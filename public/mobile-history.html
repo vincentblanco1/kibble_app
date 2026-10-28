@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KibbleGuard Mobile — Logs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mobile-style.css">
+</head>
+<body class="botanical-canvas">
+
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-[#ebdcd0] flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="Logo" class="w-7 h-7">
+      <h1 class="text-sm font-black text-[#182811]">Evaluation Logs</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-[10px] font-extrabold text-[#788673]">19 AUDITED</span>
+      <a href="mobile-settings.html" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#182811]">
+        <i class="fa-solid fa-gear"></i>
+      </a>
+    </div>
+  </header>
+
+  <main class="p-4 space-y-3">
+    
+    <!-- 4 Stats Counters -->
+    <div class="grid grid-cols-2 gap-2 text-center">
+      <div class="bg-white p-2.5 rounded-xl border border-[#ebdcd0]">
+        <span class="text-[9px] uppercase font-bold text-[#788673] block">Evaluated</span>
+        <strong class="text-sm font-black text-[#182811]">19 Records</strong>
+      </div>
+      <div class="bg-white p-2.5 rounded-xl border border-[#ebdcd0]">
+        <span class="text-[9px] uppercase font-bold text-[#16a34a] block">Safe</span>
+        <strong class="text-sm font-black text-emerald-700">16 Clear</strong>
+      </div>
+      <div class="bg-white p-2.5 rounded-xl border border-[#ebdcd0]">
+        <span class="text-[9px] uppercase font-bold text-[#b45309] block">Caution</span>
+        <strong class="text-sm font-black text-amber-700">2 Flagged</strong>
+      </div>
+      <div class="bg-white p-2.5 rounded-xl border border-[#ebdcd0]">
+        <span class="text-[9px] uppercase font-bold text-red-600 block">Critical</span>
+        <strong class="text-sm font-black text-red-700">1 Toxic</strong>
+      </div>
+    </div>
+
+    <!-- Log Items Stack -->
+    <div class="space-y-2.5 pt-1">
+      
+      <div class="tactile-card p-3.5 space-y-1 bg-white border-l-4 border-l-[#ff9800]">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-[10px] font-bold text-slate-500">#KG-9021 • Oct 19</span>
+          <span class="px-2 py-0.5 rounded bg-orange-100 text-[#b45309] font-extrabold text-[8.5px]">CAUTION</span>
+        </div>
+        <h4 class="font-black text-xs text-[#182811]">Smokey Beef Jerky Strips</h4>
+        <p class="text-[10.5px] text-[#788673]">Buster (Canine) • BHA synthetic preservative flagged.</p>
+      </div>
+
+      <div class="tactile-card p-3.5 space-y-1 bg-white border-l-4 border-l-[#16a34a]">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-[10px] font-bold text-slate-500">#KG-8994 • Oct 18</span>
+          <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-extrabold text-[8.5px]">SAFE</span>
+        </div>
+        <h4 class="font-black text-xs text-[#182811]">Wild Alaskan Salmon Entrée</h4>
+        <p class="text-[10.5px] text-[#788673]">Milo (Feline) • Clean amino balance with Taurine &amp; Omega-3.</p>
+      </div>
+
+      <div class="tactile-card p-3.5 space-y-1 bg-white border-l-4 border-l-red-600">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-[10px] font-bold text-slate-500">#KG-8812 • Oct 15</span>
+          <span class="px-2 py-0.5 rounded bg-red-100 text-red-700 font-extrabold text-[8.5px]">LETHAL</span>
+        </div>
+        <h4 class="font-black text-xs text-[#182811]">Dental Care Sweetener Chews</h4>
+        <p class="text-[10.5px] text-[#788673]">Buster (Canine) • Contained Xylitol (acute hypoglycemia).</p>
+      </div>
+
+      <div class="tactile-card p-3.5 space-y-1 bg-white border-l-4 border-l-purple-600">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-[10px] font-bold text-slate-500">#KG-8750 • Oct 12</span>
+          <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700 font-extrabold text-[8.5px]">PROHIBITED</span>
+        </div>
+        <h4 class="font-black text-xs text-[#182811]">Semi-Moist Tender Bites</h4>
+        <p class="text-[10.5px] text-[#788673]">Milo (Feline) • Contained Propylene Glycol (Heinz body anemia).</p>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Floating Center Elevated Dock (Option 03/06) -->
+  <nav class="mobile-bottom-nav">
+    <a href="mobile-index.html" class="mobile-nav-item">
+      <i class="fa-solid fa-shapes"></i>
+      <span>Overview</span>
+    </a>
+    <a href="mobile-wiki.html" class="mobile-nav-item">
+      <i class="fa-solid fa-book-medical"></i>
+      <span>Wiki</span>
+    </a>
+    <a href="mobile-results.html" class="scan-fab-container">
+      <div class="scan-fab-bubble">
+        <i class="fa-solid fa-camera"></i>
+      </div>
+      <span class="scan-fab-label">Scan</span>
+    </a>
+    <a href="mobile-history.html" class="mobile-nav-item active">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>Logs</span>
+    </a>
+    <a href="mobile-pets.html" class="mobile-nav-item">
+      <i class="fa-solid fa-paw"></i>
+      <span>Pets</span>
+    </a>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>

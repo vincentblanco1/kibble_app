@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KibbleGuard Mobile — Notifications</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mobile-style.css">
+</head>
+<body class="botanical-canvas">
+
+  <!-- Mobile Top Bar -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-[#ebdcd0] flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <a href="mobile-index.html" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#182811] cursor-pointer">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
+      <div>
+        <h1 class="text-sm font-black text-[#182811] leading-none">Alert Center</h1>
+        <span class="text-[9.5px] font-extrabold text-[#45671d]">LIVE DISPATCH ACTIVE</span>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-1.5">
+      <button type="button" id="centerMarkAllReadBtn" class="px-2.5 py-1 bg-[#fbf9f6] border border-[#ebdcd0] text-[#182811] rounded-lg text-[10px] font-bold">
+        Read All
+      </button>
+      <button type="button" id="centerClearAllBtn" class="px-2.5 py-1 bg-red-50 border border-red-200 text-red-600 rounded-lg text-[10px] font-bold">
+        Clear
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Notification Feed -->
+  <main class="p-4 space-y-3.5">
+
+    <!-- Filter Pills (Scrollable horizontally) -->
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="notifFilterButtonGroup">
+      <button type="button" class="notif-page-filter-btn px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-[#45671d] text-white shrink-0 shadow-xs" data-filter="all">
+        All (<span id="countAllNotifs">4</span>)
+      </button>
+      <button type="button" class="notif-page-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-filter="unread">
+        Unread (<span id="countUnreadNotifs">2</span>)
+      </button>
+      <button type="button" class="notif-page-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-filter="hazard">
+        Hazards
+      </button>
+      <button type="button" class="notif-page-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-filter="system">
+        System
+      </button>
+    </div>
+
+    <!-- Dynamic Notification Cards (Rendered by notifications.js) -->
+    <div id="fullNotificationList" class="space-y-2.5">
+      <!-- Injected by notifications.js -->
+    </div>
+
+    <!-- Empty State Fallback -->
+    <div id="notifEmptyState" class="hidden py-12 text-center text-[#788673] space-y-2 bg-white rounded-2xl border border-[#ebdcd0] p-6">
+      <div class="w-12 h-12 rounded-xl bg-[#fbf9f6] border border-[#ebdcd0] flex items-center justify-center mx-auto text-[#788673] text-xl">
+        <i class="fa-regular fa-bell-slash"></i>
+      </div>
+      <h3 class="font-extrabold text-sm text-[#182811]">No Notifications</h3>
+      <p class="text-[11px] max-w-xs mx-auto">All cleared. New toxic warnings and database sync notices will display here automatically.</p>
+    </div>
+
+  </main>
+
+  <!-- Mobile Floating Bottom Navigation Bar -->
+  <nav class="mobile-bottom-nav">
+    <a href="mobile-index.html" class="mobile-nav-item">
+      <i class="fa-solid fa-shapes"></i>
+      <span>Overview</span>
+    </a>
+    <a href="mobile-wiki.html" class="mobile-nav-item">
+      <i class="fa-solid fa-book-medical"></i>
+      <span>Wiki</span>
+    </a>
+    <a href="mobile-results.html" class="scan-fab-container">
+      <div class="scan-fab-bubble">
+        <i class="fa-solid fa-camera"></i>
+      </div>
+      <span class="scan-fab-label">Scan</span>
+    </a>
+    <a href="mobile-history.html" class="mobile-nav-item">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>Logs</span>
+    </a>
+    <a href="mobile-pets.html" class="mobile-nav-item">
+      <i class="fa-solid fa-paw"></i>
+      <span>Pets</span>
+    </a>
+  </nav>
+
+  <script src="app.js"></script>
+  <script src="notifications.js"></script>
+</body>
+</html>

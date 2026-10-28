@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KibbleGuard — Species-Specific Safety Dashboard</title>
+  
+  <!-- Universal Multi-Device Gateway Router -->
+  <script>
+    (function() {
+      const width = window.innerWidth;
+      const isMobileDevice = width <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isLoggedIn = localStorage.getItem('kibbleguard_user');
+      const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+      
+      const mapping = {
+        'index.html': 'mobile-index.html',
+        'landing.html': 'mobile-landing.html',
+        'auth.html': 'mobile-auth.html',
+        'history.html': 'mobile-history.html',
+        'pets.html': 'mobile-pets.html',
+        'wiki.html': 'mobile-public-wiki.html',
+        'settings.html': 'mobile-settings.html',
+        'profile.html': 'mobile-profile.html',
+        'results.html': 'mobile-results.html',
+        'notifications.html': 'mobile-notifications.html'
+      };
+
+      const reverseMapping = {
+        'mobile-index.html': 'index.html',
+        'mobile-landing.html': 'landing.html',
+        'mobile-auth.html': 'auth.html',
+        'mobile-history.html': 'history.html',
+        'mobile-pets.html': 'pets.html',
+        'mobile-public-wiki.html': 'wiki.html',
+        'mobile-settings.html': 'settings.html',
+        'mobile-profile.html': 'profile.html',
+        'mobile-results.html': 'results.html',
+        'mobile-notifications.html': 'notifications.html'
+      };
+
+      if (isMobileDevice && mapping[currentPage]) {
+        window.location.replace(mapping[currentPage] + window.location.search + window.location.hash);
+      } else if (!isMobileDevice && reverseMapping[currentPage]) {
+        window.location.replace(reverseMapping[currentPage] + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="botanical-canvas">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside id="appSidebar" class="app-sidebar">
+    <div>
+      <div class="brand-header">
+        <a href="index.html" class="brand-left">
+          <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard Logo">
+          <div class="sidebar-text">
+            <h2>KibbleGuard</h2>
+            <span class="badge">SAFETY LAB</span>
+          </div>
+        </a>
+        <button id="sidebarToggleBtn" class="hamburger-btn" title="Toggle Sidebar">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <a href="index.html" class="active">
+          <i class="fa-solid fa-shapes"></i>
+          <span class="sidebar-text">Overview</span>
+        </a>
+        <a href="results.html">
+          <i class="fa-solid fa-camera"></i>
+          <span class="sidebar-text">Scan &amp; OCR</span>
+        </a>
+        <a href="history.html">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span class="sidebar-text">Scan Logs</span>
+        </a>
+        <a href="pets.html">
+          <i class="fa-solid fa-paw"></i>
+          <span class="sidebar-text">Pet Profiles</span>
+        </a>
+        <a href="wiki.html">
+          <i class="fa-solid fa-book-medical"></i>
+          <span class="sidebar-text">Ingredient Wiki</span>
+        </a>
+        <a href="settings.html">
+          <i class="fa-solid fa-gear"></i>
+          <span class="sidebar-text">Settings</span>
+        </a>
+      </nav>
+
+      <!-- Live Pixel Habitat Canvas (Pet Corner) -->
+      <div class="habitat-card">
+        <div class="habitat-header">
+          <span>LIVE PET HABITAT</span>
+          <div class="w-1.5 h-1.5 rounded-full bg-[#4caf50]"></div>
+        </div>
+        <canvas id="habitatCanvas"></canvas>
+        <div class="habitat-actions">
+          <button id="feedTreatBtn" class="btn-treat">FEED TREAT</button>
+          <button id="switchPetBtn" class="btn-switch">SWITCH PET</button>
+        </div>
+      </div>
+
+      <div class="sidebar-extra-card">
+        <span class="text-[9px] font-extrabold uppercase text-[#45671d] block mb-1">DUAL-SPECIES SENTINEL</span>
+        <p class="text-[10px] text-[#788673] leading-snug">Calibrated against veterinary toxicology databases for canines and felines.</p>
+      </div>
+    </div>
+
+    <!-- User Profile Badge & Logout -->
+    <div class="space-y-2">
+      <a href="profile.html" class="user-profile-badge border border-[#ebdcd0] hover:border-[#45671d] transition-all block">
+        <div class="flex items-center gap-2.5">
+          <div class="avatar-circle" id="sidebarAvatarCircle">VB</div>
+          <div class="user-info min-w-0 flex-1">
+            <p class="name truncate" id="sidebarUserName">Vincent G. Blanco</p>
+            <p class="role" id="sidebarUserRole">VERIFIED OWNER</p>
+            <p class="loc truncate" id="sidebarUserLoc">Las Piñas City • 4 Pets</p>
+          </div>
+        </div>
+      </a>
+      <button type="button" id="sidebarSignOutBtn" class="w-full py-1 text-center text-xs font-bold text-[#788673] hover:text-red-600 transition-colors flex items-center justify-center gap-1.5">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="sidebar-text">Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="main-viewport">
+
+    <!-- Top Header Bar with Search & Quick Actions -->
+    <header class="flex items-center justify-between gap-4 mb-5">
+      <div class="relative flex-1 max-w-xl">
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-[#788673] text-xs"></i>
+        <input type="text" id="overviewSearchInput" placeholder="Search ingredients (e.g. BHA, Xylitol, Taurine, Red 40)..." class="w-full bg-white border border-[#ebdcd0] rounded-full pl-10 pr-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-[#45671d] shadow-2xs">
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Reusable Notification Bell Dropdown -->
+        <div class="relative">
+          <button type="button" id="notificationBellBtn" class="relative w-9 h-9 rounded-full bg-white border border-[#ebdcd0] hover:border-[#45671d] text-[#182811] flex items-center justify-center transition-all shadow-2xs" title="Notifications &amp; Alerts">
+            <i class="fa-regular fa-bell text-sm"></i>
+            <span id="notificationBadge" class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-600 text-white text-[9.5px] font-black flex items-center justify-center shadow-xs">
+              2
+            </span>
+          </button>
+
+          <!-- Slide-Down Notification Dropdown Drawer -->
+          <div id="notificationDropdown" class="hidden absolute right-0 mt-2.5 w-80 sm:w-96 bg-white rounded-3xl border border-[#ebdcd0] shadow-2xl z-50 p-4 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-[#f5efe6]">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#ff9800]"></span>
+                <h3 class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Notifications &amp; Alerts</h3>
+              </div>
+              <button type="button" id="markAllReadBtn" class="text-[10.5px] font-bold text-[#45671d] hover:underline">
+                Mark all as read
+              </button>
+            </div>
+            
+            <div id="notificationListContainer" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
+
+            <div class="pt-2 border-t border-[#f5efe6] text-center">
+              <a href="notifications.html" class="text-xs font-extrabold text-[#45671d] hover:underline block py-1">
+                See all notifications →
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="hidden sm:flex bg-white border border-[#ebdcd0] px-4 py-2 rounded-full text-xs font-bold text-[#182811] items-center gap-2 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-[#4caf50]"></span> Region: NCR - Las Piñas
+        </div>
+
+        <a href="results.html" class="bg-[#45671d] hover:bg-[#324c14] text-white px-5 py-2.5 rounded-full font-extrabold text-xs tracking-wider uppercase flex items-center gap-2 shadow-md transition-all">
+          <i class="fa-solid fa-camera"></i> CAPTURE / NEW SCAN
+        </a>
+      </div>
+    </header>
+
+    <!-- Personalized Greeting Banner -->
+    <div class="mb-5">
+      <h1 class="text-2xl sm:text-3xl font-display font-extrabold text-[#182811]">
+        Good evening, <span class="bg-[#ffe066]/60 px-2 py-0.5 rounded-lg">Vincent</span>
+      </h1>
+      <p class="text-xs font-semibold text-[#788673] mt-1">Buster and Milo are both guarded. Your last scan was on Oct 19.</p>
+    </div>
+
+    <!-- Top Statistical Metric Cards Grid (3 Cards Balanced) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+      
+      <!-- Metric Card 1: Registered Pets -->
+      <div class="tactile-card p-5 space-y-3 bg-white">
+        <div class="flex items-center justify-between">
+          <span class="text-[10.5px] font-extrabold uppercase text-[#788673] tracking-wider">REGISTERED PETS</span>
+          <div class="w-8 h-8 rounded-xl bg-orange-100 text-[#ff9800] flex items-center justify-center text-sm">
+            <i class="fa-solid fa-paw"></i>
+          </div>
+        </div>
+        <div>
+          <strong class="text-2xl font-black text-[#182811] block">2 Active</strong>
+          <span class="text-xs text-[#788673] font-semibold">Buster (Dog) &amp; Milo (Cat)</span>
+        </div>
+        <div class="pt-2 border-t border-[#ebdcd0] flex items-center justify-between text-[11px]">
+          <span class="text-emerald-700 font-bold">● Both Guarded</span>
+          <a href="pets.html" class="text-[#45671d] font-extrabold hover:underline">Manage →</a>
+        </div>
+      </div>
+
+      <!-- Metric Card 2: Evaluated Scans -->
+      <div class="tactile-card p-5 space-y-3 bg-white">
+        <div class="flex items-center justify-between">
+          <span class="text-[10.5px] font-extrabold uppercase text-[#788673] tracking-wider">EVALUATED SCANS</span>
+          <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-barcode"></i>
+          </div>
+        </div>
+        <div>
+          <strong class="text-2xl font-black text-[#182811] block">19 Batches</strong>
+          <span class="text-xs text-[#788673] font-semibold">16 Clean • 3 Flagged</span>
+        </div>
+        <div class="pt-2 border-t border-[#ebdcd0] flex items-center justify-between text-[11px]">
+          <span class="text-[#788673] font-semibold">Last scan: Oct 19</span>
+          <a href="history.html" class="text-[#45671d] font-extrabold hover:underline">Audit Logs →</a>
+        </div>
+      </div>
+
+      <!-- Metric Card 3: Caution Flags -->
+      <div class="tactile-card p-5 space-y-3 bg-white">
+        <div class="flex items-center justify-between">
+          <span class="text-[10.5px] font-extrabold uppercase text-[#b45309] tracking-wider">CAUTION FLAGS</span>
+          <div class="w-8 h-8 rounded-xl bg-orange-100 text-[#b45309] flex items-center justify-center text-sm">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+        </div>
+        <div>
+          <strong class="text-2xl font-black text-[#b45309] block">2 Preservatives</strong>
+          <span class="text-xs text-[#788673] font-semibold">BHA &amp; Ethoxyquin flagged</span>
+        </div>
+        <div class="pt-2 border-t border-[#ebdcd0] flex items-center justify-between text-[11px]">
+          <span class="text-amber-800 font-bold">▲ Moderate Risk</span>
+          <a href="wiki.html" class="text-[#45671d] font-extrabold hover:underline">Wiki Entry →</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Main Workspace Split: Left (OCR Callout & Household Pets), Right (Recent Scans & Safety Feed) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+      
+      <!-- Left Column (7 Columns) -->
+      <div class="lg:col-span-7 space-y-6">
+        
+        <!-- OCR Instant Extraction Callout Banner -->
+        <div class="tactile-card p-6 bg-gradient-to-br from-[#182811] via-[#213819] to-[#182811] text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-md relative overflow-hidden">
+          <div class="space-y-2 text-center sm:text-left z-10">
+            <span class="px-2.5 py-0.5 rounded-full bg-[#ffe066] text-[#182811] font-black text-[10px] uppercase tracking-wider inline-block">
+              <i class="fa-solid fa-camera"></i> INSTANT OCR EXTRACTION
+            </span>
+            <h2 class="text-xl font-display font-extrabold text-white">Inspect Packaging in Seconds</h2>
+            <p class="text-xs text-slate-300 max-w-md leading-relaxed font-medium">
+              Snap a photo of any commercial pet food ingredient label. Our rule engine screens every ingredient for dogs and cats.
+            </p>
+          </div>
+          <a href="results.html" class="px-6 py-3.5 rounded-2xl bg-[#ffe066] hover:bg-[#ffd43b] text-[#182811] font-black text-xs uppercase tracking-wider shadow-md hover:scale-[1.02] active:scale-95 transition-all shrink-0 flex items-center gap-2 z-10">
+            <i class="fa-solid fa-camera"></i> Start Scan →
+          </a>
+        </div>
+
+        <!-- Household Companions (Floating side-by-side standalone tactile cards matching mockup) -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between px-1">
+            <div>
+              <h3 class="text-sm font-extrabold text-[#182811]">Household companions</h3>
+            </div>
+            <a href="pets.html" class="text-xs font-extrabold text-[#45671d] hover:underline">
+              View all pets →
+            </a>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <!-- Pet Card 1: Buster -->
+            <div class="tactile-card p-5 bg-white space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-full border-2 border-amber-400 overflow-hidden shrink-0 shadow-2xs">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Buster" class="w-full h-full object-cover">
+                  </div>
+                  <div>
+                    <h4 class="font-extrabold text-sm text-[#182811]">Buster</h4>
+                    <span class="text-[11px] text-[#788673] block">French Bulldog • 3.5 yrs</span>
+                  </div>
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9.5px] font-extrabold uppercase">
+                  Protected
+                </span>
+              </div>
+
+              <div class="space-y-1 pt-1">
+                <span class="text-[9.5px] font-extrabold uppercase text-[#788673] block tracking-wider">Active watches</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <span class="px-2.5 py-0.5 rounded-lg bg-orange-100 text-[#b45309] font-bold text-[10px]">BHA sensitive</span>
+                  <span class="px-2.5 py-0.5 rounded-lg bg-red-100 text-red-700 font-bold text-[10px]">Xylitol fatal</span>
+                </div>
+              </div>
+
+              <div class="pt-2.5 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+                <span class="text-[#788673]">Risk index: <strong class="text-emerald-700 font-bold">Clean (0)</strong></span>
+                <a href="results.html?pet=buster" class="text-[#45671d] font-extrabold hover:underline">Scan →</a>
+              </div>
+            </div>
+
+            <!-- Pet Card 2: Milo -->
+            <div class="tactile-card p-5 bg-white space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-full border-2 border-purple-300 overflow-hidden shrink-0 shadow-2xs">
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Milo" class="w-full h-full object-cover">
+                  </div>
+                  <div>
+                    <h4 class="font-extrabold text-sm text-[#182811]">Milo</h4>
+                    <span class="text-[11px] text-[#788673] block">Domestic Short Hair • 8 yrs</span>
+                  </div>
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[9.5px] font-extrabold uppercase">
+                  Renal Watch
+                </span>
+              </div>
+
+              <div class="space-y-1 pt-1">
+                <span class="text-[9.5px] font-extrabold uppercase text-[#788673] block tracking-wider">Active watches</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <span class="px-2.5 py-0.5 rounded-lg bg-purple-100 text-purple-800 font-bold text-[10px]">Propylene glycol fatal</span>
+                  <span class="px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-[10px]">Taurine vital</span>
+                </div>
+              </div>
+
+              <div class="pt-2.5 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+                <span class="text-[#788673]">Risk index: <strong class="text-emerald-700 font-bold">Clean (0)</strong></span>
+                <a href="results.html?pet=milo" class="text-[#45671d] font-extrabold hover:underline">Scan →</a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column (5 Columns): Recent Scans & Regional Feed -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- Recent Scans Box -->
+        <div class="tactile-card p-6 space-y-4 bg-white">
+          <div class="flex items-center justify-between pb-2 border-b border-[#ebdcd0]">
+            <div>
+              <h3 class="text-sm font-extrabold text-[#182811]">Recent scans</h3>
+              <p class="text-[11px] text-[#788673]">Latest chemical token extractions</p>
+            </div>
+            <a href="history.html" class="text-xs font-extrabold text-[#45671d] hover:underline">
+              See all →
+            </a>
+          </div>
+
+          <div class="space-y-3">
+            
+            <!-- Scan Item 1 -->
+            <div class="p-3 rounded-2xl border border-amber-200 bg-[#fef9ec] flex items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-12 h-12 rounded-full border-2 border-amber-600 bg-white flex flex-col items-center justify-center shrink-0 shadow-2xs">
+                  <span class="text-xs font-black text-amber-700 leading-none">48</span>
+                  <span class="text-[7.5px] font-extrabold uppercase tracking-tighter text-amber-800">RISK</span>
+                </div>
+                <div class="space-y-0.5 min-w-0">
+                  <strong class="text-[#182811] block font-extrabold text-xs truncate">Smokey Beef Jerky Strips</strong>
+                  <span class="text-[10px] text-[#788673] block truncate">Buster • 19 tokens parsed</span>
+                  <span class="text-[10px] font-bold text-amber-800">▲ BHA preservative detected</span>
+                </div>
+              </div>
+              <a href="results.html?batch=KG-9021" class="px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-[#45671d] font-extrabold text-xs hover:bg-[#45671d] hover:text-white transition-all shrink-0">
+                Inspect →
+              </a>
+            </div>
+
+            <!-- Scan Item 2 -->
+            <div class="p-3 rounded-2xl border border-emerald-200 bg-[#e2f4ed]/50 flex items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-12 h-12 rounded-full border-2 border-emerald-600 bg-white flex flex-col items-center justify-center shrink-0 shadow-2xs">
+                  <span class="text-xs font-black text-emerald-700 leading-none">02</span>
+                  <span class="text-[7.5px] font-extrabold uppercase tracking-tighter text-emerald-800">RISK</span>
+                </div>
+                <div class="space-y-0.5 min-w-0">
+                  <strong class="text-[#182811] block font-extrabold text-xs truncate">Wild Alaskan Salmon Entrée</strong>
+                  <span class="text-[10px] text-[#788673] block truncate">Milo • 24 tokens parsed</span>
+                  <span class="text-[10px] font-bold text-emerald-700">✓ 100% optimal (taurine present)</span>
+                </div>
+              </div>
+              <a href="results.html?batch=KG-8994" class="px-3 py-1.5 rounded-xl bg-white border border-emerald-300 text-[#45671d] font-extrabold text-xs hover:bg-[#45671d] hover:text-white transition-all shrink-0">
+                Inspect →
+              </a>
+            </div>
+
+            <!-- Scan Item 3 -->
+            <div class="p-3 rounded-2xl border border-red-200 bg-red-50/60 flex items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-12 h-12 rounded-full border-2 border-red-600 bg-white flex flex-col items-center justify-center shrink-0 shadow-2xs">
+                  <span class="text-xs font-black text-red-700 leading-none">96</span>
+                  <span class="text-[7.5px] font-extrabold uppercase tracking-tighter text-red-800">RISK</span>
+                </div>
+                <div class="space-y-0.5 min-w-0">
+                  <strong class="text-[#182811] block font-extrabold text-xs truncate">Dental Care Sweetener Chews</strong>
+                  <span class="text-[10px] text-[#788673] block truncate">Buster • 16 tokens parsed</span>
+                  <span class="text-[10px] font-bold text-red-700">Critical hazard: Xylitol</span>
+                </div>
+              </div>
+              <a href="results.html?batch=KG-8812" class="px-3 py-1.5 rounded-xl bg-white border border-red-300 text-[#45671d] font-extrabold text-xs hover:bg-[#45671d] hover:text-white transition-all shrink-0">
+                Inspect →
+              </a>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Regional Safety Dispatch -->
+        <div class="tactile-card p-5 bg-[#fbf9f6] border border-[#ebdcd0] space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-[10px] uppercase font-extrabold text-emerald-800 tracking-wider">LAS PIÑAS SAFETY NODE</span>
+          </div>
+          <h4 class="text-xs font-extrabold text-[#182811]">No active contamination recalls in region</h4>
+          <p class="text-[11px] text-[#788673] leading-relaxed">
+            Local FDA and veterinary feeds report zero commercial dry pet food batch recalls across Metro Manila as of October 2026.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+  <script src="notifications.js"></script>
+</body>
+</html>

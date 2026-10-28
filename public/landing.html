@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KibbleGuard — Species-Specific Toxicity Intelligence</title>
+  
+  <!-- Auto Device Redirection Script -->
+  <script>
+    if (window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      const isLoggedIn = localStorage.getItem('kibbleguard_user');
+      window.location.replace(isLoggedIn ? 'mobile-index.html' : 'mobile-landing.html');
+    }
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              forest: '#45671d',
+              forestDark: '#324c14',
+              ink: '#182811',
+              paper: '#ffffff',
+              surface: '#fbf9f6',
+              line: '#ebdcd0',
+              amber: '#ff9800',
+              teal: '#45671d',
+              tealDark: '#324c14'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['"Plus Jakarta Sans"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background-color: #fbf9f6;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .highlight-yellow {
+      background-color: #fef08a;
+      padding: 0 6px;
+      border-radius: 8px;
+    }
+    .highlight-sage {
+      background-color: #d1fae5;
+      padding: 0 6px;
+      border-radius: 8px;
+    }
+    .hero-arch-desktop {
+      border-top-left-radius: 280px;
+      border-top-right-radius: 280px;
+      border-bottom-left-radius: 40px;
+      border-bottom-right-radius: 40px;
+      overflow: visible;
+      position: relative;
+    }
+    .arch-clip-inner {
+      border-top-left-radius: 280px;
+      border-top-right-radius: 280px;
+      border-bottom-left-radius: 40px;
+      border-bottom-right-radius: 40px;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+    .floating-desktop-chip {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(12px);
+      border: 1.2px solid #ebdcd0;
+      box-shadow: 0 16px 35px -4px rgba(24, 40, 17, 0.15);
+      z-index: 30;
+    }
+  </style>
+</head>
+<body class="!block w-full antialiased text-brand-ink selection:bg-[#45671d] selection:text-white">
+
+  <!-- ==================== TOP NAVIGATION ==================== -->
+  <header class="fixed top-0 left-0 w-full z-50 bg-[#fbf9f6]/95 backdrop-blur-md border-b border-[#ebdcd0]">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-10">
+        <a href="landing.html" class="flex items-center gap-2.5">
+          <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard Logo" class="w-9 h-9 object-contain">
+          <div>
+            <span class="font-display font-800 text-xl tracking-tight text-brand-ink block leading-none">KibbleGuard</span>
+            <span class="text-[9px] font-extrabold text-[#45671d] tracking-widest uppercase">Safety Lab</span>
+          </div>
+        </a>
+        <nav class="hidden md:flex items-center gap-8 text-[14px] font-semibold text-slate-600">
+          <a href="#live-demo" class="hover:text-[#45671d] transition-colors">Live Scanner</a>
+          <a href="#quick-check" class="hover:text-[#45671d] transition-colors">Instant Check</a>
+          <a href="#how-it-works" class="hover:text-[#45671d] transition-colors">How It Works</a>
+          <a href="#species-intelligence" class="hover:text-[#45671d] transition-colors">Species Intelligence</a>
+          <a href="PublicWiki.html" class="hover:text-[#45671d] transition-colors">Ingredient Wiki</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="auth.html?mode=login" class="text-[14px] font-bold text-slate-600 hover:text-brand-ink transition-colors px-3 py-2">Log In</a>
+        <a href="auth.html?mode=signup" class="bg-[#45671d] hover:bg-[#324c14] text-white px-6 py-2.5 rounded-xl text-[14px] font-extrabold shadow-md hover:shadow-lg transition-all">Sign Up</a>
+      </div>
+    </div>
+
+    <!-- Live Telemetry Ticker Ribbon -->
+    <div class="bg-[#f0ebe1] border-t border-[#ebdcd0] py-2 overflow-hidden text-xs">
+      <div class="ticker-track flex items-center gap-10 whitespace-nowrap text-[11px] font-semibold text-[#788673]">
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Feline Renal Watch: <strong>Taurine content verified optimal</strong></span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>OCR Confidence Index: <strong>98.4% mean extraction fidelity</strong></span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+          <span>Regional Alert: <strong>0 FDA recalls active in Las Piñas City, NCR</strong></span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>AAFCO &amp; FEDIAF 2026 database baselines active</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== HERO SECTION ==================== -->
+  <section class="relative pt-40 pb-28 overflow-hidden bg-[#fbf9f6]">
+    
+    <!-- Background Decorative Accent Blobs & Circles -->
+    <div class="absolute top-32 left-1/3 w-32 h-32 bg-[#ff7e1b]/35 rounded-full blur-xl pointer-events-none z-0"></div>
+    <div class="absolute bottom-10 left-12 w-64 h-64 bg-[#fde047]/50 rounded-full blur-3xl pointer-events-none z-0"></div>
+    <div class="absolute top-28 right-10 w-[500px] h-[500px] bg-[#bbf7d0]/45 rounded-full blur-3xl pointer-events-none z-0"></div>
+
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 grid lg:grid-cols-12 gap-12 items-center relative z-10">
+      
+      <!-- Left Column: Copy & Actions -->
+      <div class="lg:col-span-6 space-y-7">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-[#ebdcd0] text-xs font-extrabold text-[#45671d] uppercase tracking-widest shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-[#16a34a]"></span> OCR Ingredient Parser v2.4
+        </div>
+        
+        <h1 class="text-[56px] lg:text-[72px] font-display font-800 leading-[1.02] tracking-tight text-brand-ink">
+          Scan the label.<br>
+          Protect the <span class="highlight-yellow">paw.</span>
+        </h1>
+        
+        <p class="text-slate-600 text-base lg:text-lg max-w-lg leading-relaxed font-medium">
+          Instant ingredient parsing for felines and canines. Cross-reference every additive against a veterinary toxicological database to flag hazards in seconds.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center gap-4 pt-3">
+          <a href="#live-demo" class="w-full sm:w-auto bg-[#182811] hover:bg-black text-white px-8 py-4 rounded-2xl font-extrabold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg">
+            Test Live Scanner <i class="fa-solid fa-arrow-down text-xs"></i>
+          </a>
+          <a href="auth.html?mode=signup" class="w-full sm:w-auto bg-[#45671d] hover:bg-[#324c14] text-white px-8 py-4 rounded-2xl font-extrabold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg">
+            Create Free Account
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Column: Arched Window with landing picture.jpg -->
+      <div class="lg:col-span-6 relative flex justify-center">
+        <div class="relative w-full max-w-md h-[560px] hero-arch-desktop shadow-2xl bg-[#e2ded4]">
+          <div class="arch-clip-inner">
+            <img class="w-full h-full object-cover object-center scale-100" src="landing picture.jpg" alt="Cat playing with toy and dog watching" />
+          </div>
+
+          <!-- Buster Profile Chip (Top Left, Tilted) -->
+          <div class="floating-desktop-chip absolute top-20 -left-6 px-4 py-3 rounded-2xl flex items-center gap-3 transform rotate-[-3deg]">
+            <span class="text-2xl">🐶</span>
+            <div>
+              <strong class="text-xs font-black text-[#182811] block">Buster (Canine)</strong>
+              <span class="text-[10px] font-bold text-[#16a34a]">● Protected Profile</span>
+            </div>
+          </div>
+
+          <!-- Milo Profile Chip (Right, Tilted) -->
+          <div class="floating-desktop-chip absolute top-40 -right-6 px-4 py-3 rounded-2xl flex items-center gap-3 transform rotate-[3.5deg]">
+            <span class="text-2xl">🐱</span>
+            <div>
+              <strong class="text-xs font-black text-[#182811] block">Milo (Feline)</strong>
+              <span class="text-[10px] font-bold text-purple-700">● Renal Safe Filter</span>
+            </div>
+          </div>
+
+          <!-- Lethal Hazard Floating Alert Card (Bottom Right, Tilted) -->
+          <div class="floating-desktop-chip absolute bottom-24 -right-4 p-3.5 rounded-2xl shadow-xl transform rotate-[2deg] max-w-[200px] border border-red-200 bg-white">
+            <div class="flex items-center justify-between mb-1">
+              <span class="px-2 py-0.5 rounded bg-red-100 text-red-700 font-extrabold text-[9px] uppercase">Lethal to dogs</span>
+            </div>
+            <strong class="text-xs font-black text-[#182811] block">Xylitol detected</strong>
+            <span class="text-[10px] text-slate-500 block">Cats: not toxic</span>
+          </div>
+
+          <!-- Bottom Slanted Orange OCR Scanning Badge -->
+          <div class="absolute bottom-4 left-6 right-6 bg-[#ff7e1b] text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center justify-between text-xs font-black tracking-wide transform rotate-[-1deg] z-30">
+            <span>OCR scanning</span>
+            <span class="bg-black/20 px-3 py-1 rounded-xl text-xs font-mono">98.4% match</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== LIVE INTERACTIVE OCR SCANNER DEMO ==================== -->
+  <section id="live-demo" class="py-28 bg-white border-y border-[#ebdcd0] relative overflow-hidden">
+    <div class="absolute top-10 left-10 w-72 h-72 bg-[#fde047]/40 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-10 right-10 w-72 h-72 bg-[#e9d5ff]/50 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-6xl mx-auto px-6 lg:px-8 relative z-10">
+      
+      <div class="text-center max-w-2xl mx-auto mb-14 space-y-3">
+        <span class="px-3.5 py-1 rounded-full bg-[#fef08a] text-[#182811] font-extrabold text-xs uppercase tracking-wider">
+          HANDS-ON DEMONSTRATION
+        </span>
+        <h2 class="text-3xl lg:text-5xl font-display font-800 text-[#182811]">
+          Watch it catch the <span class="highlight-yellow">bad stuff</span>
+        </h2>
+        <p class="text-slate-600 text-sm lg:text-base font-medium">
+          Pick a sample product and watch the scanner score every ingredient. Lower toxicity risk is safer.
+        </p>
+
+        <!-- Sample Switcher Buttons -->
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-3">
+          <button type="button" class="demo-switch-btn px-5 py-2.5 rounded-2xl text-xs font-extrabold bg-[#45671d] text-white shadow-md transition-all" data-sample="salmon">
+            Salmon Entrée · 02 · Safe
+          </button>
+          <button type="button" class="demo-switch-btn px-5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 bg-white border border-[#ebdcd0] hover:text-[#182811] shadow-xs transition-all" data-sample="bha">
+            Beef Jerky · 48 · Caution
+          </button>
+          <button type="button" class="demo-switch-btn px-5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 bg-white border border-[#ebdcd0] hover:text-[#182811] shadow-xs transition-all" data-sample="xylitol">
+            Sweetener Chew · 96 · Lethal
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Interactive Inspection Display -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-[#fbf9f6] p-8 sm:p-10 rounded-[36px] border border-[#ebdcd0] shadow-xl">
+        
+        <!-- Left: Simulated Camera Viewport -->
+        <div class="lg:col-span-6 relative aspect-[4/3] bg-[#1e293b] rounded-3xl overflow-hidden p-6 border-2 border-slate-700 flex flex-col justify-between shadow-inner">
+          <div id="demoLaserBeam" class="scan-laser-line"></div>
+
+          <div class="flex items-center justify-between text-slate-400 text-xs z-10">
+            <span class="font-mono text-xs uppercase font-bold text-emerald-400 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span> CAMERA STREAM
+            </span>
+            <span id="demoSampleId" class="font-mono text-xs text-slate-300">BATCH: #KG-DEMO-03</span>
+          </div>
+
+          <div id="demoTokensOverlay" class="space-y-3 z-10 my-auto">
+            <div class="p-3 rounded-xl border border-dashed border-emerald-500 bg-emerald-500/20 flex items-center justify-between">
+              <span class="font-mono text-sm font-bold text-emerald-300">TOKEN: Wild Salmon (Protein)</span>
+              <span class="text-[10px] font-extrabold uppercase bg-emerald-500 text-black px-2 py-0.5 rounded">OPTIMAL</span>
+            </div>
+            <div class="p-3 rounded-xl border border-dashed border-emerald-500 bg-emerald-500/20 flex items-center justify-between">
+              <span class="font-mono text-sm font-bold text-emerald-300">TOKEN: Taurine (Amino Acid)</span>
+              <span class="text-[10px] font-extrabold uppercase bg-emerald-500 text-black px-2 py-0.5 rounded">VITAL</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-slate-400 z-10 pt-3 border-t border-slate-700">
+            <span>OCR Inference: <strong class="text-white">180ms</strong></span>
+            <span class="text-emerald-400 font-bold">Accuracy: 98.4%</span>
+          </div>
+        </div>
+
+        <!-- Right: Diagnostic Verdict Output -->
+        <div class="lg:col-span-6 space-y-4 bg-white p-6 sm:p-8 rounded-3xl border border-[#ebdcd0] shadow-sm">
+          <div class="flex items-center justify-between">
+            <span id="demoRiskBadge" class="px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wide border bg-emerald-100 text-emerald-800 border-emerald-300">
+              OPTIMAL SAFETY · MINIMAL RISK
+            </span>
+          </div>
+
+          <h3 id="demoScoreDisplay" class="text-4xl lg:text-5xl font-black text-[#16a34a]">
+            Toxicity Risk: 02 / 100
+          </h3>
+
+          <h4 id="demoProductTitle" class="text-xl font-extrabold text-[#182811]">
+            Wild Alaskan Salmon Entrée
+          </h4>
+
+          <p id="demoSummaryText" class="text-sm text-slate-600 leading-relaxed font-medium">
+            High bioavailability animal protein with a complete amino acid profile. Compliant with FEDIAF feline standards.
+          </p>
+
+          <div id="demoFindingCard" class="p-4 rounded-2xl border space-y-2 text-xs transition-all bg-emerald-50 border-emerald-200 text-emerald-900">
+            <div class="flex items-center justify-between">
+              <strong id="demoFindingName" class="font-extrabold text-sm">Wild Salmon &amp; Taurine Blend</strong>
+              <span class="font-bold uppercase text-[10px]">VITAL NUTRIENTS</span>
+            </div>
+            <p id="demoFindingDesc" class="text-xs leading-relaxed">
+              Omega-3 supports renal flow. Taurine protects against DCM.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== INSTANT INGREDIENT QUICK-CHECK WIDGET ==================== -->
+  <section id="quick-check" class="py-28 bg-[#fbf9f6] relative overflow-hidden">
+    <div class="absolute -bottom-10 -left-10 w-96 h-96 bg-[#bbf7d0]/60 rounded-full blur-3xl pointer-events-none z-0"></div>
+
+    <div class="max-w-6xl mx-auto px-6 lg:px-8 grid lg:grid-cols-12 gap-12 items-center relative z-10">
+      
+      <!-- Left Column: Search & Prompt -->
+      <div class="lg:col-span-6 space-y-6">
+        <span class="px-3 py-1 rounded-full bg-[#fef08a] text-[#182811] font-extrabold text-xs uppercase tracking-wider">
+          TRY IT NOW
+        </span>
+        
+        <h2 class="text-4xl lg:text-5xl font-display font-800 text-[#182811]">
+          Is it safe for your <span class="highlight-sage">pet?</span>
+        </h2>
+
+        <p class="text-slate-600 text-sm lg:text-base font-medium max-w-md">
+          Test our open veterinary database. Type any compound or pick a popular one.
+        </p>
+
+        <!-- Search Bar -->
+        <div class="relative max-w-lg">
+          <input 
+            type="text" 
+            id="instantCheckInput" 
+            value="Xylitol"
+            placeholder="Search additive..." 
+            class="w-full bg-white border border-[#ebdcd0] rounded-2xl pl-5 pr-14 py-4 text-sm font-semibold focus:outline-none focus:border-[#45671d] shadow-sm"
+          />
+          <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-[#45671d] text-white flex items-center justify-center">
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </div>
+
+        <!-- Suggestion Chips -->
+        <div class="flex flex-wrap items-center gap-2 pt-2">
+          <button type="button" class="quick-chip px-4 py-2 rounded-xl bg-white border border-[#ebdcd0] text-[#182811] font-bold text-xs shadow-2xs" data-term="Xylitol">Xylitol</button>
+          <button type="button" class="quick-chip px-4 py-2 rounded-xl bg-white border border-[#ebdcd0] text-[#182811] font-bold text-xs shadow-2xs" data-term="Propylene Glycol">Propylene Glycol</button>
+          <button type="button" class="quick-chip px-4 py-2 rounded-xl bg-white border border-[#ebdcd0] text-[#182811] font-bold text-xs shadow-2xs" data-term="BHA">BHA &amp; BHT</button>
+          <button type="button" class="quick-chip px-4 py-2 rounded-xl bg-white border border-[#ebdcd0] text-[#182811] font-bold text-xs shadow-2xs" data-term="Taurine">Taurine</button>
+        </div>
+      </div>
+
+      <!-- Right Column: Instant Verdict Result Card -->
+      <div class="lg:col-span-6">
+        <div id="instantResultCard" class="p-8 rounded-[36px] bg-white border border-[#ebdcd0] shadow-xl space-y-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 id="instantResultTitle" class="text-xl font-black text-[#182811]">Xylitol (Birch Sugar)</h4>
+              <span id="instantResultCategory" class="text-xs text-slate-500 font-bold">Sugar Alcohol Sweetener · Toxicity Score 98</span>
+            </div>
+            <span id="instantResultBadge" class="px-3.5 py-1 rounded-full bg-red-100 text-red-700 border border-red-200 font-black text-xs uppercase tracking-wider">
+              CRITICAL LETHAL
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 text-xs">
+            <div class="p-4 rounded-2xl bg-red-50 border border-red-100 space-y-1">
+              <span class="text-[10px] font-black uppercase text-red-700 tracking-wider">DOGS</span>
+              <strong class="text-base font-black text-[#182811] block">Lethal</strong>
+              <p id="instantCanineNote" class="text-slate-600 text-xs leading-relaxed">Fatal insulin surge, severe hypoglycemia and acute hepatic failure.</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 space-y-1">
+              <span class="text-[10px] font-black uppercase text-emerald-700 tracking-wider">CATS</span>
+              <strong class="text-base font-black text-[#182811] block">Not toxic</strong>
+              <p id="instantFelineNote" class="text-slate-600 text-xs leading-relaxed">Low documented acute pancreatic spike, but zero nutrition.</p>
+            </div>
+          </div>
+
+          <div class="pt-2 flex items-center justify-between text-xs font-bold border-t border-[#f5efe6]">
+            <span class="text-slate-400 font-medium">Verified against AAFCO &amp; FEDIAF.</span>
+            <a href="PublicWiki.html" class="text-[#45671d] hover:underline">View Full Clinical Dossier →</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== THREE STEPS TO SAFETY ==================== -->
+  <section id="how-it-works" class="py-28 bg-white border-t border-[#ebdcd0]">
+    <div class="max-w-7xl mx-auto px-8 space-y-16">
+      <div class="text-center max-w-2xl mx-auto space-y-3">
+        <h2 class="text-4xl lg:text-5xl font-display font-800 text-brand-ink">
+          Three steps to <span class="highlight-sage">safety</span>
+        </h2>
+        <p class="text-slate-600 font-medium text-base">Bridging the gap between complex packaging fine print and companion animal safety.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- Step 1 -->
+        <div class="bg-[#fbf9f6] p-8 rounded-[32px] shadow-sm border border-[#ebdcd0] space-y-4">
+          <div class="w-12 h-12 bg-emerald-200 text-[#182811] rounded-2xl font-black text-lg flex items-center justify-center">1</div>
+          <h3 class="text-xl font-display font-extrabold text-brand-ink">Capture the label</h3>
+          <p class="text-slate-600 text-sm font-medium leading-relaxed">Snap a photo of the ingredient statement on any kibble bag or wet food can, or upload a file.</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="bg-[#fbf9f6] p-8 rounded-[32px] shadow-sm border border-[#ebdcd0] space-y-4">
+          <div class="w-12 h-12 bg-[#fef08a] text-[#182811] rounded-2xl font-black text-lg flex items-center justify-center">2</div>
+          <h3 class="text-xl font-display font-extrabold text-brand-ink">Diagnostic parsing</h3>
+          <p class="text-slate-600 text-sm font-medium leading-relaxed">Our rule engine tokenizes every chemical and cross-references it against canine and feline biology.</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="bg-[#fbf9f6] p-8 rounded-[32px] shadow-sm border border-[#ebdcd0] space-y-4">
+          <div class="w-12 h-12 bg-orange-200 text-[#182811] rounded-2xl font-black text-lg flex items-center justify-center">3</div>
+          <h3 class="text-xl font-display font-extrabold text-brand-ink">Get the verdict</h3>
+          <p class="text-slate-600 text-sm font-medium leading-relaxed">Instant safety scores, highlighted hazard tokens and species-specific clinical warnings.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== SPECIES INTELLIGENCE ==================== -->
+  <section id="species-intelligence" class="py-28 bg-[#fbf9f6] space-y-24">
+    <div class="max-w-7xl mx-auto px-8 space-y-24">
+      
+      <!-- Canine Section -->
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div class="relative flex justify-center">
+          <div class="absolute top-10 left-10 w-72 h-72 bg-[#fde047]/60 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="rounded-[40px] overflow-hidden shadow-2xl border-8 border-white bg-orange-50 aspect-square w-full max-w-md relative z-10">
+            <img class="w-full h-full object-cover" src="dogs.jpg" alt="French Bulldogs" />
+          </div>
+        </div>
+        <div class="space-y-6">
+          <span class="px-3 py-1 rounded-full bg-orange-100 text-orange-900 font-extrabold text-xs uppercase tracking-wider">FOR DOGS</span>
+          <h2 class="text-[44px] font-display font-800 text-brand-ink leading-tight">
+            Canine-specific <span class="highlight-yellow">toxicity intelligence</span>
+          </h2>
+          <p class="text-slate-600 text-base font-medium leading-relaxed">
+            Canine physiology cannot safely metabolize artificial sugar alcohols. KibbleGuard flags Xylitol, BHA/BHT preservatives and synthetic dyes before they trigger organ damage.
+          </p>
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center gap-3 font-bold text-sm text-brand-ink">
+              <i class="fa-solid fa-circle-check text-[#45671d]"></i> Synthetic sweetener detection (Xylitol)
+            </div>
+            <div class="flex items-center gap-3 font-bold text-sm text-brand-ink">
+              <i class="fa-solid fa-circle-check text-[#45671d]"></i> Bioaccumulation risk markers for preservatives
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feline Section -->
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div class="order-2 lg:order-1 space-y-6">
+          <span class="px-3 py-1 rounded-full bg-purple-100 text-purple-900 font-extrabold text-xs uppercase tracking-wider">FOR CATS</span>
+          <h2 class="text-[44px] font-display font-800 text-brand-ink leading-tight">
+            Feline metabolic <span class="highlight-sage">sensitivity</span>
+          </h2>
+          <p class="text-slate-600 text-base font-medium leading-relaxed">
+            As obligate carnivores, cats lack glucuronidation pathways. Additives tolerated by dogs, such as Propylene Glycol, can induce life-threatening Heinz body anemia.
+          </p>
+          <div class="space-y-3 pt-2">
+            <div class="flex items-center gap-3 font-bold text-sm text-brand-ink">
+              <i class="fa-solid fa-circle-check text-[#45671d]"></i> Glucuronidation-deficiency compound detection
+            </div>
+            <div class="flex items-center gap-3 font-bold text-sm text-brand-ink">
+              <i class="fa-solid fa-circle-check text-[#45671d]"></i> Mandatory dietary taurine requirement checks
+            </div>
+          </div>
+        </div>
+        <div class="order-1 lg:order-2 relative flex justify-center">
+          <div class="absolute top-10 right-10 w-72 h-72 bg-purple-200/50 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="rounded-[40px] overflow-hidden shadow-2xl border-8 border-white bg-purple-50 aspect-square w-full max-w-md relative z-10">
+            <img class="w-full h-full object-cover" src="siamese cat yawning.jpg" alt="Siamese cat yawning" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== FINAL CTA BANNER ==================== -->
+  <section class="py-24 bg-[#182811] text-white text-center px-8 relative overflow-hidden">
+    <div class="absolute top-0 left-0 w-96 h-96 bg-[#2d4a27] rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+    <div class="absolute bottom-0 right-0 w-96 h-96 bg-[#2d4a27] rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+
+    <div class="max-w-4xl mx-auto space-y-6 z-10 relative">
+      <!-- Floating Pet Avatars in Banner matching Mockup -->
+      <div class="flex items-center justify-between max-w-2xl mx-auto">
+        <img src="cat and dog.jpg" alt="Pet" class="w-20 h-20 rounded-full object-cover border-4 border-amber-300 shadow-xl hidden sm:block">
+        <img src="siamese cat yawning.jpg" alt="Pet" class="w-20 h-20 rounded-full object-cover border-4 border-orange-400 shadow-xl hidden sm:block">
+      </div>
+
+      <h2 class="text-[48px] lg:text-[64px] font-display font-800 tracking-tight leading-tight">
+        Because <span class="highlight-yellow text-[#182811]">every meal</span> counts.
+      </h2>
+      <p class="text-slate-300 text-base lg:text-lg font-medium max-w-xl mx-auto leading-relaxed">
+        Join verified pet caregivers who inspect their companion animals' food with veterinary-backed intelligence.
+      </p>
+      
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+        <a href="auth.html?mode=signup" class="w-full sm:w-auto bg-[#ffdf6d] hover:bg-[#f6d048] text-[#182811] px-8 py-4 rounded-2xl font-extrabold text-sm uppercase tracking-wider shadow-lg transition-all">
+          START PROTECTION TODAY
+        </a>
+        <a href="PublicWiki.html" class="w-full sm:w-auto bg-[#2b3e23] hover:bg-[#354c2d] text-white border border-white/20 px-8 py-4 rounded-2xl font-extrabold text-sm uppercase tracking-wider transition-all">
+          Browse Ingredient Wiki
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="py-12 bg-white border-t border-[#ebdcd0]">
+    <div class="max-w-7xl mx-auto px-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500 font-medium">
+      <div class="flex items-center gap-3">
+        <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard" class="w-6 h-6 object-contain">
+        <span class="font-extrabold text-brand-ink">KibbleGuard Safety Lab</span>
+        <span>•</span>
+        <span>© 2026 UPHSD Las Piñas</span>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="PublicWiki.html" class="hover:text-brand-ink font-bold">Ingredient Wiki</a>
+        <a href="auth.html?mode=login" class="hover:text-brand-ink font-bold">Account Portal</a>
+        <a href="auth.html?mode=signup" class="hover:text-brand-ink font-bold">Sign Up</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="landing.js"></script>
+</body>
+</html>

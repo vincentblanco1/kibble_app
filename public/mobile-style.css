@@ -1,0 +1,191 @@
+/* ==================== KIBBLEGUARD MOBILE FLOATING DOCK ==================== */
+body {
+  display: block !important;
+  background-color: #fbf9f6;
+  padding-bottom: 96px !important;
+}
+
+/* Floating Elevated Nav Dock (Matching Option 03 & 06) */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 12px;
+  left: 14px;
+  right: 14px;
+  height: 62px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 28px;
+  border: 1.2px solid #ebdcd0;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 10px;
+  z-index: 50;
+  box-shadow: 0 12px 30px -4px rgba(24, 40, 17, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #788673;
+  gap: 2.5px;
+  flex: 1;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-item i {
+  font-size: 16px;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.mobile-nav-item.active {
+  color: #45671d !important;
+}
+
+.mobile-nav-item.active i {
+  transform: translateY(-1.5px);
+  color: #45671d;
+}
+
+/* Center FAB Camera Button with Botanical Halo */
+.scan-fab-container {
+  position: relative;
+  top: -18px;
+  flex: 0 0 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+}
+
+.scan-fab-bubble {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #45671d 0%, #2f4912 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px -2px rgba(69, 103, 29, 0.45), 0 0 0 4px #ffffff;
+  transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.scan-fab-bubble i {
+  font-size: 20px;
+  color: #ffffff !important;
+}
+
+.scan-fab-container:active .scan-fab-bubble {
+  transform: scale(0.92);
+}
+
+.scan-fab-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #45671d;
+  margin-top: 2px;
+  letter-spacing: 0.2px;
+}
+
+/* ============================================================
+   FIX: UNCRUSH BUSTER & MILO SPECIES SELECTOR
+   ============================================================ */
+
+/* 1. Main Card Container */
+.species-option-card,
+#targetBusterOption,
+#targetMiloOption {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 10px 14px !important;
+  border-radius: 16px !important;
+}
+
+/* 2. Left Section: Icon + Text Container */
+.species-option-card > div:first-child,
+#targetBusterOption > div:first-child,
+#targetMiloOption > div:first-child {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+}
+
+/* 3. The Animal Emoji */
+.species-option-card > div:first-child > span,
+#targetBusterOption > div:first-child > span,
+#targetMiloOption > div:first-child > span {
+  font-size: 24px !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  width: 28px !important;
+  display: inline-block !important;
+}
+
+/* 4. The Text Wrapper (Give it min-width so it can NEVER be crushed to 0px) */
+.species-option-card > div:first-child > div,
+.species-option-card .info-block,
+#targetBusterOption > div:first-child > div,
+#targetMiloOption > div:first-child > div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  flex: 1 1 auto !important;
+  min-width: 160px !important; /* CRITICAL: Prevents 0px collapse */
+  width: auto !important;
+}
+
+/* 5. Title & Subtitle: Stop word-wrapping entirely */
+.species-option-card h4,
+#targetBusterOption h4,
+#targetMiloOption h4 {
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #182811 !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  display: block !important;
+}
+
+.species-option-card p,
+#targetBusterOption p,
+#targetMiloOption p {
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  line-height: 1.2 !important;
+  margin: 2px 0 0 0 !important;
+  display: block !important;
+}
+
+/* 6. Radio Indicator Dot: Anchored to the right side */
+.species-option-card > div:last-child,
+#busterIndicator,
+#miloIndicator {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+}

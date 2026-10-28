@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KibbleGuard Mobile — Pet Profiles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mobile-style.css">
+</head>
+<body class="botanical-canvas">
+
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-[#ebdcd0] flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="Logo" class="w-7 h-7">
+      <h1 class="text-sm font-black text-[#182811]">Pet Profiles</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-[10px] font-extrabold text-[#45671d]">2 REGISTERED</span>
+      <a href="mobile-settings.html" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#182811]">
+        <i class="fa-solid fa-gear"></i>
+      </a>
+    </div>
+  </header>
+
+  <main class="p-4 space-y-3">
+    
+    <!-- Buster Card -->
+    <div class="tactile-card p-4 space-y-3 bg-white">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">🐶</span>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h3 class="text-sm font-black text-[#182811]">Buster</h3>
+              <span class="px-2 py-0.5 rounded bg-orange-100 text-[#b45309] font-black text-[8.5px]">CANINE</span>
+            </div>
+            <p class="text-[11px] text-[#788673] font-bold">French Bulldog • 12.4 kg</p>
+          </div>
+        </div>
+      </div>
+      <div class="p-2.5 bg-[#fbf9f6] rounded-xl border border-[#ebdcd0] text-[11px] space-y-1">
+        <strong class="text-[9px] uppercase font-bold text-[#788673] block">Active Watches:</strong>
+        <div class="flex flex-wrap gap-1">
+          <span class="px-2 py-0.5 rounded bg-orange-50 border border-orange-200 text-[#b45309] font-bold text-[9.5px]">BHA / BHT</span>
+          <span class="px-2 py-0.5 rounded bg-red-50 border border-red-200 text-red-700 font-bold text-[9.5px]">Xylitol</span>
+        </div>
+      </div>
+      <a href="mobile-results.html" class="block w-full py-2 text-center bg-[#45671d]/10 text-[#45671d] font-black rounded-xl text-xs">
+        <i class="fa-solid fa-camera mr-1"></i> Scan for Buster
+      </a>
+    </div>
+
+    <!-- Milo Card -->
+    <div class="tactile-card p-4 space-y-3 bg-white">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">🐱</span>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <h3 class="text-sm font-black text-[#182811]">Milo</h3>
+              <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700 font-black text-[8.5px]">FELINE</span>
+            </div>
+            <p class="text-[11px] text-[#788673] font-bold">Domestic Short Hair • 4.1 kg</p>
+          </div>
+        </div>
+      </div>
+      <div class="p-2.5 bg-[#fbf9f6] rounded-xl border border-[#ebdcd0] text-[11px] space-y-1">
+        <strong class="text-[9px] uppercase font-bold text-[#788673] block">Active Watches:</strong>
+        <div class="flex flex-wrap gap-1">
+          <span class="px-2 py-0.5 rounded bg-red-50 border border-red-200 text-red-700 font-bold text-[9.5px]">Propylene Glycol Fatal</span>
+          <span class="px-2 py-0.5 rounded bg-purple-50 border border-purple-200 text-purple-700 font-bold text-[9.5px]">Renal Watch</span>
+        </div>
+      </div>
+      <a href="mobile-results.html" class="block w-full py-2 text-center bg-[#45671d]/10 text-[#45671d] font-black rounded-xl text-xs">
+        <i class="fa-solid fa-camera mr-1"></i> Scan for Milo
+      </a>
+    </div>
+
+  </main>
+
+  <!-- Floating Center Elevated Dock (Option 03/06) -->
+  <nav class="mobile-bottom-nav">
+    <a href="mobile-index.html" class="mobile-nav-item">
+      <i class="fa-solid fa-shapes"></i>
+      <span>Overview</span>
+    </a>
+    <a href="mobile-wiki.html" class="mobile-nav-item">
+      <i class="fa-solid fa-book-medical"></i>
+      <span>Wiki</span>
+    </a>
+    <a href="mobile-results.html" class="scan-fab-container">
+      <div class="scan-fab-bubble">
+        <i class="fa-solid fa-camera"></i>
+      </div>
+      <span class="scan-fab-label">Scan</span>
+    </a>
+    <a href="mobile-history.html" class="mobile-nav-item">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>Logs</span>
+    </a>
+    <a href="mobile-pets.html" class="mobile-nav-item active">
+      <i class="fa-solid fa-paw"></i>
+      <span>Pets</span>
+    </a>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>

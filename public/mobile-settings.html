@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KibbleGuard Mobile — Settings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mobile-style.css">
+</head>
+<body class="botanical-canvas">
+
+  <!-- Mobile Top Bar -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-[#ebdcd0] flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <a href="mobile-index.html" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#182811]">
+        <i class="fa-solid fa-arrow-left"></i>
+      </a>
+      <h1 class="text-sm font-black text-[#182811]">Settings</h1>
+    </div>
+    <span class="text-[10px] font-bold text-[#788673]">v2.4.0</span>
+  </header>
+
+  <main class="p-4 space-y-4">
+    <!-- Theme Settings -->
+    <div class="tactile-card p-4 bg-white space-y-3">
+      <span class="text-[10px] font-extrabold uppercase text-[#788673] tracking-wider block">Appearance</span>
+      <div class="flex items-center gap-2 p-1 bg-[#fbf9f6] rounded-xl border border-[#ebdcd0]">
+        <button type="button" id="themeLightBtn" class="flex-1 py-1.5 rounded-lg font-bold text-xs bg-[#45671d] text-white shadow-xs flex items-center justify-center gap-1.5">
+          <i class="fa-regular fa-sun"></i> Light
+        </button>
+        <button type="button" id="themeDarkBtn" class="flex-1 py-1.5 rounded-lg font-bold text-xs text-[#788673] flex items-center justify-center gap-1.5">
+          <i class="fa-regular fa-moon"></i> Dark
+        </button>
+      </div>
+    </div>
+
+    <!-- Data Management -->
+    <div class="tactile-card p-4 bg-white space-y-3 text-xs">
+      <span class="text-[10px] font-extrabold uppercase text-[#788673] tracking-wider block">Local Backup &amp; Storage</span>
+      <button type="button" id="exportDataBtn" class="w-full py-2 bg-[#fbf9f6] border border-[#ebdcd0] hover:border-[#45671d] rounded-xl font-bold text-[#182811] flex items-center justify-center gap-2">
+        <i class="fa-solid fa-download text-[#45671d]"></i> Export Local JSON Backup
+      </button>
+      <button type="button" id="clearCacheBtn" class="w-full py-2 bg-red-50 border border-red-200 text-red-600 rounded-xl font-bold flex items-center justify-center gap-2">
+        <i class="fa-solid fa-trash text-red-600"></i> Clear Local Storage Cache
+      </button>
+    </div>
+
+    <!-- Report / Dispute Issue -->
+    <div class="tactile-card p-4 bg-white space-y-3 text-xs">
+      <span class="text-[10px] font-extrabold uppercase text-[#788673] tracking-wider block">Flag Inaccurate Token / Report Issue</span>
+      <form id="disputeReportForm" class="space-y-2.5">
+        <div>
+          <label class="font-bold text-[#788673] block mb-1">Category</label>
+          <select id="reportCategory" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+            <option value="Chemical Misclassification">Chemical Misclassification</option>
+            <option value="OCR Inaccuracy">OCR Recognition Error</option>
+            <option value="Species Tolerance Discrepancy">Species Tolerance Discrepancy</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-bold text-[#788673] block mb-1">Ingredient / Batch Reference</label>
+          <input type="text" id="reportReference" placeholder="e.g. BHA or #KG-9102" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+        </div>
+        <div>
+          <label class="font-bold text-[#788673] block mb-1">Issue Description</label>
+          <textarea id="reportDescription" rows="3" required placeholder="Describe what went wrong..." class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold"></textarea>
+        </div>
+        <button type="submit" class="w-full py-2 bg-[#45671d] text-white rounded-xl font-bold uppercase tracking-wider text-[11px] shadow-xs">
+          Submit Report
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <!-- Mobile Floating Bottom Navigation Bar -->
+  <nav class="mobile-bottom-nav">
+    <a href="mobile-index.html" class="mobile-nav-item">
+      <i class="fa-solid fa-shapes"></i>
+      <span>Overview</span>
+    </a>
+    <a href="mobile-wiki.html" class="mobile-nav-item">
+      <i class="fa-solid fa-book-medical"></i>
+      <span>Wiki</span>
+    </a>
+    <a href="mobile-results.html" class="scan-fab-container">
+      <div class="scan-fab-bubble">
+        <i class="fa-solid fa-camera"></i>
+      </div>
+      <span class="scan-fab-label">Scan</span>
+    </a>
+    <a href="mobile-history.html" class="mobile-nav-item">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>Logs</span>
+    </a>
+    <a href="mobile-pets.html" class="mobile-nav-item">
+      <i class="fa-solid fa-paw"></i>
+      <span>Pets</span>
+    </a>
+  </nav>
+
+  <script src="app.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KibbleGuard Mobile — Ingredient Wiki</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mobile-style.css">
+</head>
+<body class="botanical-canvas">
+
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-[#ebdcd0] flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="Logo" class="w-7 h-7">
+      <h1 class="text-sm font-black text-[#182811]">Ingredient Wiki</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-[10px] font-extrabold text-[#45671d]">12 DOSSIERS</span>
+      <a href="mobile-settings.html" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#182811]">
+        <i class="fa-solid fa-gear"></i>
+      </a>
+    </div>
+  </header>
+
+  <main class="p-4 space-y-3.5">
+    
+    <!-- Species Calibration Toggle -->
+    <div class="p-2.5 bg-white rounded-2xl border border-[#ebdcd0] flex items-center justify-between overflow-x-auto gap-2">
+      <button type="button" class="species-view-btn px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-[#45671d] text-white shrink-0" data-species="dual">
+        Dual Matrix
+      </button>
+      <button type="button" class="species-view-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] shrink-0" data-species="canine">
+        🐶 Canine
+      </button>
+      <button type="button" class="species-view-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] shrink-0" data-species="feline">
+        🐱 Feline
+      </button>
+    </div>
+
+    <!-- Search Input -->
+    <div class="relative w-full">
+      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#788673] text-xs"></i>
+      <input type="text" id="wikiSearchInput" placeholder="Search compound, alias, or hazard..." class="w-full bg-white border border-[#ebdcd0] rounded-xl pl-9 pr-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#45671d]">
+    </div>
+
+    <!-- Category Pills -->
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="wikiFilterButtonGroup">
+      <button type="button" class="wiki-filter-btn px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-[#45671d] text-white shrink-0" data-category="all">All (12)</button>
+      <button type="button" class="wiki-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-category="hazard">Toxins</button>
+      <button type="button" class="wiki-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-category="preservative">Preservatives</button>
+      <button type="button" class="wiki-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-category="nutrient">Nutrients</button>
+    </div>
+
+    <!-- Cards Deck -->
+    <div class="space-y-3" id="wikiCardsContainer">
+      
+      <!-- Xylitol -->
+      <div class="tactile-card p-4 space-y-2 wiki-card cursor-pointer" data-category="hazard" data-compound="xylitol" data-search="xylitol birch sugar wood sugar e967 sweetener lethal">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="card-tier-label text-[9px] font-black uppercase text-red-600 block">Lethal to Dogs</span>
+            <h3 class="text-sm font-black text-[#182811]">Xylitol</h3>
+            <span class="text-[10.5px] text-[#788673]">Birch Sugar, E967</span>
+          </div>
+          <span class="card-score-badge px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-black text-[9px]">Score: 98</span>
+        </div>
+        <p class="text-xs text-[#586754] leading-relaxed line-clamp-2">Triggers acute canine insulin spike, hypoglycemia, and liver failure.</p>
+        <span class="text-[11px] font-extrabold text-[#45671d] block">Read Clinical Dossier →</span>
+      </div>
+
+      <!-- BHA -->
+      <div class="tactile-card p-4 space-y-2 wiki-card cursor-pointer" data-category="preservative" data-compound="bha" data-search="bha bht butylated hydroxyanisole preservative caution">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="card-tier-label text-[9px] font-black uppercase text-[#b45309] block">Caution Preservative</span>
+            <h3 class="text-sm font-black text-[#182811]">BHA &amp; BHT</h3>
+            <span class="text-[10.5px] text-[#788673]">Fat Stabilizer, E320 / E321</span>
+          </div>
+          <span class="card-score-badge px-2 py-0.5 rounded-full bg-orange-100 text-[#b45309] font-black text-[9px]">Score: 48</span>
+        </div>
+        <p class="text-xs text-[#586754] leading-relaxed line-clamp-2">Synthetic antioxidant linked to chronic cumulative bioaccumulation.</p>
+        <span class="text-[11px] font-extrabold text-[#45671d] block">Read Clinical Dossier →</span>
+      </div>
+
+      <!-- Propylene Glycol -->
+      <div class="tactile-card p-4 space-y-2 wiki-card cursor-pointer" data-category="hazard" data-compound="propylene-glycol" data-search="propylene glycol humectant e1520 cat lethal heinz body anemia">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="card-tier-label text-[9px] font-black uppercase text-purple-700 block">Lethal to Cats</span>
+            <h3 class="text-sm font-black text-[#182811]">Propylene Glycol</h3>
+            <span class="text-[10.5px] text-[#788673]">Humectant, E1520</span>
+          </div>
+          <span class="card-score-badge px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-black text-[9px]">Score: 92</span>
+        </div>
+        <p class="text-xs text-[#586754] leading-relaxed line-clamp-2">Tolerated in dogs; strictly fatal to cats (Heinz body anemia).</p>
+        <span class="text-[11px] font-extrabold text-[#45671d] block">Read Clinical Dossier →</span>
+      </div>
+
+      <!-- Taurine -->
+      <div class="tactile-card p-4 space-y-2 wiki-card cursor-pointer" data-category="nutrient" data-compound="taurine" data-search="taurine amino acid nutrient essential heart eyes">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="card-tier-label text-[9px] font-black uppercase text-emerald-700 block">Essential Amino Acid</span>
+            <h3 class="text-sm font-black text-[#182811]">Taurine</h3>
+            <span class="text-[10.5px] text-[#788673]">2-aminoethanesulfonic acid</span>
+          </div>
+          <span class="card-score-badge px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-black text-[9px]">Score: 00</span>
+        </div>
+        <p class="text-xs text-[#586754] leading-relaxed line-clamp-2">Mandatory feline nutrient; prevents blindness and heart failure.</p>
+        <span class="text-[11px] font-extrabold text-[#45671d] block">Read Clinical Dossier →</span>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Floating Center Elevated Dock (Option 03/06) -->
+  <nav class="mobile-bottom-nav">
+    <a href="mobile-index.html" class="mobile-nav-item">
+      <i class="fa-solid fa-shapes"></i>
+      <span>Overview</span>
+    </a>
+    <a href="mobile-wiki.html" class="mobile-nav-item active">
+      <i class="fa-solid fa-book-medical"></i>
+      <span>Wiki</span>
+    </a>
+    <a href="mobile-results.html" class="scan-fab-container">
+      <div class="scan-fab-bubble">
+        <i class="fa-solid fa-camera"></i>
+      </div>
+      <span class="scan-fab-label">Scan</span>
+    </a>
+    <a href="mobile-history.html" class="mobile-nav-item">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>Logs</span>
+    </a>
+    <a href="mobile-pets.html" class="mobile-nav-item">
+      <i class="fa-solid fa-paw"></i>
+      <span>Pets</span>
+    </a>
+  </nav>
+
+  <script src="app.js"></script>
+  <script src="wiki.js"></script>
+</body>
+</html>

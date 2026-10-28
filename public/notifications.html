@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KibbleGuard — Notification Center & Safety Alerts</title>
+  
+  <!-- Universal Multi-Device Gateway Router -->
+  <script>
+    (function() {
+      const width = window.innerWidth;
+      const isMobileDevice = width <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isLoggedIn = localStorage.getItem('kibbleguard_user');
+      const currentPage = window.location.pathname.split('/').pop() || 'notifications.html';
+      
+      const mapping = {
+        'index.html': 'mobile-index.html',
+        'landing.html': 'mobile-landing.html',
+        'auth.html': 'mobile-auth.html',
+        'history.html': 'mobile-history.html',
+        'pets.html': 'mobile-pets.html',
+        'wiki.html': 'mobile-public-wiki.html',
+        'settings.html': 'mobile-settings.html',
+        'profile.html': 'mobile-profile.html',
+        'results.html': 'mobile-results.html',
+        'notifications.html': 'mobile-notifications.html'
+      };
+
+      const reverseMapping = {
+        'mobile-index.html': 'index.html',
+        'mobile-landing.html': 'landing.html',
+        'mobile-auth.html': 'auth.html',
+        'mobile-history.html': 'history.html',
+        'mobile-pets.html': 'pets.html',
+        'mobile-public-wiki.html': 'wiki.html',
+        'mobile-settings.html': 'settings.html',
+        'mobile-profile.html': 'profile.html',
+        'mobile-results.html': 'results.html',
+        'mobile-notifications.html': 'notifications.html'
+      };
+
+      if (isMobileDevice && mapping[currentPage]) {
+        window.location.replace(mapping[currentPage] + window.location.search + window.location.hash);
+      } else if (!isMobileDevice && reverseMapping[currentPage]) {
+        window.location.replace(reverseMapping[currentPage] + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="botanical-canvas">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside id="appSidebar" class="app-sidebar">
+    <div>
+      <div class="brand-header">
+        <a href="index.html" class="brand-left">
+          <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard Logo">
+          <div class="sidebar-text">
+            <h2>KibbleGuard</h2>
+            <span class="badge">SAFETY LAB</span>
+          </div>
+        </a>
+        <button id="sidebarToggleBtn" class="hamburger-btn" title="Toggle Sidebar">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <a href="index.html">
+          <i class="fa-solid fa-shapes"></i>
+          <span class="sidebar-text">Overview</span>
+        </a>
+        <a href="results.html">
+          <i class="fa-solid fa-camera"></i>
+          <span class="sidebar-text">Scan &amp; OCR</span>
+        </a>
+        <a href="history.html">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span class="sidebar-text">Scan Logs</span>
+        </a>
+        <a href="pets.html">
+          <i class="fa-solid fa-paw"></i>
+          <span class="sidebar-text">Pet Profiles</span>
+        </a>
+        <a href="wiki.html">
+          <i class="fa-solid fa-book-medical"></i>
+          <span class="sidebar-text">Ingredient Wiki</span>
+        </a>
+        <a href="settings.html">
+          <i class="fa-solid fa-gear"></i>
+          <span class="sidebar-text">Settings</span>
+        </a>
+      </nav>
+
+      <!-- Live Pixel Habitat Canvas -->
+      <div class="habitat-card">
+        <div class="habitat-header">
+          <span>Live Pet Habitat</span>
+          <div class="w-1.5 h-1.5 rounded-full bg-[#4caf50]"></div>
+        </div>
+        <canvas id="habitatCanvas"></canvas>
+        <div class="habitat-actions">
+          <button id="feedTreatBtn" class="btn-treat">Feed Treat</button>
+          <button id="switchPetBtn" class="btn-switch">Switch Pet</button>
+        </div>
+      </div>
+
+      <div class="sidebar-extra-card">
+        <span class="text-[9px] font-extrabold uppercase text-[#45671d] block mb-1">Safety Dispatch</span>
+        <p class="text-[10px] text-[#788673] leading-snug">Real-time alerts on toxic ingredients, dietary recalls, and regional updates.</p>
+      </div>
+    </div>
+
+    <!-- User Profile Badge & Logout -->
+    <div class="space-y-2">
+      <a href="profile.html" class="user-profile-badge border border-[#ebdcd0] hover:border-[#45671d] transition-all block">
+        <div class="flex items-center gap-2.5">
+          <div class="avatar-circle" id="sidebarAvatarCircle">VG</div>
+          <div class="user-info min-w-0 flex-1">
+            <p class="name truncate" id="sidebarUserName">Vincent G. Blanco</p>
+            <p class="role" id="sidebarUserRole">VERIFIED OWNER</p>
+            <p class="loc truncate" id="sidebarUserLoc">Las Piñas City</p>
+          </div>
+        </div>
+      </a>
+      <button type="button" id="sidebarSignOutBtn" class="w-full py-1 text-center text-xs font-bold text-[#788673] hover:text-red-600 transition-colors flex items-center justify-center gap-1.5">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="sidebar-text">Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="main-viewport">
+
+    <!-- Top Header Bar with Standard Notification Bell -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-6 border-b border-[#ebdcd0]">
+      <div class="flex items-center gap-3">
+        <button onclick="window.history.back()" class="w-9 h-9 rounded-full bg-white border border-[#ebdcd0] hover:border-[#45671d] text-[#182811] flex items-center justify-center transition-all shadow-2xs cursor-pointer" title="Go Back">
+          <i class="fa-solid fa-arrow-left text-xs"></i>
+        </button>
+        <div>
+          <h1 class="text-xl font-extrabold text-[#182811]">Notification &amp; Alert Center</h1>
+          <p class="text-xs font-semibold text-[#788673] mt-0.5">Comprehensive audit trail of toxic warnings, metabolic incompatibilities, and system updates.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 self-end sm:self-auto">
+        <!-- Reusable Notification Bell Dropdown -->
+        <div class="relative">
+          <button type="button" id="notificationBellBtn" class="relative w-9 h-9 rounded-full bg-white border border-[#ebdcd0] hover:border-[#45671d] text-[#182811] flex items-center justify-center transition-all shadow-2xs cursor-pointer" title="Notifications &amp; Alerts">
+            <i class="fa-regular fa-bell text-sm pointer-events-none"></i>
+            <span id="notificationBadge" class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-600 text-white text-[9.5px] font-black flex items-center justify-center shadow-xs pointer-events-none">
+              2
+            </span>
+          </button>
+
+          <!-- Slide-Down Notification Dropdown Drawer -->
+          <div id="notificationDropdown" class="hidden absolute right-0 mt-2.5 w-80 sm:w-96 bg-white rounded-3xl border border-[#ebdcd0] shadow-2xl z-50 p-4 space-y-3" style="display: none;">
+            <div class="flex items-center justify-between pb-2 border-b border-[#f5efe6]">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#ff9800]"></span>
+                <h3 class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Notifications &amp; Alerts</h3>
+              </div>
+              <button type="button" id="markAllReadBtn" class="text-[10.5px] font-bold text-[#45671d] hover:underline cursor-pointer">
+                Mark all as read
+              </button>
+            </div>
+            <div id="notificationListContainer" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
+            <div class="pt-2 border-t border-[#f5efe6] text-center">
+              <a href="notifications.html" class="text-xs font-extrabold text-[#45671d] hover:underline block py-1">
+                See all notifications →
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" id="centerMarkAllReadBtn" class="px-4 py-2 bg-white border border-[#ebdcd0] hover:border-[#45671d] text-[#182811] rounded-full text-xs font-bold transition-all shadow-2xs cursor-pointer">
+          Mark All Read
+        </button>
+        <button type="button" id="centerClearAllBtn" class="px-4 py-2 bg-red-50 border border-red-200 hover:bg-red-100 text-red-700 rounded-full text-xs font-bold transition-all shadow-2xs cursor-pointer">
+          Clear History
+        </button>
+      </div>
+    </header>
+
+    <!-- Filter Pills & Statistics Bar -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl border border-[#ebdcd0] shadow-2xs">
+      <div class="flex items-center gap-2 self-stretch sm:self-auto overflow-x-auto pb-1 sm:pb-0" id="notifFilterButtonGroup">
+        <button type="button" class="notif-page-filter-btn px-4 py-2 rounded-full text-xs font-extrabold bg-[#45671d] text-white transition-all shrink-0 shadow-xs cursor-pointer" data-filter="all">
+          All Notifications (<span id="countAllNotifs">0</span>)
+        </button>
+        <button type="button" class="notif-page-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer" data-filter="unread">
+          Unread Alerts (<span id="countUnreadNotifs">0</span>)
+        </button>
+        <button type="button" class="notif-page-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer" data-filter="hazard">
+          Toxic Hazards &amp; Recalls
+        </button>
+        <button type="button" class="notif-page-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer" data-filter="system">
+          System &amp; Database
+        </button>
+      </div>
+
+      <div class="text-xs font-bold text-[#788673] self-end sm:self-auto">
+        Status: <span class="text-emerald-700 font-extrabold">Live Dispatch Active</span>
+      </div>
+    </div>
+
+    <!-- Notifications List Container -->
+    <div id="fullNotificationList" class="space-y-3">
+      <!-- Dynamically Rendered by notifications.js -->
+    </div>
+
+    <!-- Empty State Fallback -->
+    <div id="notifEmptyState" class="hidden py-20 text-center text-[#788673] space-y-3 bg-white rounded-3xl border border-[#ebdcd0] p-8">
+      <div class="w-14 h-14 rounded-2xl bg-[#fbf9f6] border border-[#ebdcd0] flex items-center justify-center mx-auto text-[#788673] text-2xl">
+        <i class="fa-regular fa-bell-slash"></i>
+      </div>
+      <h3 class="font-extrabold text-base text-[#182811]">No Notifications Found</h3>
+      <p class="text-xs max-w-sm mx-auto">There are currently no alerts matching this filter. New toxic warnings and database sync notices will display here automatically.</p>
+    </div>
+
+  </main>
+
+  <!-- ==================== SCRIPTS IN EXACT ORDER ==================== -->
+  <script src="app.js"></script>
+  <script src="notifications.js"></script>
+</body>
+</html>

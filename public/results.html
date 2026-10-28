@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KibbleGuard — Diagnostic Inspection Console</title>
+  
+  <!-- Bulletproof Mobile / Tablet Redirection Script -->
+  <script>
+    (function() {
+      const width = window.innerWidth;
+      const isMobileDevice = width <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isLoggedIn = localStorage.getItem('kibbleguard_user');
+      const currentPage = window.location.pathname.split('/').pop() || 'results.html';
+      
+      const mapping = {
+        'index.html': 'mobile-index.html',
+        'landing.html': 'mobile-landing.html',
+        'auth.html': 'mobile-auth.html',
+        'history.html': 'mobile-history.html',
+        'pets.html': 'mobile-pets.html',
+        'wiki.html': 'mobile-public-wiki.html',
+        'settings.html': 'mobile-settings.html',
+        'profile.html': 'mobile-profile.html',
+        'results.html': 'mobile-results.html',
+        'notifications.html': 'mobile-notifications.html'
+      };
+
+      const reverseMapping = {
+        'mobile-index.html': 'index.html',
+        'mobile-landing.html': 'landing.html',
+        'mobile-auth.html': 'auth.html',
+        'mobile-history.html': 'history.html',
+        'mobile-pets.html': 'pets.html',
+        'mobile-public-wiki.html': 'wiki.html',
+        'mobile-settings.html': 'settings.html',
+        'mobile-profile.html': 'profile.html',
+        'mobile-results.html': 'results.html',
+        'mobile-notifications.html': 'notifications.html'
+      };
+
+      if (isMobileDevice && mapping[currentPage]) {
+        window.location.replace(mapping[currentPage] + window.location.search + window.location.hash);
+      } else if (!isMobileDevice && reverseMapping[currentPage]) {
+        window.location.replace(reverseMapping[currentPage] + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="botanical-canvas">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside id="appSidebar" class="app-sidebar">
+    <div>
+      <div class="brand-header">
+        <a href="index.html" class="brand-left">
+          <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard Logo">
+          <div class="sidebar-text">
+            <h2>KibbleGuard</h2>
+            <span class="badge">SAFETY LAB</span>
+          </div>
+        </a>
+        <button id="sidebarToggleBtn" class="hamburger-btn" title="Toggle Sidebar">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="index.html">
+          <i class="fa-solid fa-shapes"></i>
+          <span class="sidebar-text">Overview</span>
+        </a>
+        <a href="results.html" class="active">
+          <i class="fa-solid fa-camera"></i>
+          <span class="sidebar-text">Scan &amp; OCR</span>
+        </a>
+        <a href="history.html">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span class="sidebar-text">Scan Logs</span>
+        </a>
+        <a href="pets.html">
+          <i class="fa-solid fa-paw"></i>
+          <span class="sidebar-text">Pet Profiles</span>
+        </a>
+        <a href="wiki.html">
+          <i class="fa-solid fa-book-medical"></i>
+          <span class="sidebar-text">Ingredient Wiki</span>
+        </a>
+        <a href="settings.html">
+          <i class="fa-solid fa-gear"></i>
+          <span class="sidebar-text">Settings</span>
+        </a>
+      </nav>
+
+      <!-- Live Pixel Habitat Canvas Widget Restored -->
+      <div class="habitat-card">
+        <div class="habitat-header">
+          <span>LIVE PET HABITAT</span>
+          <div class="w-1.5 h-1.5 rounded-full bg-[#4caf50]"></div>
+        </div>
+        <canvas id="habitatCanvas"></canvas>
+        <div class="habitat-actions">
+          <button id="feedTreatBtn" class="btn-treat">FEED TREAT</button>
+          <button id="switchPetBtn" class="btn-switch">SWITCH PET</button>
+        </div>
+      </div>
+
+      <div class="sidebar-extra-card">
+        <span class="text-[9px] font-extrabold uppercase text-[#45671d] block mb-1">DIETARY GUIDELINE</span>
+        <p class="text-[10px] text-[#788673] leading-snug">Ensure clean water access when feeding concentrated dry formulations.</p>
+      </div>
+    </div>
+
+    <!-- User Profile Badge & Logout -->
+    <div class="space-y-2">
+      <a href="profile.html" class="user-profile-badge border border-[#ebdcd0] hover:border-[#45671d] transition-all block bg-white">
+        <div class="flex items-center gap-2.5">
+          <div class="avatar-circle" id="sidebarAvatarCircle">VB</div>
+          <div class="user-info min-w-0 flex-1">
+            <p class="name truncate" id="sidebarUserName">Vincent G. Blanco</p>
+            <p class="role" id="sidebarUserRole">VERIFIED OWNER</p>
+            <p class="loc truncate" id="sidebarUserLoc">Las Piñas City • 2 Pets</p>
+          </div>
+        </div>
+      </a>
+      <button type="button" id="sidebarSignOutBtn" class="w-full py-1 text-center text-xs font-bold text-[#788673] hover:text-red-600 transition-colors flex items-center justify-center gap-1.5">
+        <span class="sidebar-text">Sign out</span> <i class="fa-solid fa-arrow-right-from-bracket text-[10px]"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="main-viewport">
+    
+    <!-- Top Pill Header Bar -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white p-3 rounded-2xl border border-[#ebdcd0] shadow-2xs">
+      <div class="flex items-center gap-3 flex-wrap">
+        <a href="index.html" class="px-3.5 py-1.5 bg-[#fbf9f6] border border-[#ebdcd0] text-[#182811] rounded-full text-xs font-bold hover:bg-slate-50 transition-all flex items-center gap-1.5">
+          <span class="text-[#45671d] font-black">—</span> Overview
+        </a>
+        <h1 class="text-base sm:text-lg font-display font-extrabold text-[#182811]">Diagnostic Inspection Console</h1>
+        <span class="px-3 py-1 rounded-full bg-[#f4effa] border border-[#d8b4fe] text-[#9333ea] font-extrabold text-xs">
+          SCAN ID: #KG-9102-BF
+        </span>
+      </div>
+
+      <div class="flex items-center gap-3 self-end sm:self-auto">
+        <!-- Notification Bell Dropdown -->
+        <div class="relative">
+          <button type="button" id="notificationBellBtn" class="relative w-9 h-9 rounded-full bg-[#fbf9f6] border border-[#ebdcd0] hover:border-[#45671d] text-[#182811] flex items-center justify-center transition-all shadow-2xs" title="Notifications & Alerts">
+            <i class="fa-regular fa-bell text-sm pointer-events-none"></i>
+            <span id="notificationBadge" class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-600 text-white text-[9.5px] font-black flex items-center justify-center shadow-xs pointer-events-none">
+              2
+            </span>
+          </button>
+
+          <div id="notificationDropdown" class="hidden absolute right-0 mt-2.5 w-80 sm:w-96 bg-white rounded-3xl border border-[#ebdcd0] shadow-2xl z-50 p-4 space-y-3" style="display: none;">
+            <div class="flex items-center justify-between pb-2 border-b border-[#f5efe6]">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#ff9800]"></span>
+                <h3 class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Notifications &amp; Alerts</h3>
+              </div>
+              <button type="button" id="markAllReadBtn" class="text-[10.5px] font-bold text-[#45671d] hover:underline cursor-pointer">
+                Mark all as read
+              </button>
+            </div>
+            <div id="notificationListContainer" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
+            
+            <div class="pt-2 border-t border-[#f5efe6] text-center">
+              <a href="notifications.html" class="text-xs font-extrabold text-[#45671d] hover:underline block py-1">
+                See all notifications →
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <a href="history.html" class="px-4 py-2 bg-[#fbf9f6] border border-[#ebdcd0] text-[#182811] rounded-full text-xs font-bold hover:bg-slate-50 transition-all">
+          Audit Logs
+        </a>
+        <button onclick="window.print()" class="px-5 py-2.5 bg-[#45671d] hover:bg-[#324c14] text-white rounded-full text-xs font-extrabold uppercase tracking-wider shadow-md cursor-pointer transition-all">
+          Export Report
+        </button>
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- ==================== LEFT COLUMN ==================== -->
+      <div class="lg:col-span-5 space-y-5">
+        
+        <!-- Viewport Box -->
+        <div class="tactile-card p-5 bg-white">
+          <div class="flex items-center justify-between mb-3 text-xs">
+            <span class="font-extrabold text-[#788673] uppercase tracking-wider text-[11px]">Captured packaging label</span>
+            <div class="flex items-center gap-2">
+              <button type="button" id="headerCameraLink" class="font-bold text-[#45671d] hover:underline flex items-center gap-1 cursor-pointer">
+                Live camera
+              </button>
+              <label for="labelUploadInput" class="font-bold text-[#788673] hover:underline cursor-pointer">Upload</label>
+              <input type="file" id="labelUploadInput" accept="image/*" class="hidden">
+            </div>
+          </div>
+
+          <div id="packagingBoxTrigger" title="Click to activate camera" class="relative w-full aspect-[4/3] bg-[#1e293b] rounded-2xl overflow-hidden p-4 flex flex-col justify-between border-2 border-dashed border-slate-600 hover:border-[#4caf50] cursor-pointer group transition-all">
+            
+            <video id="liveVideoFeed" autoplay playsinline class="hidden absolute inset-0 w-full h-full object-cover z-10"></video>
+            <img id="capturedImagePreview" class="hidden absolute inset-0 w-full h-full object-cover z-0" alt="Captured Packaging">
+            <canvas id="snapshotCanvas" class="hidden"></canvas>
+
+            <div id="ocrLaserBeam" class="hidden ocr-laser-beam"></div>
+
+            <div class="absolute top-2.5 left-2.5 w-4 h-4 border-t-2 border-l-2 border-[#4caf50] z-20 pointer-events-none"></div>
+            <div class="absolute top-2.5 right-2.5 w-4 h-4 border-t-2 border-r-2 border-[#4caf50] z-20 pointer-events-none"></div>
+            <div class="absolute bottom-2.5 left-2.5 w-4 h-4 border-b-2 border-l-2 border-[#4caf50] z-20 pointer-events-none"></div>
+            <div class="absolute bottom-2.5 right-2.5 w-4 h-4 border-b-2 border-r-2 border-[#4caf50] z-20 pointer-events-none"></div>
+
+            <div id="staticViewportGraphic" class="flex flex-col justify-between h-full pointer-events-none z-20">
+              <div class="text-center mt-1">
+                <h3 class="text-sm font-extrabold text-white tracking-wide">SMOKEY STRIPS</h3>
+                <p class="text-[10px] text-slate-400">Smokey Beef Formula for Dogs</p>
+                <div class="w-3/4 mx-auto h-1 bg-slate-600 rounded-full mt-2 opacity-50"></div>
+              </div>
+
+              <div class="space-y-2 my-auto">
+                <div class="p-1.5 rounded-lg border border-dashed border-[#ff9800] bg-[#ff9800]/15">
+                  <span class="text-[9.5px] font-mono font-bold text-[#ffb74d] block">TOKEN: BHA (Preservative)</span>
+                </div>
+                <div class="p-1.5 rounded-lg border border-dashed border-[#f44336] bg-[#f44336]/15">
+                  <span class="text-[9.5px] font-mono font-bold text-[#ef5350] block">TOKEN: Propylene Glycol</span>
+                </div>
+              </div>
+
+              <div id="tapPillContainer" class="self-center bg-black/60 backdrop-blur-xs px-3 py-1 rounded-full text-[10px] font-bold text-white border border-white/20 group-hover:bg-[#45671d] transition-colors">
+                Tap to open camera viewfinder
+              </div>
+            </div>
+
+            <div id="cameraControlsOverlay" class="hidden absolute bottom-3 inset-x-3 z-30 flex items-center justify-between gap-2 bg-black/75 backdrop-blur-md p-2 rounded-xl border border-white/20">
+              <button type="button" id="cancelCameraBtn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] cursor-pointer">
+                Cancel
+              </button>
+              
+              <button type="button" id="takeSnapshotBtn" class="btn-snap-photo px-4 py-1.5 rounded-lg bg-[#4caf50] hover:bg-[#3d9140] text-white font-extrabold text-[11px] uppercase tracking-wider flex items-center gap-1.5 shadow-md cursor-pointer">
+                Capture photo
+              </button>
+
+              <button type="button" id="retakeCameraBtn" class="hidden px-3 py-1.5 rounded-lg bg-[#ff9800] hover:bg-[#e68900] text-white font-bold text-[11px] cursor-pointer">
+                Retake
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-4 p-3 rounded-xl bg-[#fbf9f6] border border-[#ebdcd0] text-xs space-y-1">
+            <span class="text-[9.5px] font-extrabold uppercase text-[#788673] tracking-widest block mb-1">Extraction Telemetry</span>
+            <div class="flex justify-between font-bold">
+              <span>OCR inference accuracy:</span>
+              <span class="text-[#4caf50]">98.4% (Optimal)</span>
+            </div>
+            <div class="flex justify-between font-bold">
+              <span>Packaging bounding boxes:</span>
+              <span class="text-[#182811]">2 regions flagged</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evaluating Metabolic Risk For -->
+        <div class="tactile-card p-5 bg-white">
+          <span class="text-[10.5px] font-extrabold uppercase text-[#788673] tracking-wider block mb-3">Evaluating metabolic risk for</span>
+          
+          <div class="flex flex-col gap-3">
+            <div id="targetBusterOption" class="w-full p-3.5 rounded-2xl border-2 border-[#45671d] bg-emerald-50/40 flex items-center justify-between cursor-pointer transition-all">
+              <div class="flex items-center gap-3.5 flex-1 min-w-0">
+                <span class="text-2xl shrink-0">🐶</span>
+                <div class="flex flex-col min-w-0 flex-1">
+                  <h4 class="font-extrabold text-sm text-[#182811] leading-tight">Buster (Canine)</h4>
+                  <p class="text-[11px] text-[#788673] font-semibold truncate mt-0.5">Golden Retriever • 24.5 kg • Sensitive</p>
+                </div>
+              </div>
+              <div id="busterIndicator" class="w-5 h-5 rounded-full bg-[#45671d] text-white flex items-center justify-center text-[10px] shrink-0 ml-3">
+                <i class="fa-solid fa-check"></i>
+              </div>
+            </div>
+
+            <div id="targetMiloOption" class="w-full p-3.5 rounded-2xl border border-[#ebdcd0] bg-white opacity-75 hover:opacity-100 flex items-center justify-between cursor-pointer transition-all">
+              <div class="flex items-center gap-3.5 flex-1 min-w-0">
+                <span class="text-2xl shrink-0">🐱</span>
+                <div class="flex flex-col min-w-0 flex-1">
+                  <h4 class="font-extrabold text-sm text-[#182811] leading-tight">Milo (Feline)</h4>
+                  <p class="text-[11px] text-[#788673] font-medium truncate mt-0.5">Domestic Shorthair • 4.2 kg • Renal Watch</p>
+                </div>
+              </div>
+              <div id="miloIndicator" class="w-4 h-4 rounded-full border-2 border-slate-300 shrink-0 ml-3"></div>
+            </div>
+          </div>
+
+          <div class="mt-4 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[10.5px] text-[#788673] leading-relaxed">
+            <strong class="text-[#182811] block mb-1">Dual-species rule matrix:</strong>
+            Canine classification considers hepatic bioaccumulation, whereas felines strictly lack glucuronidation pathways.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ==================== RIGHT COLUMN ==================== -->
+      <div class="lg:col-span-7 space-y-5">
+        
+        <!-- Score Banner -->
+        <div class="tactile-card p-6 bg-[#fef9ec] border border-[#fde68a] flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-40 h-40 bg-[#fde047]/30 rounded-full blur-2xl pointer-events-none"></div>
+
+          <div class="relative w-28 h-28 shrink-0 flex items-center justify-center z-10">
+            <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" stroke="#fef08a" stroke-width="12" fill="none"/>
+              <circle id="scoreSvgGauge" cx="50" cy="50" r="40" stroke="#f59e0b" stroke-width="12" stroke-dasharray="251.2" stroke-dashoffset="90" stroke-linecap="round" fill="none"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="scoreNumberDisplay" class="text-3xl font-black text-[#182811]">64</span>
+              <span id="scoreRiskLabel" class="text-[7.5px] font-extrabold uppercase tracking-wider text-[#b45309]">Moderate risk</span>
+            </div>
+          </div>
+
+          <div class="space-y-2 text-center sm:text-left z-10 flex-1">
+            <span id="cautionPillBadge" class="px-3 py-1 rounded-full bg-white text-[#b45309] font-extrabold text-[10px] uppercase border border-amber-300 inline-block shadow-2xs">
+              Caution flag
+            </span>
+            <h2 id="verdictHeadline" class="font-extrabold text-base sm:text-lg text-[#182811] leading-snug">
+              Contains flagged synthetic antioxidants &amp; <span class="bg-white px-2 py-0.5 rounded-lg border border-amber-200/60 shadow-2xs inline-block">preservatives</span>
+            </h2>
+            <p id="verdictSubtext" class="text-xs text-[#788673]">
+              The rule engine matched 2 flagged additives against canine veterinary toxicological records.
+            </p>
+            
+            <div id="tokenCountsRow" class="flex flex-wrap items-center gap-2 pt-1.5 justify-center sm:justify-start text-xs font-bold">
+              <span class="px-3 py-1 rounded-full bg-[#e2f4ed] border border-[#b8e6d0] text-[#0f5132] text-[11px] shadow-2xs">
+                18 safe tokens
+              </span>
+              <span class="px-3 py-1 rounded-full bg-[#fef3c7] border border-[#fde68a] text-[#92400e] text-[11px] shadow-2xs">
+                2 caution tokens
+              </span>
+              <span class="px-3 py-1 rounded-full bg-white border border-[#ebdcd0] text-[#788673] text-[11px] shadow-2xs">
+                0 lethal toxins
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Extracted Tokens Section -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-extrabold text-sm text-[#182811]">Extracted chemical tokens &amp; findings</h3>
+            <span id="filterFindingsBtn" class="text-xs font-bold text-[#45671d] cursor-pointer hover:underline flex items-center gap-1">
+              Filter by hazard level <i class="fa-solid fa-chevron-down text-[9px]"></i>
+            </span>
+          </div>
+
+          <div class="space-y-3" id="diagnosticCardsList">
+            <div class="tactile-card p-4 bg-white border-l-4 border-l-[#ff9800] flex items-start gap-4 diagnostic-item cursor-pointer hover:border-[#45671d] transition-all group" data-hazard="caution" data-token="bha">
+              <div class="w-9 h-9 rounded-full bg-[#fff8ed] flex items-center justify-center text-base shrink-0 mt-0.5 text-[#ff9800]">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div class="flex-1 space-y-1">
+                <div class="flex items-center justify-between">
+                  <h4 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">BHA (Butylated Hydroxyanisole)</h4>
+                  <span class="px-2.5 py-0.5 rounded bg-orange-100 text-[#b45309] font-extrabold text-[9.5px]">CAUTION</span>
+                </div>
+                <p class="text-[11px] font-bold text-[#8c633a]">Category: Synthetic phenolic antioxidant / fat stabilizer</p>
+                <p class="text-xs text-[#788673]">Long-term exposure has been associated with endocrine disruption and cellular inflammation in canine models.</p>
+                <div class="flex items-center justify-between pt-1">
+                  <p class="text-[10.5px] font-bold text-[#45671d]">Suggested alternative: mixed tocopherols (Vitamin E), rosemary extract</p>
+                  <span class="text-[10.5px] font-extrabold text-[#45671d] group-hover:underline">Drill down →</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="pgFindingCard" class="tactile-card p-4 bg-white border-l-4 border-l-[#ff9800] flex items-start gap-4 diagnostic-item cursor-pointer hover:border-[#45671d] transition-all group" data-hazard="caution" data-token="pg">
+              <div class="w-9 h-9 rounded-full bg-[#fff8ed] flex items-center justify-center text-base shrink-0 mt-0.5 text-[#ff9800]">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div class="flex-1 space-y-1">
+                <div class="flex items-center justify-between">
+                  <h4 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">Propylene Glycol</h4>
+                  <span id="pgBadge" class="px-2.5 py-0.5 rounded bg-orange-100 text-[#b45309] font-extrabold text-[9.5px]">CAUTION</span>
+                </div>
+                <p class="text-[11px] font-bold text-[#8c633a]">Category: Humectant / moisture-retaining additive</p>
+                <p id="pgBodyText" class="text-xs text-[#788673]">Permitted in moderate thresholds for canines; strictly lethal and prohibited for felines (causes Heinz body anemia).</p>
+                <div class="flex items-center justify-between pt-1">
+                  <p id="pgNoteText" class="text-[10.5px] font-bold text-[#ba7f57]">Cross-species note: if shared with Milo (cat), do NOT feed.</p>
+                  <span class="text-[10.5px] font-extrabold text-[#45671d] group-hover:underline">Drill down →</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="tactile-card p-4 bg-white border-l-4 border-l-[#4caf50] flex items-start gap-4 diagnostic-item cursor-pointer hover:border-[#45671d] transition-all group" data-hazard="safe" data-token="beef">
+              <div class="w-9 h-9 rounded-full bg-[#f0fdf4] flex items-center justify-center text-base shrink-0 mt-0.5 text-emerald-600">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <div class="flex-1 space-y-1">
+                <div class="flex items-center justify-between">
+                  <h4 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">Deboned Beef &amp; Organ Blend</h4>
+                  <span class="px-2.5 py-0.5 rounded bg-emerald-100 text-[#15803d] font-extrabold text-[9.5px]">SAFE</span>
+                </div>
+                <p class="text-[11px] font-bold text-[#16a34a]">Category: High-bioavailability animal protein</p>
+                <p class="text-xs text-[#788673]">Excellent amino acid profile supporting muscular integrity and healthy energy requirements for Golden Retrievers.</p>
+                <div class="flex items-center justify-between pt-1">
+                  <p class="text-[10.5px] font-bold text-[#16a34a]">FEDIAF biological standard: Optimal</p>
+                  <span class="text-[10.5px] font-extrabold text-[#45671d] group-hover:underline">Drill down →</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="tactile-card p-4 bg-white border-l-4 border-l-[#4caf50] flex items-start gap-4 diagnostic-item cursor-pointer hover:border-[#45671d] transition-all group" data-hazard="safe" data-token="rice">
+              <div class="w-9 h-9 rounded-full bg-[#f0fdf4] flex items-center justify-center text-base shrink-0 mt-0.5 text-emerald-600">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <div class="flex-1 space-y-1">
+                <div class="flex items-center justify-between">
+                  <h4 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">Whole Grain Brown Rice</h4>
+                  <span class="px-2.5 py-0.5 rounded bg-emerald-100 text-[#15803d] font-extrabold text-[9.5px]">SAFE</span>
+                </div>
+                <p class="text-[11px] font-bold text-[#16a34a]">Category: Complex carbohydrate &amp; soluble fiber</p>
+                <p class="text-xs text-[#788673]">Provides sustained glycemic release and supports gastrointestinal transit.</p>
+                <div class="flex items-center justify-between pt-1">
+                  <p class="text-[10.5px] font-bold text-[#16a34a]">Digestive tolerance: High</p>
+                  <span class="text-[10.5px] font-extrabold text-[#45671d] group-hover:underline">Drill down →</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Mandatory Clinical Disclaimer on Export & Print -->
+    <div id="printClinicalDisclaimer" class="hidden">
+      <strong>VETERINARY CLINICAL DISCLAIMER &amp; REGULATORY NOTICE:</strong><br>
+      This diagnostic report is an image-based educational screening aid generated via rule-based optical inspection. It is not designed to replace formal veterinary medical consultation, clinical diagnosis, chemical laboratory testing, or toxicological analysis. Unrated ingredients are not guaranteed safe. For clinical emergencies or suspected toxic ingestion, consult a licensed veterinarian immediately.
+    </div>
+
+    <!-- ==================== FEATURE 1: SLIDE-OVER FINDING DRAWER ==================== -->
+    <div id="drawerBackdrop" class="hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-50 transition-opacity"></div>
+    <aside id="findingDetailDrawer" class="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white border-l border-[#ebdcd0] shadow-2xl z-50 p-6 flex flex-col justify-between translate-x-full overflow-y-auto">
+      <div>
+        <div class="flex items-center justify-between pb-4 border-b border-[#ebdcd0]">
+          <div>
+            <span id="drawerBadge" class="px-2 py-0.5 rounded text-[9.5px] font-extrabold uppercase">STATUS</span>
+            <h3 id="drawerTitle" class="text-lg font-extrabold text-[#182811] mt-1">Chemical Compound</h3>
+            <span id="drawerCategory" class="text-xs text-[#788673] font-medium block">Category</span>
+          </div>
+          <button type="button" id="closeDrawerBtn" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#182811] text-sm font-bold flex items-center justify-center transition-colors cursor-pointer">✕</button>
+        </div>
+
+        <div class="space-y-4 text-xs text-[#586754] mt-5">
+          <div class="p-4 rounded-2xl bg-[#fbf9f6] border border-[#ebdcd0] space-y-1">
+            <strong class="text-[#182811] font-bold uppercase tracking-wider text-[10px] block">Toxicological Mechanism of Action</strong>
+            <p id="drawerMechanism" class="leading-relaxed">Biological description.</p>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-orange-50 border border-orange-200 space-y-1">
+            <div class="flex items-center gap-1.5 text-[#b45309]">
+              <i class="fa-solid fa-dog text-xs"></i>
+              <strong class="font-bold uppercase tracking-wide text-[10px]">Canine Clinical Tolerance</strong>
+            </div>
+            <p id="drawerCanine" class="text-[11.5px] leading-relaxed text-[#b45309]">Impact on dogs.</p>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 space-y-1">
+            <div class="flex items-center gap-1.5 text-purple-800">
+              <i class="fa-solid fa-cat text-xs"></i>
+              <strong class="font-bold uppercase tracking-wide text-[10px]">Feline Clinical Tolerance</strong>
+            </div>
+            <p id="drawerFeline" class="text-[11.5px] leading-relaxed text-purple-800">Impact on cats.</p>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1">
+            <strong class="text-emerald-900 text-[10px] font-bold block uppercase tracking-wide">Recommended Safe Alternative</strong>
+            <p id="drawerAlternative" class="text-xs text-emerald-800 leading-relaxed font-semibold">Healthy substitute.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-[#ebdcd0] flex items-center justify-between text-xs mt-6">
+        <a id="drawerWikiLink" href="wiki.html" class="font-extrabold text-[#45671d] hover:underline flex items-center gap-1">
+          <i class="fa-solid fa-book-medical"></i> Inspect Full Dossier in Wiki →
+        </a>
+        <button type="button" id="closeDrawerBtn2" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[#182811] rounded-xl font-bold cursor-pointer transition-colors">
+          Dismiss
+        </button>
+      </div>
+    </aside>
+
+  </main>
+
+  <script src="app.js"></script>
+  <script src="notifications.js"></script>
+  <script src="results.js"></script>
+</body>
+</html>

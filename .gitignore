@@ -1,0 +1,8 @@
+node_modules/
+.env
+.env.*
+!.env.example
+petfood.db
+*.sqlite
+*.sqlite3
+.DS_Store

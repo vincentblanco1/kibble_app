@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KibbleGuard — User Demographic Profile</title>
+  
+  <!-- Bulletproof Mobile / Tablet Redirection Script -->
+  <script>
+    (function() {
+      const width = window.innerWidth;
+      const isMobileDevice = width <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobileDevice) {
+        window.location.replace('mobile-profile.html');
+      }
+    })();
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="botanical-canvas">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside id="appSidebar" class="app-sidebar">
+    <div>
+      <div class="brand-header">
+        <a href="index.html" class="brand-left">
+          <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard Logo">
+          <div class="sidebar-text">
+            <h2>KibbleGuard</h2>
+            <span class="badge">SAFETY LAB</span>
+          </div>
+        </a>
+        <button id="sidebarToggleBtn" class="hamburger-btn" title="Toggle Sidebar">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <a href="index.html">
+          <i class="fa-solid fa-shapes"></i>
+          <span class="sidebar-text">Overview</span>
+        </a>
+        <a href="results.html">
+          <i class="fa-solid fa-camera"></i>
+          <span class="sidebar-text">Scan &amp; OCR</span>
+        </a>
+        <a href="history.html">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span class="sidebar-text">Scan Logs</span>
+        </a>
+        <a href="pets.html">
+          <i class="fa-solid fa-paw"></i>
+          <span class="sidebar-text">Pet Profiles</span>
+        </a>
+        <a href="wiki.html">
+          <i class="fa-solid fa-book-medical"></i>
+          <span class="sidebar-text">Ingredient Wiki</span>
+        </a>
+        <a href="settings.html">
+          <i class="fa-solid fa-gear"></i>
+          <span class="sidebar-text">Settings</span>
+        </a>
+      </nav>
+
+      <!-- Live Pixel Habitat Canvas -->
+      <div class="habitat-card">
+        <div class="habitat-header">
+          <span>Live Pet Habitat</span>
+          <div class="w-1.5 h-1.5 rounded-full bg-[#4caf50]"></div>
+        </div>
+        <canvas id="habitatCanvas"></canvas>
+        <div class="habitat-actions">
+          <button id="feedTreatBtn" class="btn-treat">Feed Treat</button>
+          <button id="switchPetBtn" class="btn-switch">Switch Pet</button>
+        </div>
+      </div>
+
+      <div class="sidebar-extra-card">
+        <span class="text-[9px] font-extrabold uppercase text-[#45671d] block mb-1">User Account</span>
+        <p class="text-[10px] text-[#788673] leading-snug">Demographic entries refine locality-specific food recall data.</p>
+      </div>
+    </div>
+
+    <!-- Active Clickable Profile Badge with Sign Out -->
+    <div class="space-y-2">
+      <a href="profile.html" class="user-profile-badge border-2 border-[#45671d] transition-all hover:bg-slate-50 block">
+        <div class="flex items-center gap-2.5">
+          <div class="avatar-circle" id="sidebarAvatarCircle">VG</div>
+          <div class="user-info min-w-0 flex-1">
+            <p class="name truncate" id="sidebarUserName">Vincent G. Blanco</p>
+            <p class="role" id="sidebarUserRole">VERIFIED OWNER</p>
+            <p class="loc truncate" id="sidebarUserLoc">Las Piñas City • 2 Pets</p>
+          </div>
+        </div>
+      </a>
+      <button type="button" id="sidebarSignOutBtn" class="w-full py-1 text-center text-xs font-bold text-[#788673] hover:text-red-600 transition-colors flex items-center justify-center gap-1.5">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="sidebar-text">Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="main-viewport">
+    
+    <header class="flex items-center justify-between pb-4 mb-5 border-b border-[#ebdcd0]">
+      <div>
+        <h1 class="text-xl font-extrabold text-[#182811]">User Demographic Profile</h1>
+        <p class="text-xs font-semibold text-[#788673] mt-0.5">Manage personal variables, spatial data, and account security.</p>
+      </div>
+      <div class="flex items-center gap-2.5">
+        <button type="button" id="editToggleBtn" class="px-4 py-2 bg-white border border-[#ebdcd0] hover:bg-[#45671d] hover:text-white text-[#182811] rounded-full text-xs font-extrabold uppercase tracking-wider transition-all shadow-xs flex items-center gap-1.5">
+          <i class="fa-solid fa-pen text-[10.5px]"></i> Edit Profile
+        </button>
+      </div>
+    </header>
+
+    <form id="userProfileForm" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- ==================== LEFT COLUMN: PERSONAL IDENTIFICATION ==================== -->
+      <div class="lg:col-span-5 space-y-5">
+        <div class="tactile-card p-5 space-y-4">
+          <div class="flex items-center gap-2.5 pb-2 border-b border-[#f5efe6]">
+            <div class="w-7 h-7 rounded-lg bg-[#45671d]/10 text-[#45671d] flex items-center justify-center text-xs">
+              <i class="fa-solid fa-id-card"></i>
+            </div>
+            <div>
+              <h2 class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Personal Identification</h2>
+              <p class="text-[10.5px] text-[#788673]">Basic personal demographic variables.</p>
+            </div>
+          </div>
+
+          <!-- Avatar Image Preview & Upload -->
+          <div class="flex items-center gap-4 py-1">
+            <div class="relative shrink-0">
+              <img id="profileAvatarPreview" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-16 h-16 rounded-2xl object-cover ring-2 ring-[#45671d]/20 shadow-xs" alt="User Avatar">
+              <label for="avatarInput" id="avatarUploadLabel" class="hidden absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#45671d] hover:bg-[#324c14] text-white flex items-center justify-center cursor-pointer shadow-sm transition-all text-[10px]">
+                <i class="fa-solid fa-camera"></i>
+              </label>
+              <input type="file" id="avatarInput" accept="image/*" class="hidden" disabled>
+            </div>
+            <div class="min-w-0">
+              <h3 id="displayFullName" class="font-extrabold text-sm text-[#182811] leading-tight truncate">Vincent Gregg Blanco</h3>
+              <p id="displayEmail" class="text-[11px] text-[#788673] truncate">vincent.gregg@uphsd.edu.ph</p>
+              <p id="displayRole" class="text-[10px] font-bold text-[#45671d] uppercase tracking-wide mt-0.5">Verified Owner • Contributor</p>
+            </div>
+          </div>
+
+          <!-- Name Fields -->
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">First Name *</label>
+              <input type="text" id="firstNameInput" required value="Vincent" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Middle Name</label>
+                <input type="text" id="middleNameInput" value="Gregg" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+              </div>
+              <div>
+                <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Last Name *</label>
+                <input type="text" id="lastNameInput" required value="Blanco" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+              </div>
+            </div>
+
+            <!-- Email Address Field -->
+            <div>
+              <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Email Address *</label>
+              <input type="email" id="emailInput" required value="vincent.gregg@uphsd.edu.ph" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Birthdate</label>
+                <input type="date" id="birthdateInput" value="2002-05-18" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+              </div>
+              <div>
+                <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Computed Age</label>
+                <input type="text" id="computedAgeDisplay" value="24 yrs old" readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 border border-[#ebdcd0] text-xs font-bold text-[#182811] cursor-default">
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Gender / Sex</label>
+              <select id="genderInput" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+                <option value="Male" selected>Male</option>
+                <option value="Female">Female</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== RIGHT COLUMN: DEMOGRAPHICS & SECURITY ==================== -->
+      <div class="lg:col-span-7 space-y-5">
+        
+        <!-- Regional & Spatial Information -->
+        <div class="tactile-card p-5 space-y-4">
+          <div class="flex items-center gap-2.5 pb-2 border-b border-[#f5efe6]">
+            <div class="w-7 h-7 rounded-lg bg-[#ff9800]/15 text-[#b45309] flex items-center justify-center text-xs">
+              <i class="fa-solid fa-map-location-dot"></i>
+            </div>
+            <div>
+              <h2 class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Regional &amp; Spatial Information</h2>
+              <p class="text-[10.5px] text-[#788673]">Locality data guides regional pet food recall notices.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Country</label>
+              <input type="text" id="countryInput" value="Philippines" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+            </div>
+            <div>
+              <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Region / Administrative Area</label>
+              <input type="text" id="regionInput" value="NCR (National Capital Region)" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+            </div>
+            <div>
+              <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">City / Municipality</label>
+              <input type="text" id="cityInput" value="Las Piñas City" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+            </div>
+            <div>
+              <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Caregiver Status / Role</label>
+              <select id="caregiverRoleInput" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+                <option value="Pet Owner" selected>Pet Owner / General Consumer</option>
+                <option value="Veterinary Professional">Veterinarian / Clinical Staff</option>
+                <option value="Animal Advocate">Animal Welfare Advocate / Shelter</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Household Pet Care Profile -->
+        <div class="tactile-card p-5 space-y-4">
+          <div class="flex items-center gap-2.5 pb-2 border-b border-[#f5efe6]">
+            <div class="w-7 h-7 rounded-lg bg-[#a855f7]/15 text-[#9333ea] flex items-center justify-center text-xs">
+              <i class="fa-solid fa-bowl-food"></i>
+            </div>
+            <div>
+              <h2 class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Household Pet Care &amp; Diet Style</h2>
+              <p class="text-[10.5px] text-[#788673]">Dietary habits calibrate allergen recommendations.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block font-bold text-[#788673] uppercase text-[10px]">Total Companion Animals</label>
+                <a href="pets.html" class="text-[10px] font-bold text-[#45671d] hover:underline" title="Add or edit animals in Pet Profiles">Manage in Pets →</a>
+              </div>
+              <div class="relative">
+                <input type="text" id="petCountInput" value="2 Registered Pets" readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 border border-[#ebdcd0] text-xs font-bold text-[#182811] cursor-not-allowed">
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" title="Synced from Pet Profiles database">
+                  <i class="fa-solid fa-lock"></i>
+                </span>
+              </div>
+              <p class="text-[10px] text-[#788673] mt-1">Automatically computed from your verified Pet Profiles.</p>
+            </div>
+
+            <div>
+              <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Primary Pet Feeding Style</label>
+              <select id="feedingStyleInput" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+                <option value="Commercial Dry Kibble" selected>Commercial Dry Kibble</option>
+                <option value="Commercial Wet / Canned">Commercial Wet / Canned</option>
+                <option value="Mixed Commercial &amp; Cooked">Mixed Commercial &amp; Cooked</option>
+                <option value="Raw / Fresh Feeding">Raw / Fresh Feeding</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Session & Account Security -->
+        <div class="tactile-card p-5 space-y-3">
+          <div class="flex items-center gap-2.5 pb-2 border-b border-[#f5efe6]">
+            <div class="w-7 h-7 rounded-lg bg-red-100 text-red-700 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+              <h2 class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Session &amp; Security</h2>
+              <p class="text-[10.5px] text-[#788673]">Manage your active local session.</p>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-red-50/50 border border-red-100 text-xs">
+            <div>
+              <p class="font-bold text-red-700">Log Out of Account</p>
+              <p class="text-[10.5px] text-[#788673]">Terminates the local user session and returns to the landing screen.</p>
+            </div>
+            <button type="button" id="accountLogoutBtn" class="px-4 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 font-extrabold text-xs uppercase tracking-wider shrink-0 transition-all flex items-center gap-1.5 shadow-2xs">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out
+            </button>
+          </div>
+        </div>
+
+        <!-- Editable Action Buttons -->
+        <div id="profileActionButtonsBar" class="hidden justify-end gap-2.5 pt-1">
+          <button type="button" id="cancelProfileEditBtn" class="px-4 py-2 rounded-xl text-xs font-bold text-[#788673] hover:bg-slate-100 transition-all">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-[#45671d] hover:bg-[#324c14] text-white font-extrabold text-xs uppercase tracking-wider shadow-md transition-all">
+            Save Changes
+          </button>
+        </div>
+
+      </div>
+
+    </form>
+  </main>
+
+  <script src="app.js"></script>
+  <script src="profile.js"></script>
+</body>
+</html>

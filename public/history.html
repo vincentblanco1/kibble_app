@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KibbleGuard — Evaluation Audit Logs</title>
+  
+  <!-- Universal Multi-Device Gateway Router -->
+  <script>
+    (function() {
+      const width = window.innerWidth;
+      const isMobileDevice = width <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isLoggedIn = localStorage.getItem('kibbleguard_user');
+      const currentPage = window.location.pathname.split('/').pop() || 'history.html';
+      
+      const mapping = {
+        'index.html': 'mobile-index.html',
+        'landing.html': 'mobile-landing.html',
+        'auth.html': 'mobile-auth.html',
+        'history.html': 'mobile-history.html',
+        'pets.html': 'mobile-pets.html',
+        'wiki.html': 'mobile-public-wiki.html',
+        'settings.html': 'mobile-settings.html',
+        'profile.html': 'mobile-profile.html',
+        'results.html': 'mobile-results.html',
+        'notifications.html': 'mobile-notifications.html'
+      };
+
+      const reverseMapping = {
+        'mobile-index.html': 'index.html',
+        'mobile-landing.html': 'landing.html',
+        'mobile-auth.html': 'auth.html',
+        'mobile-history.html': 'history.html',
+        'mobile-pets.html': 'pets.html',
+        'mobile-public-wiki.html': 'wiki.html',
+        'mobile-settings.html': 'settings.html',
+        'mobile-profile.html': 'profile.html',
+        'mobile-results.html': 'results.html',
+        'mobile-notifications.html': 'notifications.html'
+      };
+
+      if (isMobileDevice && mapping[currentPage]) {
+        window.location.replace(mapping[currentPage] + window.location.search + window.location.hash);
+      } else if (!isMobileDevice && reverseMapping[currentPage]) {
+        window.location.replace(reverseMapping[currentPage] + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Professional Clinical Print Styling Override -->
+  <style>
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+        font-size: 11pt;
+      }
+      aside, header button, header a[href="results.html"], 
+      #historySearchInput, #historyFilterButtonGroup, 
+      .history-filter-btn, button, .tactile-card:has(button) {
+        display: none !important;
+      }
+      .main-viewport {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+      }
+      /* Format log cards nicely for clinical print */
+      #historyRecordsContainer .tactile-card {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+        margin-bottom: 10px;
+        padding: 12px !important;
+      }
+    }
+  </style>
+</head>
+<body class="botanical-canvas">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside id="appSidebar" class="app-sidebar">
+    <div>
+      <div class="brand-header">
+        <a href="index.html" class="brand-left">
+          <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard Logo">
+          <div class="sidebar-text">
+            <h2>KibbleGuard</h2>
+            <span class="badge">SAFETY LAB</span>
+          </div>
+        </a>
+        <button id="sidebarToggleBtn" class="hamburger-btn" title="Toggle Sidebar">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <a href="index.html">
+          <i class="fa-solid fa-shapes"></i>
+          <span class="sidebar-text">Overview</span>
+        </a>
+        <a href="results.html">
+          <i class="fa-solid fa-camera"></i>
+          <span class="sidebar-text">Scan &amp; OCR</span>
+        </a>
+        <a href="history.html" class="active">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span class="sidebar-text">Scan Logs</span>
+        </a>
+        <a href="pets.html">
+          <i class="fa-solid fa-paw"></i>
+          <span class="sidebar-text">Pet Profiles</span>
+        </a>
+        <a href="wiki.html">
+          <i class="fa-solid fa-book-medical"></i>
+          <span class="sidebar-text">Ingredient Wiki</span>
+        </a>
+        <a href="settings.html">
+          <i class="fa-solid fa-gear"></i>
+          <span class="sidebar-text">Settings</span>
+        </a>
+      </nav>
+
+      <!-- Live Pixel Habitat Canvas -->
+      <div class="habitat-card">
+        <div class="habitat-header">
+          <span>LIVE PET HABITAT</span>
+          <div class="w-1.5 h-1.5 rounded-full bg-[#4caf50]"></div>
+        </div>
+        <canvas id="habitatCanvas"></canvas>
+        <div class="habitat-actions">
+          <button id="feedTreatBtn" class="btn-treat">FEED TREAT</button>
+          <button id="switchPetBtn" class="btn-switch">SWITCH PET</button>
+        </div>
+      </div>
+
+      <div class="sidebar-extra-card">
+        <span class="text-[9px] font-extrabold uppercase text-[#45671d] block mb-1">AUDIT LEDGER</span>
+        <p class="text-[10px] text-[#788673] leading-snug">Stores past diagnostic token analyses for clinical veterinarian export.</p>
+      </div>
+    </div>
+
+    <!-- User Profile Badge & Logout -->
+    <div class="space-y-2">
+      <a href="profile.html" class="user-profile-badge border border-[#ebdcd0] hover:border-[#45671d] transition-all block">
+        <div class="flex items-center gap-2.5">
+          <div class="avatar-circle" id="sidebarAvatarCircle">VG</div>
+          <div class="user-info min-w-0 flex-1">
+            <p class="name truncate" id="sidebarUserName">Vincent G. Blanco</p>
+            <p class="role" id="sidebarUserRole">VERIFIED OWNER</p>
+            <p class="loc truncate" id="sidebarUserLoc">Las Piñas City • 2 Pets</p>
+          </div>
+        </div>
+      </a>
+      <button type="button" id="sidebarSignOutBtn" class="w-full py-1 text-center text-xs font-bold text-[#788673] hover:text-red-600 transition-colors flex items-center justify-center gap-1.5">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="sidebar-text">Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="main-viewport">
+    
+    <!-- Top Header Bar -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 mb-6">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-display font-extrabold text-[#182811]">
+          Evaluation <span class="bg-[#ffe066]/60 px-2 py-0.5 rounded-lg">audit logs</span>
+        </h1>
+        <p class="text-xs font-semibold text-[#788673] mt-1">Historical record of all scanned formulas, token extractions, and diagnostic outcomes.</p>
+      </div>
+
+      <div class="flex items-center gap-3 self-end sm:self-auto">
+        <!-- Reusable Notification Bell Dropdown -->
+        <div class="relative">
+          <button type="button" id="notificationBellBtn" class="relative w-9 h-9 rounded-full bg-white border border-[#ebdcd0] hover:border-[#45671d] text-[#182811] flex items-center justify-center transition-all shadow-2xs" title="Notifications &amp; Alerts">
+            <i class="fa-regular fa-bell text-sm"></i>
+            <span id="notificationBadge" class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-600 text-white text-[9.5px] font-black flex items-center justify-center shadow-xs">
+              2
+            </span>
+          </button>
+
+          <!-- Slide-Down Notification Dropdown Drawer -->
+          <div id="notificationDropdown" class="hidden absolute right-0 mt-2.5 w-80 sm:w-96 bg-white rounded-3xl border border-[#ebdcd0] shadow-2xl z-50 p-4 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-[#f5efe6]">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#ff9800]"></span>
+                <h3 class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Notifications &amp; Alerts</h3>
+              </div>
+              <button type="button" id="markAllReadBtn" class="text-[10.5px] font-bold text-[#45671d] hover:underline">
+                Mark all as read
+              </button>
+            </div>
+            
+            <div id="notificationListContainer" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
+
+            <div class="pt-2 border-t border-[#f5efe6] text-center">
+              <a href="notifications.html" class="text-xs font-extrabold text-[#45671d] hover:underline block py-1">
+                See all notifications →
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <a href="results.html" class="bg-[#45671d] hover:bg-[#324c14] text-white px-5 py-2.5 rounded-full font-extrabold text-xs tracking-wider uppercase flex items-center gap-2 shadow-md transition-all">
+          <i class="fa-solid fa-camera"></i> New Scan
+        </a>
+      </div>
+    </header>
+
+    <!-- Audit Summary Counter Statistics -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white p-5 rounded-2xl border border-[#ebdcd0] shadow-2xs space-y-1">
+        <span class="text-[10px] uppercase font-extrabold text-[#788673] tracking-wider block">TOTAL BATCHES EVALUATED</span>
+        <strong id="historyStatTotal" class="text-2xl font-black text-[#182811] block">19 Records</strong>
+      </div>
+      <div class="bg-white p-5 rounded-2xl border border-emerald-200 bg-emerald-50/30 shadow-2xs space-y-1">
+        <span class="text-[10px] uppercase font-extrabold text-emerald-800 tracking-wider block">OPTIMAL / SAFE</span>
+        <strong id="historyStatSafe" class="text-2xl font-black text-emerald-700 block">16 Clear</strong>
+        <div class="w-full bg-emerald-200 h-1 rounded-full mt-2 overflow-hidden">
+          <div class="bg-emerald-600 h-full w-[84%]"></div>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-2xl border border-amber-200 bg-amber-50/30 shadow-2xs space-y-1">
+        <span class="text-[10px] uppercase font-extrabold text-amber-800 tracking-wider block">CAUTION / PRESERVATIVE</span>
+        <strong id="historyStatCaution" class="text-2xl font-black text-amber-700 block">2 Flagged</strong>
+        <div class="w-full bg-amber-200 h-1 rounded-full mt-2 overflow-hidden">
+          <div class="bg-amber-600 h-full w-[11%]"></div>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-2xl border border-red-200 bg-red-50/30 shadow-2xs space-y-1">
+        <span class="text-[10px] uppercase font-extrabold text-red-800 tracking-wider block">CRITICAL LETHAL TOXICITY</span>
+        <strong id="historyStatLethal" class="text-2xl font-black text-red-700 block">1 Prohibited</strong>
+        <div class="w-full bg-red-200 h-1 rounded-full mt-2 overflow-hidden">
+          <div class="bg-red-600 h-full w-[5%]"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search & Functional Filter Pills Bar -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl border border-[#ebdcd0] shadow-2xs">
+      <div class="relative w-full sm:max-w-md">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#788673] text-xs"></i>
+        <input type="text" id="historySearchInput" placeholder="Filter audit logs by product name, token, or batch..." class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl pl-9 pr-4 py-2 text-xs font-semibold focus:outline-none focus:border-[#45671d]">
+      </div>
+
+      <div class="flex items-center gap-2 self-stretch sm:self-auto overflow-x-auto pb-1 sm:pb-0" id="historyFilterButtonGroup">
+        <button type="button" class="history-filter-btn px-4 py-2 rounded-full text-xs font-extrabold bg-[#45671d] text-white transition-all shrink-0 shadow-xs" data-filter="all">
+          All audits (4)
+        </button>
+        <button type="button" class="history-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0" data-filter="caution">
+          Flagged / Caution
+        </button>
+        <button type="button" class="history-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0" data-filter="lethal">
+          Lethal toxins
+        </button>
+        <button type="button" class="history-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0" data-filter="safe">
+          Safe nutrients
+        </button>
+      </div>
+    </div>
+
+    <!-- Audit Log Records List -->
+    <div class="space-y-3 mb-8" id="historyRecordsContainer">
+      
+      <!-- Record 1 -->
+      <div class="tactile-card p-4 bg-white border-l-8 border-l-amber-600 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-amber-700 transition-all" data-status="caution">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 flex-1 items-center">
+          <div>
+            <span class="font-mono font-black text-xs text-[#182811] block">#KG-9021</span>
+            <span class="text-[10px] text-[#788673] font-medium">Oct 19, 2026 • 18:24</span>
+          </div>
+          <div>
+            <strong class="text-sm font-extrabold text-[#182811] block">Smokey Beef Jerky Strips</strong>
+            <span class="text-[11px] text-[#788673]">19 extracted tokens</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-full border-2 border-amber-600 bg-white flex items-center justify-center shrink-0 shadow-2xs font-black text-xs text-amber-700">
+              48
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[9.5px] font-black uppercase">
+              Caution
+            </span>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-amber-800 block">BHA (Fat Stabilizer E320)</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-end">
+          <a href="results.html?batch=KG-9021" class="text-xs font-extrabold text-[#45671d] hover:underline px-3 py-1.5 rounded-lg bg-[#fbf9f6] border border-[#ebdcd0]">
+            Inspect →
+          </a>
+        </div>
+      </div>
+
+      <!-- Record 2 -->
+      <div class="tactile-card p-4 bg-white border-l-8 border-l-emerald-600 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-emerald-700 transition-all" data-status="safe">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 flex-1 items-center">
+          <div>
+            <span class="font-mono font-black text-xs text-[#182811] block">#KG-8994</span>
+            <span class="text-[10px] text-[#788673] font-medium">Oct 18, 2026 • 11:10</span>
+          </div>
+          <div>
+            <strong class="text-sm font-extrabold text-[#182811] block">Wild Alaskan Salmon Entrée</strong>
+            <span class="text-[11px] text-[#788673]">24 extracted tokens</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-full border-2 border-emerald-600 bg-white flex items-center justify-center shrink-0 shadow-2xs font-black text-xs text-emerald-700">
+              02
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9.5px] font-black uppercase">
+              Safe
+            </span>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-emerald-700 block">Optimal (Taurine present)</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-end">
+          <a href="results.html?batch=KG-8994" class="text-xs font-extrabold text-[#45671d] hover:underline px-3 py-1.5 rounded-lg bg-[#fbf9f6] border border-[#ebdcd0]">
+            Inspect →
+          </a>
+        </div>
+      </div>
+
+      <!-- Record 3 -->
+      <div class="tactile-card p-4 bg-white border-l-8 border-l-red-600 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-red-700 transition-all" data-status="lethal">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 flex-1 items-center">
+          <div>
+            <span class="font-mono font-black text-xs text-[#182811] block">#KG-8812</span>
+            <span class="text-[10px] text-[#788673] font-medium">Oct 15, 2026 • 09:42</span>
+          </div>
+          <div>
+            <strong class="text-sm font-extrabold text-[#182811] block">Dental Care Sweetener Chews</strong>
+            <span class="text-[11px] text-[#788673]">16 extracted tokens</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-full border-2 border-red-600 bg-white flex items-center justify-center shrink-0 shadow-2xs font-black text-xs text-red-700">
+              96
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full bg-red-100 text-red-800 text-[9.5px] font-black uppercase">
+              Lethal
+            </span>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-red-700 block">Xylitol (Fatal insulin spike)</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-end">
+          <a href="results.html?batch=KG-8812" class="text-xs font-extrabold text-[#45671d] hover:underline px-3 py-1.5 rounded-lg bg-[#fbf9f6] border border-[#ebdcd0]">
+            Inspect →
+          </a>
+        </div>
+      </div>
+
+      <!-- Record 4 -->
+      <div class="tactile-card p-4 bg-white border-l-8 border-l-purple-600 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-purple-700 transition-all" data-status="caution">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 flex-1 items-center">
+          <div>
+            <span class="font-mono font-black text-xs text-[#182811] block">#KG-8750</span>
+            <span class="text-[10px] text-[#788673] font-medium">Oct 12, 2026 • 15:03</span>
+          </div>
+          <div>
+            <strong class="text-sm font-extrabold text-[#182811] block">Semi-Moist Tender Bites</strong>
+            <span class="text-[11px] text-[#788673]">21 extracted tokens</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-full border-2 border-purple-600 bg-white flex items-center justify-center shrink-0 shadow-2xs font-black text-xs text-purple-700">
+              92
+            </div>
+            <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[9.5px] font-black uppercase">
+              Prohibited
+            </span>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-purple-700 block">Propylene Glycol (Heinz anemia)</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-end">
+          <a href="results.html?batch=KG-8750" class="text-xs font-extrabold text-[#45671d] hover:underline px-3 py-1.5 rounded-lg bg-[#fbf9f6] border border-[#ebdcd0]">
+            Inspect →
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Export Clinical Ledger Banner -->
+    <div class="tactile-card p-5 bg-[#182811] text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+      <div class="space-y-1 text-center sm:text-left">
+        <h3 class="text-sm font-extrabold text-white">Need these for your vet?</h3>
+        <p class="text-xs text-slate-300">Export the full ledger as a clinical report.</p>
+      </div>
+      <button onclick="window.print()" class="px-6 py-2.5 rounded-xl bg-[#ffe066] hover:bg-[#ffd43b] text-[#182811] font-black text-xs uppercase tracking-wider transition-all shadow-md shrink-0 cursor-pointer">
+        Export clinical ledger →
+      </button>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+  <script src="notifications.js"></script>
+  <script src="history.js"></script>
+</body>
+</html>

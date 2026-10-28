@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KibbleGuard — Public Ingredient Wiki</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="!block w-full botanical-canvas min-h-screen text-[#182811]">
+
+  <!-- Public Top Navigation Bar -->
+  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#ebdcd0]">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-10">
+        <a href="landing.html" class="flex items-center gap-2.5">
+          <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard Logo" class="w-9 h-9 object-contain">
+          <div>
+            <span class="font-extrabold text-xl tracking-tight text-[#182811] block leading-none">KibbleGuard</span>
+            <span class="text-[9px] font-extrabold text-[#45671d] tracking-widest uppercase">Public Wiki</span>
+          </div>
+        </a>
+        <nav class="hidden md:flex items-center gap-8 text-[14px] font-semibold text-slate-500">
+          <a href="landing.html#how-it-works" class="hover:text-[#45671d] transition-colors">How It Works</a>
+          <a href="landing.html#species-intelligence" class="hover:text-[#45671d] transition-colors">Species Intelligence</a>
+          <a href="PublicWiki.html" class="text-[#45671d] font-bold">Ingredient Wiki</a>
+        </nav>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <a href="auth.html?mode=login" class="text-[14px] font-bold text-slate-600 hover:text-[#182811] transition-colors px-3 py-2">Log In</a>
+        <a href="auth.html?mode=signup" class="bg-[#45671d] hover:bg-[#324c14] text-white px-5 py-2.5 rounded-xl text-[14px] font-extrabold shadow-sm transition-all">
+          Get Started
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Public Content Area -->
+  <main class="max-w-7xl mx-auto px-6 lg:px-8 py-12">
+    
+    <!-- Title Banner -->
+    <div class="text-center max-w-2xl mx-auto mb-10 space-y-3">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-[#ebdcd0] text-[11px] font-extrabold text-[#45671d] uppercase tracking-widest shadow-2xs">
+        <i class="fa-solid fa-book-medical"></i> Open Veterinary Standard 2026
+      </div>
+      <h1 class="text-3xl lg:text-4xl font-extrabold text-[#182811] tracking-tight">
+        Veterinary Ingredient Wiki
+      </h1>
+      <p class="text-slate-600 text-sm font-medium leading-relaxed">
+        Public encyclopedia of compound additives, whole foods, chemical preservatives, and species-specific metabolic risks.
+      </p>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-4 rounded-2xl border border-[#ebdcd0] shadow-sm">
+      <div class="relative w-full sm:max-w-md">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#788673] text-xs"></i>
+        <input type="text" id="publicWikiSearchInput" placeholder="Search compounds (e.g. BHA, Xylitol, Taurine)..." class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl pl-9 pr-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-[#45671d] shadow-2xs">
+      </div>
+
+      <div class="flex items-center gap-1.5 p-1 rounded-xl bg-[#fbf9f6] border border-[#ebdcd0] self-stretch sm:self-auto overflow-x-auto">
+        <button class="public-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#45671d] text-white transition-all shrink-0" data-hazard="all">All</button>
+        <button class="public-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-[#788673] hover:text-[#182811] transition-all shrink-0" data-hazard="danger">Critical Toxic</button>
+        <button class="public-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-[#788673] hover:text-[#182811] transition-all shrink-0" data-hazard="caution">Caution Flag</button>
+        <button class="public-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-[#788673] hover:text-[#182811] transition-all shrink-0" data-hazard="safe">Safe Nutrients</button>
+      </div>
+    </div>
+
+    <!-- Cards Grid -->
+    <div id="publicWikiGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      
+      <!-- Xylitol -->
+      <div class="public-wiki-card tactile-card p-5 border-l-4 border-l-red-600 flex flex-col justify-between cursor-pointer hover:border-[#45671d]/40 transition-all group" data-id="xylitol" data-hazard="danger">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 font-extrabold text-[10px] uppercase tracking-wide">
+              Critical Lethal
+            </span>
+            <span class="text-[10px] font-bold text-[#788673]">Canine Fatal</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">Xylitol (Birch Sugar)</h3>
+            <span class="text-xs text-[#788673] group-hover:text-[#45671d]"><i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i></span>
+          </div>
+          <p class="text-[11px] font-bold text-[#8c633a] mt-0.5">Classification: Sugar Alcohol</p>
+          <p class="text-xs text-[#788673] mt-2 leading-relaxed">
+            Causes rapid, massive insulin surge in canines resulting in severe hypoglycemia, seizures, and acute hepatic necrosis. Toxic at 0.1 g/kg.
+          </p>
+        </div>
+        <div class="pt-3 mt-3 border-t border-[#f5efe6] flex items-center justify-between text-[11px]">
+          <span class="text-[#788673]">Primary Risk: <strong class="text-red-700">Liver Failure</strong></span>
+          <span class="font-bold text-red-600">Prohibited</span>
+        </div>
+      </div>
+
+      <!-- Propylene Glycol -->
+      <div class="public-wiki-card tactile-card p-5 border-l-4 border-l-[#a855f7] flex flex-col justify-between cursor-pointer hover:border-[#45671d]/40 transition-all group" data-id="propylene-glycol" data-hazard="danger">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-[#9333ea] font-extrabold text-[10px] uppercase tracking-wide">
+              Lethal to Felines
+            </span>
+            <span class="text-[10px] font-bold text-[#788673]">Glucuronidation Defect</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">Propylene Glycol</h3>
+            <span class="text-xs text-[#788673] group-hover:text-[#45671d]"><i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i></span>
+          </div>
+          <p class="text-[11px] font-bold text-[#8c633a] mt-0.5">Classification: Synthetic Humectant</p>
+          <p class="text-xs text-[#788673] mt-2 leading-relaxed">
+            While tolerated in minor quantities by dogs, cats lack glucuronidation pathways. Triggers Heinz body hemolytic anemia.
+          </p>
+        </div>
+        <div class="pt-3 mt-3 border-t border-[#f5efe6] flex items-center justify-between text-[11px]">
+          <span class="text-[#788673]">Primary Risk: <strong class="text-[#9333ea]">Heinz Body Anemia</strong></span>
+          <span class="font-bold text-[#9333ea]">Feline Ban</span>
+        </div>
+      </div>
+
+      <!-- BHA & BHT -->
+      <div class="public-wiki-card tactile-card p-5 border-l-4 border-l-[#ff9800] flex flex-col justify-between cursor-pointer hover:border-[#45671d]/40 transition-all group" data-id="bha-bht" data-hazard="caution">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-orange-100 text-[#b45309] font-extrabold text-[10px] uppercase tracking-wide">
+              Caution Flag
+            </span>
+            <span class="text-[10px] font-bold text-[#788673]">Synthetic Preservative</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">BHA &amp; BHT</h3>
+            <span class="text-xs text-[#788673] group-hover:text-[#45671d]"><i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i></span>
+          </div>
+          <p class="text-[11px] font-bold text-[#8c633a] mt-0.5">Classification: Chemical Fat Stabilizer</p>
+          <p class="text-xs text-[#788673] mt-2 leading-relaxed">
+            Synthetic preservatives. Bioaccumulation from long-term consumption has been associated with endocrine disruption and allergic dermatitis.
+          </p>
+        </div>
+        <div class="pt-3 mt-3 border-t border-[#f5efe6] flex items-center justify-between text-[11px]">
+          <span class="text-[#788673]">Alternative: <strong class="text-[#45671d]">Mixed Tocopherols</strong></span>
+          <span class="font-bold text-[#b45309]">Flagged</span>
+        </div>
+      </div>
+
+      <!-- Artificial Dyes -->
+      <div class="public-wiki-card tactile-card p-5 border-l-4 border-l-[#ff9800] flex flex-col justify-between cursor-pointer hover:border-[#45671d]/40 transition-all group" data-id="artificial-dyes" data-hazard="caution">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-orange-100 text-[#b45309] font-extrabold text-[10px] uppercase tracking-wide">
+              Caution Flag
+            </span>
+            <span class="text-[10px] font-bold text-[#788673]">Cosmetic Additive</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">Artificial Dyes (Red 40, Yellow 5)</h3>
+            <span class="text-xs text-[#788673] group-hover:text-[#45671d]"><i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i></span>
+          </div>
+          <p class="text-[11px] font-bold text-[#8c633a] mt-0.5">Classification: Petroleum-Derived Colorants</p>
+          <p class="text-xs text-[#788673] mt-2 leading-relaxed">
+            Added for marketing appeal; pets cannot distinguish food colors. Linked to allergic skin flare-ups and unnecessary renal filtration stress.
+          </p>
+        </div>
+        <div class="pt-3 mt-3 border-t border-[#f5efe6] flex items-center justify-between text-[11px]">
+          <span class="text-[#788673]">Biological Need: <strong class="text-[#b45309]">None (0%)</strong></span>
+          <span class="font-bold text-[#b45309]">Avoid</span>
+        </div>
+      </div>
+
+      <!-- Wild Salmon -->
+      <div class="public-wiki-card tactile-card p-5 border-l-4 border-l-[#4caf50] flex flex-col justify-between cursor-pointer hover:border-[#45671d]/40 transition-all group" data-id="wild-salmon" data-hazard="safe">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#15803d] font-extrabold text-[10px] uppercase tracking-wide">
+              Safe &amp; Beneficial
+            </span>
+            <span class="text-[10px] font-bold text-[#788673]">Complete Protein</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">Wild Salmon</h3>
+            <span class="text-xs text-[#788673] group-hover:text-[#45671d]"><i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i></span>
+          </div>
+          <p class="text-[11px] font-bold text-[#16a34a] mt-0.5">Classification: Marine Animal Protein</p>
+          <p class="text-xs text-[#788673] mt-2 leading-relaxed">
+            Complete essential amino acid profile. Rich in Omega-3 fatty acids (EPA/DHA) that promote renal vascular perfusion and joint mobility.
+          </p>
+        </div>
+        <div class="pt-3 mt-3 border-t border-[#f5efe6] flex items-center justify-between text-[11px]">
+          <span class="text-[#788673]">Benefit: <strong class="text-[#15803d]">EPA / DHA Omega-3</strong></span>
+          <span class="font-bold text-[#15803d]">Optimal</span>
+        </div>
+      </div>
+
+      <!-- Taurine -->
+      <div class="public-wiki-card tactile-card p-5 border-l-4 border-l-[#4caf50] flex flex-col justify-between cursor-pointer hover:border-[#45671d]/40 transition-all group" data-id="taurine" data-hazard="safe">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#15803d] font-extrabold text-[10px] uppercase tracking-wide">
+              Vital Nutrient
+            </span>
+            <span class="text-[10px] font-bold text-[#788673]">Feline Mandatory</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">Taurine</h3>
+            <span class="text-xs text-[#788673] group-hover:text-[#45671d]"><i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i></span>
+          </div>
+          <p class="text-[11px] font-bold text-[#16a34a] mt-0.5">Classification: Essential Amino Sulfonic Acid</p>
+          <p class="text-xs text-[#788673] mt-2 leading-relaxed">
+            Cats cannot synthesize taurine endogenously. Deficiency directly induces dilated cardiomyopathy (DCM) and central retinal degeneration.
+          </p>
+        </div>
+        <div class="pt-3 mt-3 border-t border-[#f5efe6] flex items-center justify-between text-[11px]">
+          <span class="text-[#788673]">Benefit: <strong class="text-[#15803d]">Heart &amp; Vision</strong></span>
+          <span class="font-bold text-[#15803d]">Vital</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Public Detail Dossier Modal -->
+    <div id="publicIngredientModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+      <div class="bg-white rounded-3xl p-6 border border-[#ebdcd0] max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-5">
+        
+        <div class="flex items-start justify-between pb-3 border-b border-[#ebdcd0]">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span id="pubModalRiskBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-red-100 text-red-700">
+                Critical Lethal
+              </span>
+              <span id="pubModalStandardBadge" class="text-[10px] font-bold text-[#788673]">
+                AAFCO Prohibited
+              </span>
+            </div>
+            <h2 id="pubModalTitle" class="text-xl font-extrabold text-[#182811]">Xylitol (Birch Sugar)</h2>
+            <p id="pubModalCategory" class="text-xs font-bold text-[#8c633a]">Classification: Sugar Alcohol</p>
+          </div>
+          <button type="button" id="pubCloseModalBtn" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors text-sm">
+            ✕
+          </button>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#45671d]">Who Is Affected? (Species Tolerance)</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div id="pubModalCanineBox" class="p-3 rounded-2xl border border-red-200 bg-red-50/70 space-y-1">
+              <div class="flex items-center justify-between font-bold text-red-700">
+                <span>🐶 Canine (Dogs)</span>
+                <span id="pubModalCanineTag" class="text-[10px] uppercase font-black">Lethal Hazard</span>
+              </div>
+              <p id="pubModalCanineDesc" class="text-[11px] text-slate-600 leading-snug">Severe toxic response. Triggers massive insulin release and acute hepatic failure.</p>
+            </div>
+
+            <div id="pubModalFelineBox" class="p-3 rounded-2xl border border-slate-200 bg-slate-50 space-y-1">
+              <div class="flex items-center justify-between font-bold text-slate-700">
+                <span>🐱 Feline (Cats)</span>
+                <span id="pubModalFelineTag" class="text-[10px] uppercase font-black">Low Documented Risk</span>
+              </div>
+              <p id="pubModalFelineDesc" class="text-[11px] text-slate-600 leading-snug">Does not trigger severe insulin spike, but offers zero biological benefit.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#ba7f57]">Clinical Mechanism &amp; Danger</h4>
+          <div class="p-3.5 rounded-2xl bg-[#fbf9f6] border border-[#ebdcd0] text-xs text-[#788673] leading-relaxed space-y-2">
+            <p id="pubModalMechanismText">
+              In dogs, xylitol is absorbed into the bloodstream within 30 minutes, stimulating a potent release of insulin from the pancreas. This leads to profound hypoglycemia, hypokalemia, weakness, collapse, and seizures.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+            <span class="font-bold text-[#182811] block text-[11px]">Common Aliases &amp; E-Numbers:</span>
+            <p id="pubModalAliasesText" class="text-[11px] text-[#788673]">Birch bark extract, Wood sugar, E967, D-xylitol</p>
+          </div>
+
+          <div class="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+            <span class="font-bold text-[#15803d] block text-[11px]">Recommended Safe Alternative:</span>
+            <p id="pubModalAlternativeText" class="text-[11px] text-[#15803d]">Pure pumpkin puree, unsweetened applesauce, or fresh blueberries.</p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-3 border-t border-[#ebdcd0] text-xs">
+          <a href="auth.html?mode=signup" class="font-bold text-[#45671d] hover:underline flex items-center gap-1">
+            <i class="fa-solid fa-camera text-[10px]"></i> Create account to scan products
+          </a>
+          <button type="button" id="pubModalDismissBtn" class="px-5 py-2 rounded-xl bg-[#45671d] hover:bg-[#324c14] text-white font-extrabold text-xs shadow-sm transition-all">
+            Close
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Public Footer -->
+  <footer class="py-12 bg-white border-t border-[#ebdcd0] mt-20">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500 font-medium">
+      <div class="flex items-center gap-3">
+        <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard" class="w-6 h-6 object-contain">
+        <span class="font-extrabold text-[#182811]">KibbleGuard Safety Lab</span>
+        <span>•</span>
+        <span>Public Scientific Reference</span>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <a href="landing.html" class="hover:text-[#182811] font-bold">Home</a>
+        <a href="auth.html?mode=login" class="hover:text-[#182811] font-bold">Sign In</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const CLINICAL_DATA = {
+      'xylitol': {
+        title: 'Xylitol (Birch Sugar)',
+        category: 'Classification: Sugar Alcohol Sweetener',
+        riskBadgeText: 'Critical Lethal',
+        riskBadgeClass: 'bg-red-100 text-red-700',
+        standardText: 'AAFCO & FEDIAF Prohibited',
+        canineTag: 'Lethal Hazard',
+        canineClass: 'border-red-200 bg-red-50/70 text-red-700',
+        canineDesc: 'Severe acute toxicity. Ingestion as low as 0.1 g/kg triggers massive insulin release, acute hepatic failure, and seizures.',
+        felineTag: 'Low Documented Risk',
+        felineClass: 'border-slate-200 bg-slate-50 text-slate-700',
+        felineDesc: 'Does not trigger severe pancreatic insulin release in felines, but offers zero nutritional value and should never be fed.',
+        mechanism: 'In canines, xylitol is rapidly absorbed within 30 minutes, triggering up to 6x the normal pancreatic insulin release. This causes life-threatening hypoglycemia, followed by acute, irreversible hepatic necrosis.',
+        aliases: 'Birch sugar, Birch bark extract, Wood sugar, E967, D-xylitol',
+        alternative: 'Pure unsweetened pumpkin puree, fresh blueberries, or mashed sweet potato.'
+      },
+      'propylene-glycol': {
+        title: 'Propylene Glycol',
+        category: 'Classification: Synthetic Humectant & Moisture Stabilizer',
+        riskBadgeText: 'Lethal to Felines',
+        riskBadgeClass: 'bg-purple-100 text-[#9333ea]',
+        standardText: 'FDA Prohibited in Cat Food',
+        canineTag: 'Regulated / Low Risk',
+        canineClass: 'border-orange-200 bg-orange-50/70 text-[#b45309]',
+        canineDesc: 'Permitted in small regulated doses for moisture retention in soft kibbles, but offers no nutritive benefit.',
+        felineTag: 'Fatal / Prohibited',
+        felineClass: 'border-purple-200 bg-purple-50/70 text-[#9333ea]',
+        felineDesc: 'Strictly prohibited. Felines lack the glucuronidation metabolic pathway required to break it down safely.',
+        mechanism: 'Cats possess red blood cells with highly reactive sulfhydryl groups and lack hepatic glucuronosyltransferase. Propylene glycol causes oxidative injury to hemoglobin, precipitating into Heinz bodies and inducing acute hemolytic anemia.',
+        aliases: '1,2-propanediol, Propane-1,2-diol, E1520, PG, Dowfrost',
+        alternative: 'Natural vegetable glycerin or rendered animal fats for moisture retention.'
+      },
+      'bha-bht': {
+        title: 'BHA & BHT (Antioxidants)',
+        category: 'Classification: Synthetic Phenolic Preservatives',
+        riskBadgeText: 'Caution Flag',
+        riskBadgeClass: 'bg-orange-100 text-[#b45309]',
+        standardText: 'Controlled Usage Limit',
+        canineTag: 'Caution / Flagged',
+        canineClass: 'border-orange-200 bg-orange-50/70 text-[#b45309]',
+        canineDesc: 'Chronic daily intake is linked to metabolic stress, allergic skin reactions, and hepatic cellular alterations.',
+        felineTag: 'Caution / Flagged',
+        felineClass: 'border-orange-200 bg-orange-50/70 text-[#b45309]',
+        felineDesc: 'Feline liver clearance is slower than canines, leading to higher bioaccumulation over continuous feedings.',
+        mechanism: 'BHA and BHT are synthetic phenolic compounds that inhibit fat rancidity by donating electrons to free radicals. However, chronic exposure has demonstrated xenoestrogenic activity, disrupting thyroid hormones and producing oxidative stress.',
+        aliases: 'E320 (BHA), E321 (BHT), Butylated hydroxyanisole, Synthetic antioxidant',
+        alternative: 'Mixed natural tocopherols (Vitamin E), Rosemary extract, and Citric acid.'
+      },
+      'artificial-dyes': {
+        title: 'Artificial Food Colorants',
+        category: 'Classification: Synthetic Azo & Triarylmethane Dyes',
+        riskBadgeText: 'Caution Flag',
+        riskBadgeClass: 'bg-orange-100 text-[#b45309]',
+        standardText: 'Non-Nutritive Cosmetic',
+        canineTag: 'Avoid / Non-Nutritive',
+        canineClass: 'border-orange-200 bg-orange-50/70 text-[#b45309]',
+        canineDesc: 'Dogs are dichromats and cannot perceive bright kibble colors. Dyes trigger cutaneous allergies and pruritus.',
+        felineTag: 'Avoid / Non-Nutritive',
+        felineClass: 'border-orange-200 bg-orange-50/70 text-[#b45309]',
+        felineDesc: 'Cats choose food strictly through olfaction and moisture, not color. Dyes increase renal filtration workload.',
+        mechanism: 'Artificial food dyes (e.g. Red 40, Yellow 5) are synthetic petroleum derivatives added solely for human marketing psychology. They provoke mast cell degranulation, histamine release, itchy skin, and gastrointestinal upset.',
+        aliases: 'FD&C Red 40, Allura Red AC, E129, Tartrazine (Yellow 5), E102, Brilliant Blue',
+        alternative: 'Natural beet root powder, turmeric, spirulina, or leaving kibbles in their natural state.'
+      },
+      'wild-salmon': {
+        title: 'Wild Alaskan Salmon',
+        category: 'Classification: High-Biological-Value Animal Protein',
+        riskBadgeText: 'Safe & Optimal',
+        riskBadgeClass: 'bg-emerald-100 text-[#15803d]',
+        standardText: 'AAFCO & FEDIAF Approved',
+        canineTag: 'Optimal Nutrition',
+        canineClass: 'border-emerald-200 bg-emerald-50/70 text-[#15803d]',
+        canineDesc: 'Abundant in EPA and DHA to reduce inflammatory joint stress, support heart health, and strengthen coat density.',
+        felineTag: 'Optimal Nutrition',
+        felineClass: 'border-emerald-200 bg-emerald-50/70 text-[#15803d]',
+        felineDesc: 'Provides complete feline amino acid chains and natural moisture support while protecting renal blood flow.',
+        mechanism: 'Wild salmon provides high-protein bioavailability with low ash and phosphorus ratios. The high concentration of Omega-3 polyunsaturated fatty acids downregulates pro-inflammatory cytokines.',
+        aliases: 'Salmo salar, Salmon hydrolysate, Dehydrated salmon meal, Wild ocean fish',
+        alternative: 'Sardines, Atlantic mackerel, or cold-pressed wild fish oil.'
+      },
+      'taurine': {
+        title: 'Taurine',
+        category: 'Classification: Essential Amino Sulfonic Acid',
+        riskBadgeText: 'Vital & Safe',
+        riskBadgeClass: 'bg-emerald-100 text-[#15803d]',
+        standardText: 'Mandatory in Feline Diets',
+        canineTag: 'Safe / Beneficial',
+        canineClass: 'border-emerald-200 bg-emerald-50/70 text-[#15803d]',
+        canineDesc: 'While dogs synthesize taurine from cysteine, supplementation protects large breeds from dilated cardiomyopathy.',
+        felineTag: 'Mandatory Nutrient',
+        felineClass: 'border-emerald-200 bg-emerald-50/70 text-[#15803d]',
+        felineDesc: 'Strictly required. Cats lack sufficient enzymatic activity to synthesize taurine, needing daily dietary intake.',
+        mechanism: 'Taurine is essential for myocardial contractility and retinal photoreceptor viability. In felines, inadequate intake leads to central retinal degeneration, irreversible blindness, and fatal dilated cardiomyopathy (DCM).',
+        aliases: '2-aminoethanesulfonic acid, L-taurine',
+        alternative: 'Naturally rich in poultry hearts, dark chicken muscle meat, liver, and marine shellfish.'
+      }
+    };
+
+    const modal = document.getElementById('publicIngredientModal');
+    const closeBtn = document.getElementById('pubCloseModalBtn');
+    const dismissBtn = document.getElementById('pubModalDismissBtn');
+    const cards = document.querySelectorAll('.public-wiki-card');
+
+    function openDossier(id) {
+      const data = CLINICAL_DATA[id];
+      if (!data) return;
+
+      document.getElementById('pubModalTitle').textContent = data.title;
+      document.getElementById('pubModalCategory').textContent = data.category;
+      
+      const riskBadge = document.getElementById('pubModalRiskBadge');
+      riskBadge.textContent = data.riskBadgeText;
+      riskBadge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${data.riskBadgeClass}`;
+
+      document.getElementById('pubModalStandardBadge').textContent = data.standardText;
+
+      const canineBox = document.getElementById('pubModalCanineBox');
+      canineBox.className = `p-3 rounded-2xl border space-y-1 ${data.canineClass}`;
+      document.getElementById('pubModalCanineTag').textContent = data.canineTag;
+      document.getElementById('pubModalCanineDesc').textContent = data.canineDesc;
+
+      const felineBox = document.getElementById('pubModalFelineBox');
+      felineBox.className = `p-3 rounded-2xl border space-y-1 ${data.felineClass}`;
+      document.getElementById('pubModalFelineTag').textContent = data.felineTag;
+      document.getElementById('pubModalFelineDesc').textContent = data.felineDesc;
+
+      document.getElementById('pubModalMechanismText').textContent = data.mechanism;
+      document.getElementById('pubModalAliasesText').textContent = data.aliases;
+      document.getElementById('pubModalAlternativeText').textContent = data.alternative;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeDossier() {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.getAttribute('data-id');
+        openDossier(id);
+      });
+    });
+
+    closeBtn?.addEventListener('click', closeDossier);
+    dismissBtn?.addEventListener('click', closeDossier);
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) closeDossier();
+    });
+
+    // Search and Filter controller
+    const searchInput = document.getElementById('publicWikiSearchInput');
+    const filterBtns = document.querySelectorAll('.public-filter-btn');
+    let activeFilter = 'all';
+
+    function filterCards() {
+      const q = searchInput.value.toLowerCase().trim();
+
+      cards.forEach(card => {
+        const text = card.innerText.toLowerCase();
+        const hazard = card.getAttribute('data-hazard');
+        const matchesQuery = text.includes(q);
+        const matchesHazard = activeFilter === 'all' || hazard === activeFilter;
+        card.style.display = matchesQuery && matchesHazard ? '' : 'none';
+      });
+    }
+
+    searchInput?.addEventListener('input', filterCards);
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => {
+          b.className = 'public-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold text-[#788673] hover:text-[#182811] transition-all shrink-0';
+        });
+        btn.className = 'public-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#45671d] text-white transition-all shrink-0';
+        activeFilter = btn.getAttribute('data-hazard');
+        filterCards();
+      });
+    });
+  </script>
+</body>
+</html>

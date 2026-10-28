@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KibbleGuard — Pet Profiles</title>
+  
+  <!-- Universal Multi-Device Gateway Router -->
+  <script>
+    (function() {
+      const width = window.innerWidth;
+      const isMobileDevice = width <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isLoggedIn = localStorage.getItem('kibbleguard_user');
+      const currentPage = window.location.pathname.split('/').pop() || 'pets.html';
+      
+      const mapping = {
+        'index.html': 'mobile-index.html',
+        'landing.html': 'mobile-landing.html',
+        'auth.html': 'mobile-auth.html',
+        'history.html': 'mobile-history.html',
+        'pets.html': 'mobile-pets.html',
+        'wiki.html': 'mobile-public-wiki.html',
+        'settings.html': 'mobile-settings.html',
+        'profile.html': 'mobile-profile.html',
+        'results.html': 'mobile-results.html',
+        'notifications.html': 'mobile-notifications.html'
+      };
+
+      const reverseMapping = {
+        'mobile-index.html': 'index.html',
+        'mobile-landing.html': 'landing.html',
+        'mobile-auth.html': 'auth.html',
+        'mobile-history.html': 'history.html',
+        'mobile-pets.html': 'pets.html',
+        'mobile-public-wiki.html': 'wiki.html',
+        'mobile-settings.html': 'settings.html',
+        'mobile-profile.html': 'profile.html',
+        'mobile-results.html': 'results.html',
+        'mobile-notifications.html': 'notifications.html'
+      };
+
+      if (isMobileDevice && mapping[currentPage]) {
+        window.location.replace(mapping[currentPage] + window.location.search + window.location.hash);
+      } else if (!isMobileDevice && reverseMapping[currentPage]) {
+        window.location.replace(reverseMapping[currentPage] + window.location.search + window.location.hash);
+      }
+    })();
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="botanical-canvas">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside id="appSidebar" class="app-sidebar">
+    <div>
+      <div class="brand-header">
+        <a href="index.html" class="brand-left">
+          <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard Logo">
+          <div class="sidebar-text">
+            <h2>KibbleGuard</h2>
+            <span class="badge">SAFETY LAB</span>
+          </div>
+        </a>
+        <button id="sidebarToggleBtn" class="hamburger-btn" title="Toggle Sidebar">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <a href="index.html">
+          <i class="fa-solid fa-shapes"></i>
+          <span class="sidebar-text">Overview</span>
+        </a>
+        <a href="results.html">
+          <i class="fa-solid fa-camera"></i>
+          <span class="sidebar-text">Scan &amp; OCR</span>
+        </a>
+        <a href="history.html">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span class="sidebar-text">Scan Logs</span>
+        </a>
+        <a href="pets.html" class="active">
+          <i class="fa-solid fa-paw"></i>
+          <span class="sidebar-text">Pet Profiles</span>
+        </a>
+        <a href="wiki.html">
+          <i class="fa-solid fa-book-medical"></i>
+          <span class="sidebar-text">Ingredient Wiki</span>
+        </a>
+        <a href="settings.html">
+          <i class="fa-solid fa-gear"></i>
+          <span class="sidebar-text">Settings</span>
+        </a>
+      </nav>
+
+      <!-- Live Pixel Habitat Canvas -->
+      <div class="habitat-card">
+        <div class="habitat-header">
+          <span>LIVE PET HABITAT</span>
+          <div class="w-1.5 h-1.5 rounded-full bg-[#4caf50]"></div>
+        </div>
+        <canvas id="habitatCanvas"></canvas>
+        <div class="habitat-actions">
+          <button id="feedTreatBtn" class="btn-treat">FEED TREAT</button>
+          <button id="switchPetBtn" class="btn-switch">SWITCH PET</button>
+        </div>
+      </div>
+
+      <div class="sidebar-extra-card">
+        <span class="text-[9px] font-extrabold uppercase text-[#45671d] block mb-1">STRATIFIED CARE ENGINE</span>
+        <p class="text-[10px] text-[#788673] leading-snug">Each companion profile activates dedicated biological rule-engines and toxicological thresholds during packaging label OCR scans.</p>
+      </div>
+    </div>
+
+    <!-- User Profile Badge & Logout -->
+    <div class="space-y-2">
+      <a href="profile.html" class="user-profile-badge border border-[#ebdcd0] hover:border-[#45671d] transition-all block">
+        <div class="flex items-center gap-2.5">
+          <div class="avatar-circle" id="sidebarAvatarCircle">VB</div>
+          <div class="user-info min-w-0 flex-1">
+            <p class="name truncate" id="sidebarUserName">Vincent G. Blanco</p>
+            <p class="role" id="sidebarUserRole">VERIFIED OWNER</p>
+            <p class="loc truncate" id="sidebarUserLoc">Las Piñas City • 2 Pets</p>
+          </div>
+        </div>
+      </a>
+      <button type="button" id="sidebarSignOutBtn" class="w-full py-1 text-center text-xs font-bold text-[#788673] hover:text-red-600 transition-colors flex items-center justify-center gap-1.5">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="sidebar-text">Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="main-viewport">
+    
+    <!-- Top Header Bar matching new UI mockup -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 mb-6">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-display font-extrabold text-[#182811]">
+          Companion <span class="bg-[#ffe066]/60 px-2 py-0.5 rounded-lg">profiles</span>
+        </h1>
+        <p class="text-xs font-semibold text-[#788673] mt-1">Manage biological profiles, custom avatars, age brackets, and species-specific hazard watches.</p>
+      </div>
+
+      <div class="flex items-center gap-3 self-end sm:self-auto">
+        <!-- Reusable Notification Bell Dropdown -->
+        <div class="relative">
+          <button type="button" id="notificationBellBtn" class="relative w-9 h-9 rounded-full bg-white border border-[#ebdcd0] hover:border-[#45671d] text-[#182811] flex items-center justify-center transition-all shadow-2xs" title="Notifications &amp; Alerts">
+            <i class="fa-regular fa-bell text-sm"></i>
+            <span id="notificationBadge" class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-600 text-white text-[9.5px] font-black flex items-center justify-center shadow-xs">
+              2
+            </span>
+          </button>
+
+          <!-- Slide-Down Notification Dropdown Drawer -->
+          <div id="notificationDropdown" class="hidden absolute right-0 mt-2.5 w-80 sm:w-96 bg-white rounded-3xl border border-[#ebdcd0] shadow-2xl z-50 p-4 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-[#f5efe6]">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#ff9800]"></span>
+                <h3 class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Notifications &amp; Alerts</h3>
+              </div>
+              <button type="button" id="markAllReadBtn" class="text-[10.5px] font-bold text-[#45671d] hover:underline">
+                Mark all as read
+              </button>
+            </div>
+            
+            <div id="notificationListContainer" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
+
+            <div class="pt-2 border-t border-[#f5efe6] text-center">
+              <a href="notifications.html" class="text-xs font-extrabold text-[#45671d] hover:underline block py-1">
+                See all notifications →
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" id="openAddPetModalBtn" class="bg-[#45671d] hover:bg-[#324c14] text-white px-5 py-2.5 rounded-full font-extrabold text-xs tracking-wider uppercase flex items-center gap-2 shadow-md transition-all cursor-pointer">
+          <i class="fa-solid fa-plus"></i> + Add Companion
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Statistical Counter Ribbon (4 Cards matching mockup) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      
+      <!-- Card 1 -->
+      <div class="tactile-card p-5 bg-white space-y-1">
+        <span class="text-[10px] uppercase font-extrabold text-[#788673] tracking-wider block">ACTIVE COMPANIONS</span>
+        <strong id="petStatCount" class="text-2xl font-black text-[#182811] block">4 Registered</strong>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="tactile-card p-5 bg-white space-y-1">
+        <span class="text-[10px] uppercase font-extrabold text-[#b45309] tracking-wider block">CANINE PROFILES</span>
+        <strong id="petCanineCount" class="text-2xl font-black text-[#b45309] block">3 Canine</strong>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="tactile-card p-5 bg-purple-50/40 border border-purple-200 space-y-1">
+        <span class="text-[10px] uppercase font-extrabold text-purple-800 tracking-wider block">FELINE PROFILES</span>
+        <strong id="petFelineCount" class="text-2xl font-black text-purple-900 block">1 Feline</strong>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="tactile-card p-5 bg-emerald-50/50 border border-emerald-200 space-y-1">
+        <span class="text-[10px] uppercase font-extrabold text-emerald-800 tracking-wider block">BIOMETRIC CALIBRATIONS</span>
+        <strong id="petStatCalib" class="text-2xl font-black text-emerald-700 block">Stratified Active</strong>
+      </div>
+
+    </div>
+
+    <!-- Multi-Species Household Protection Mode Banner matching mockup -->
+    <div class="tactile-card p-4 mb-6 bg-[#182811] text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md relative overflow-hidden">
+      <div class="flex items-center gap-3.5 z-10">
+        <div class="w-9 h-9 rounded-xl bg-[#ffe066] text-[#182811] flex items-center justify-center shrink-0 text-sm font-black shadow-inner">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <strong class="text-white block font-extrabold text-xs tracking-wide">Multi-species household protection mode</strong>
+          <p class="text-[11px] text-slate-300 leading-relaxed mt-0.5">
+            Canine and feline metabolic pathways are kept separate. Ingredients lethal to cats (like propylene glycol) or dogs (like xylitol) are cross-checked across every companion automatically.
+          </p>
+        </div>
+      </div>
+      <span class="px-3 py-1.5 rounded-full bg-[#ffe066] text-[#182811] font-black text-[10px] uppercase tracking-wider shrink-0 z-10 shadow-sm">
+        DUAL SENTINEL ENABLED
+      </span>
+    </div>
+
+    <!-- Companion Cards Grid -->
+    <div id="petProfilesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      
+      <!-- Card 1: Pieper 1 (Canine) -->
+      <div class="tactile-card p-6 bg-white space-y-4 relative group transition-all hover:border-[#45671d]" data-pet-id="pieper-1">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-12 h-12 rounded-full border-2 border-amber-400 overflow-hidden shrink-0 shadow-2xs">
+              <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Pieper" class="w-full h-full object-cover">
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-extrabold text-[#182811] truncate">Pieper</h3>
+                <span class="px-2.5 py-0.5 rounded-full bg-orange-100 text-[#b45309] font-extrabold text-[9px] uppercase">Canine</span>
+              </div>
+              <p class="text-xs text-[#788673] font-medium truncate">Mixed / Other Canine • <span class="text-emerald-700 font-bold">Active</span></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" class="edit-pet-btn w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 text-[#788673] hover:text-[#45671d] flex items-center justify-center transition-colors cursor-pointer" data-id="pieper-1" title="Edit Profile">
+              <i class="fa-solid fa-pen text-[10px]"></i>
+            </button>
+            <button type="button" class="delete-pet-btn w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer" data-id="pieper-1" title="Archive Profile">
+              <i class="fa-solid fa-trash text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-xs bg-[#fbf9f6] p-3 rounded-2xl border border-[#ebdcd0] text-center">
+          <div>
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">LIFE STAGE</span>
+            <strong class="text-[#182811] text-xs block truncate">Adult</strong>
+          </div>
+          <div class="border-x border-[#ebdcd0]">
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">WEIGHT</span>
+            <strong class="text-[#182811] text-xs block">– kg</strong>
+          </div>
+          <div>
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">DAILY ENERGY</span>
+            <strong class="text-[#182811] text-xs block">500 kcal</strong>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <span class="text-[10px] uppercase font-extrabold text-[#788673] block tracking-wider">CLINICAL SENSITIVITIES &amp; WATCHES</span>
+          <p class="text-xs text-[#788673] flex items-center gap-1.5 py-1">
+            <span class="text-emerald-600">✓</span> No active contraindications registered.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <div>
+            <span class="text-[10.5px] text-[#788673] block">Last evaluated: <strong class="text-[#182811]">Oct 19, 2026</strong></span>
+            <span class="text-[10px] text-[#788673]">Batch: <strong>#KG-9021</strong></span>
+          </div>
+          <a href="results.html?pet=pieper" class="px-4 py-2 bg-[#45671d] hover:bg-[#324c14] text-white font-extrabold rounded-xl transition-all shadow-xs text-xs">
+            Scan for Pieper
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 2: Pieper 2 (Canine) -->
+      <div class="tactile-card p-6 bg-white space-y-4 relative group transition-all hover:border-[#45671d]" data-pet-id="pieper-2">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-12 h-12 rounded-full border-2 border-amber-400 overflow-hidden shrink-0 shadow-2xs">
+              <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Pieper" class="w-full h-full object-cover">
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-extrabold text-[#182811] truncate">Pieper</h3>
+                <span class="px-2.5 py-0.5 rounded-full bg-orange-100 text-[#b45309] font-extrabold text-[9px] uppercase">Canine</span>
+              </div>
+              <p class="text-xs text-[#788673] font-medium truncate">Mixed / Other Canine • <span class="text-emerald-700 font-bold">Active</span></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" class="edit-pet-btn w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 text-[#788673] hover:text-[#45671d] flex items-center justify-center transition-colors cursor-pointer" data-id="pieper-2" title="Edit Profile">
+              <i class="fa-solid fa-pen text-[10px]"></i>
+            </button>
+            <button type="button" class="delete-pet-btn w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer" data-id="pieper-2" title="Archive Profile">
+              <i class="fa-solid fa-trash text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-xs bg-[#fbf9f6] p-3 rounded-2xl border border-[#ebdcd0] text-center">
+          <div>
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">LIFE STAGE</span>
+            <strong class="text-[#182811] text-xs block truncate">Adult</strong>
+          </div>
+          <div class="border-x border-[#ebdcd0]">
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">WEIGHT</span>
+            <strong class="text-[#182811] text-xs block">– kg</strong>
+          </div>
+          <div>
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">DAILY ENERGY</span>
+            <strong class="text-[#182811] text-xs block">500 kcal</strong>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <span class="text-[10px] uppercase font-extrabold text-[#788673] block tracking-wider">CLINICAL SENSITIVITIES &amp; WATCHES</span>
+          <p class="text-xs text-[#788673] flex items-center gap-1.5 py-1">
+            <span class="text-emerald-600">✓</span> No active contraindications registered.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <div>
+            <span class="text-[10.5px] text-[#788673] block">Last evaluated: <strong class="text-[#182811]">Oct 19, 2026</strong></span>
+            <span class="text-[10px] text-[#788673]">Batch: <strong>#KG-9021</strong></span>
+          </div>
+          <a href="results.html?pet=pieper" class="px-4 py-2 bg-[#45671d] hover:bg-[#324c14] text-white font-extrabold rounded-xl transition-all shadow-xs text-xs">
+            Scan for Pieper
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 3: Luna (Feline) -->
+      <div class="tactile-card p-6 bg-white space-y-4 relative group transition-all hover:border-[#45671d]" data-pet-id="luna">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-12 h-12 rounded-full border-2 border-purple-300 overflow-hidden shrink-0 shadow-2xs">
+              <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Luna" class="w-full h-full object-cover">
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-extrabold text-[#182811] truncate">Luna</h3>
+                <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-extrabold text-[9px] uppercase">Feline</span>
+              </div>
+              <p class="text-xs text-[#788673] font-medium truncate">Domestic Short Hair (Puspin) • <span class="text-emerald-700 font-bold">Active</span></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" class="edit-pet-btn w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 text-[#788673] hover:text-[#45671d] flex items-center justify-center transition-colors cursor-pointer" data-id="luna" title="Edit Profile">
+              <i class="fa-solid fa-pen text-[10px]"></i>
+            </button>
+            <button type="button" class="delete-pet-btn w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer" data-id="luna" title="Archive Profile">
+              <i class="fa-solid fa-trash text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-xs bg-[#fbf9f6] p-3 rounded-2xl border border-[#ebdcd0] text-center">
+          <div>
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">LIFE STAGE</span>
+            <strong class="text-[#182811] text-xs block truncate">Adult</strong>
+          </div>
+          <div class="border-x border-[#ebdcd0]">
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">WEIGHT</span>
+            <strong class="text-[#182811] text-xs block">– kg</strong>
+          </div>
+          <div>
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">DAILY ENERGY</span>
+            <strong class="text-[#182811] text-xs block">500 kcal</strong>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <span class="text-[10px] uppercase font-extrabold text-[#788673] block tracking-wider">CLINICAL SENSITIVITIES &amp; WATCHES</span>
+          <p class="text-xs text-[#788673] flex items-center gap-1.5 py-1">
+            <span class="text-emerald-600">✓</span> No active contraindications registered.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <div>
+            <span class="text-[10.5px] text-[#788673] block">Last evaluated: <strong class="text-[#182811]">Oct 19, 2026</strong></span>
+            <span class="text-[10px] text-[#788673]">Batch: <strong>#KG-9021</strong></span>
+          </div>
+          <a href="results.html?pet=luna" class="px-4 py-2 bg-[#45671d] hover:bg-[#324c14] text-white font-extrabold rounded-xl transition-all shadow-xs text-xs">
+            Scan for Luna
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 4: Buster (Canine) -->
+      <div class="tactile-card p-6 bg-white space-y-4 relative group transition-all hover:border-[#45671d]" data-pet-id="buster">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-12 h-12 rounded-full border-2 border-amber-400 overflow-hidden shrink-0 shadow-2xs">
+              <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-1.jpg" alt="Buster" class="w-full h-full object-cover">
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-extrabold text-[#182811] truncate">Buster</h3>
+                <span class="px-2.5 py-0.5 rounded-full bg-orange-100 text-[#b45309] font-extrabold text-[9px] uppercase">Canine</span>
+              </div>
+              <p class="text-xs text-[#788673] font-medium truncate">Beagle • <span class="text-emerald-700 font-bold">Active</span></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" class="edit-pet-btn w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 text-[#788673] hover:text-[#45671d] flex items-center justify-center transition-colors cursor-pointer" data-id="buster" title="Edit Profile">
+              <i class="fa-solid fa-pen text-[10px]"></i>
+            </button>
+            <button type="button" class="delete-pet-btn w-7 h-7 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer" data-id="buster" title="Archive Profile">
+              <i class="fa-solid fa-trash text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-xs bg-[#fbf9f6] p-3 rounded-2xl border border-[#ebdcd0] text-center">
+          <div>
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">LIFE STAGE</span>
+            <strong class="text-[#182811] text-xs block truncate">Adult</strong>
+          </div>
+          <div class="border-x border-[#ebdcd0]">
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">WEIGHT</span>
+            <strong class="text-[#182811] text-xs block">– kg</strong>
+          </div>
+          <div>
+            <span class="text-[9.5px] uppercase font-bold text-[#788673] block">DAILY ENERGY</span>
+            <strong class="text-[#182811] text-xs block">500 kcal</strong>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <span class="text-[10px] uppercase font-extrabold text-[#788673] block tracking-wider">CLINICAL SENSITIVITIES &amp; WATCHES</span>
+          <p class="text-xs text-[#788673] flex items-center gap-1.5 py-1">
+            <span class="text-emerald-600">✓</span> No active contraindications registered.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <div>
+            <span class="text-[10.5px] text-[#788673] block">Last evaluated: <strong class="text-[#182811]">Oct 19, 2026</strong></span>
+            <span class="text-[10px] text-[#788673]">Batch: <strong>#KG-9021</strong></span>
+          </div>
+          <a href="results.html?pet=buster" class="px-4 py-2 bg-[#45671d] hover:bg-[#324c14] text-white font-extrabold rounded-xl transition-all shadow-xs text-xs">
+            Scan for Buster
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 5: Add a companion dashed card matching mockup -->
+      <div id="openAddPetModalCard" class="p-6 rounded-3xl border-2 border-dashed border-[#ebdcd0] hover:border-[#45671d] bg-[#fbf9f6]/50 flex flex-col items-center justify-center text-center cursor-pointer transition-all group min-h-[300px] space-y-3">
+        <div class="w-14 h-14 rounded-full bg-[#fef3c7] group-hover:bg-[#fde68a] text-[#b45309] flex items-center justify-center text-xl font-black shadow-sm transition-all">
+          <i class="fa-solid fa-plus"></i>
+        </div>
+        <div class="space-y-1">
+          <h4 class="font-extrabold text-sm text-[#182811]">Add a companion</h4>
+          <p class="text-[11px] text-[#788673] max-w-xs leading-relaxed">Each new pet gets its own rule engine and safety watches.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Add / Edit Companion Modal -->
+    <div id="addPetModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl border border-[#ebdcd0] shadow-2xl max-w-lg w-full p-6 space-y-4 max-h-[92vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-[#ebdcd0]">
+          <div>
+            <h3 id="modalTitle" class="font-extrabold text-base text-[#182811]">Register Companion Profile</h3>
+            <span class="text-[11px] text-[#788673]">Custom photo, species physiology, and individual clinical contraindications.</span>
+          </div>
+          <button type="button" id="closeAddPetModalBtn" class="text-[#788673] hover:text-[#182811] text-lg font-bold w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors cursor-pointer">✕</button>
+        </div>
+
+        <form id="addPetForm" class="space-y-4 text-xs">
+          
+          <div class="p-3.5 rounded-2xl bg-[#fbf9f6] border border-[#ebdcd0] flex items-center gap-4">
+            <div id="petPhotoPreviewContainer" class="w-16 h-16 rounded-2xl bg-white border-2 border-dashed border-[#ebdcd0] flex items-center justify-center text-2xl overflow-hidden shrink-0 shadow-inner relative group">
+              <span id="previewEmojiFallback">🐶</span>
+              <img id="petPhotoPreviewImg" src="" alt="Preview" class="w-full h-full object-cover hidden">
+            </div>
+            <div class="flex-1 space-y-1">
+              <span class="font-bold text-[#182811] block text-[11px]">Companion Picture</span>
+              <p class="text-[10.5px] text-[#788673] leading-snug">Upload a picture of your pet, or leave blank to use the species avatar.</p>
+              <div class="flex items-center gap-2 pt-1">
+                <label for="petImageFileInput" class="px-3 py-1 bg-white border border-[#ebdcd0] hover:border-[#45671d] text-[#182811] rounded-lg font-bold text-[10.5px] cursor-pointer shadow-2xs transition-all flex items-center gap-1.5">
+                  <i class="fa-solid fa-arrow-up-from-bracket text-[10px]"></i> Choose Photo
+                </label>
+                <input type="file" id="petImageFileInput" accept="image/*" class="hidden">
+                <button type="button" id="removePhotoBtn" class="text-[10.5px] text-red-600 hover:underline hidden font-semibold">
+                  Remove photo
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="font-bold text-[#182811] block mb-1">Companion Name</label>
+            <input type="text" id="petNameInput" required placeholder="e.g. Luna" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="font-bold text-[#182811] block mb-1">Species</label>
+              <select id="petSpeciesInput" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+                <option value="canine">Canine (Dog)</option>
+                <option value="feline">Feline (Cat)</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-bold text-[#182811] block mb-1">Breed</label>
+              <input type="text" id="petBreedInput" placeholder="e.g. Domestic Short Hair (Puspin)" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="font-bold text-[#182811] block mb-1">Life Stage</label>
+              <select id="petAgeInput" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+                <option value="Puppy / Kitten">Puppy / Kitten (&lt; 1 yr)</option>
+                <option value="Young Adult">Young Adult (1 - 3 yrs)</option>
+                <option value="Adult" selected>Adult (3 - 7 yrs)</option>
+                <option value="Senior">Senior (7+ yrs)</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-bold text-[#182811] block mb-1">Weight (kg)</label>
+              <input type="number" step="0.1" id="petWeightInput" placeholder="e.g. 4.2" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="font-bold text-[#182811] block mb-1">Gender</label>
+              <select id="petGenderInput" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+                <option value="Neutered Male">Neutered Male</option>
+                <option value="Spayed Female">Spayed Female</option>
+                <option value="Intact Male">Intact Male</option>
+                <option value="Intact Female">Intact Female</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-bold text-[#182811] block mb-1">Birth Date</label>
+              <input type="date" id="petBirthdateInput" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="font-bold text-[#182811] block mb-1">Vaccine Status</label>
+              <select id="petVaccineInput" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+                <option value="Up to Date">Up to Date</option>
+                <option value="Due for Booster">Due for Booster</option>
+                <option value="Unvaccinated">Unvaccinated / Unknown</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-bold text-[#182811] block mb-1">Last Deworming</label>
+              <input type="date" id="petDewormingInput" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+            </div>
+          </div>
+          <div>
+            <label class="font-bold text-[#182811] block mb-1">Active Clinical Sensitivities &amp; Watches</label>
+            <input type="text" id="petSensitivitiesInput" placeholder="e.g. Artificial Red Dye #40, High-Sodium Additives, BHA" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-[#ebdcd0]">
+            <button type="button" id="cancelPetModalBtn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[#182811] rounded-xl font-bold cursor-pointer">
+              Cancel
+            </button>
+            <button type="submit" id="savePetSubmitBtn" class="px-5 py-2 bg-[#45671d] hover:bg-[#324c14] text-white rounded-xl font-extrabold shadow-sm cursor-pointer">
+              Save Companion
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+  <script src="notifications.js"></script>
+  <script src="pets.js"></script>
+</body>
+</html>

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KibbleGuard — Veterinary Ingredient Wiki</title>
+  
+  <!-- Bulletproof Mobile / Tablet Redirection Script -->
+  <script>
+    (function() {
+      const width = window.innerWidth;
+      const isMobileDevice = width <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobileDevice) {
+        window.location.replace('mobile-wiki.html');
+      }
+    })();
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="botanical-canvas">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside id="appSidebar" class="app-sidebar">
+    <div>
+      <div class="brand-header">
+        <a href="index.html" class="brand-left">
+          <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard Logo">
+          <div class="sidebar-text">
+            <h2>KibbleGuard</h2>
+            <span class="badge">SAFETY LAB</span>
+          </div>
+        </a>
+        <button id="sidebarToggleBtn" class="hamburger-btn" title="Toggle Sidebar">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="sidebar-nav">
+        <a href="index.html">
+          <i class="fa-solid fa-shapes"></i>
+          <span class="sidebar-text">Overview</span>
+        </a>
+        <a href="results.html">
+          <i class="fa-solid fa-camera"></i>
+          <span class="sidebar-text">Scan &amp; OCR</span>
+        </a>
+        <a href="history.html">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span class="sidebar-text">Scan Logs</span>
+        </a>
+        <a href="pets.html">
+          <i class="fa-solid fa-paw"></i>
+          <span class="sidebar-text">Pet Profiles</span>
+        </a>
+        <a href="wiki.html" class="active">
+          <i class="fa-solid fa-book-medical"></i>
+          <span class="sidebar-text">Ingredient Wiki</span>
+        </a>
+        <a href="settings.html">
+          <i class="fa-solid fa-gear"></i>
+          <span class="sidebar-text">Settings</span>
+        </a>
+      </nav>
+
+      <!-- Live Pixel Habitat Canvas (Pet Corner) -->
+      <div class="habitat-card">
+        <div class="habitat-header">
+          <span>LIVE PET HABITAT</span>
+          <div class="w-1.5 h-1.5 rounded-full bg-[#4caf50]"></div>
+        </div>
+        <canvas id="habitatCanvas"></canvas>
+        <div class="habitat-actions">
+          <button id="feedTreatBtn" class="btn-treat">FEED TREAT</button>
+          <button id="switchPetBtn" class="btn-switch">SWITCH PET</button>
+        </div>
+      </div>
+
+      <div class="sidebar-extra-card">
+        <span class="text-[9px] font-extrabold uppercase text-[#45671d] block mb-1">VETERINARY LEDGER</span>
+        <p class="text-[10px] text-[#788673] leading-snug">Calibrated against 2026 AAFCO and FEDIAF nutritional safety baselines.</p>
+      </div>
+    </div>
+
+    <!-- User Profile Badge & Logout -->
+    <div class="space-y-2">
+      <a href="profile.html" class="user-profile-badge border border-[#ebdcd0] hover:border-[#45671d] transition-all block">
+        <div class="flex items-center gap-2.5">
+          <div class="avatar-circle" id="sidebarAvatarCircle">VB</div>
+          <div class="user-info min-w-0 flex-1">
+            <p class="name truncate" id="sidebarUserName">Vincent G. Blanco</p>
+            <p class="role" id="sidebarUserRole">VERIFIED OWNER</p>
+            <p class="loc truncate" id="sidebarUserLoc">Las Piñas City • 2 Pets</p>
+          </div>
+        </div>
+      </a>
+      <button type="button" id="sidebarSignOutBtn" class="w-full py-1 text-center text-xs font-bold text-[#788673] hover:text-red-600 transition-colors flex items-center justify-center gap-1.5">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="sidebar-text">Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="main-viewport">
+    
+    <!-- Top Header Bar matching new UI -->
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 mb-6">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-display font-extrabold text-[#182811]">
+          Veterinary <span class="bg-[#ffe066]/60 px-2 py-0.5 rounded-lg">ingredient wiki</span>
+        </h1>
+        <p class="text-xs font-semibold text-[#788673] mt-1">Clinical reference database calibrated against AAFCO and FEDIAF 2026 baselines.</p>
+      </div>
+
+      <div class="flex items-center gap-3 self-end sm:self-auto">
+        <!-- Reusable Notification Bell Dropdown -->
+        <div class="relative">
+          <button type="button" id="notificationBellBtn" class="relative w-9 h-9 rounded-full bg-white border border-[#ebdcd0] hover:border-[#45671d] text-[#182811] flex items-center justify-center transition-all shadow-2xs cursor-pointer" title="Notifications &amp; Alerts">
+            <i class="fa-regular fa-bell text-sm pointer-events-none"></i>
+            <span id="notificationBadge" class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-600 text-white text-[9.5px] font-black flex items-center justify-center shadow-xs pointer-events-none">
+              2
+            </span>
+          </button>
+
+          <!-- Slide-Down Notification Dropdown Drawer -->
+          <div id="notificationDropdown" class="hidden absolute right-0 mt-2.5 w-80 sm:w-96 bg-white rounded-3xl border border-[#ebdcd0] shadow-2xl z-50 p-4 space-y-3" style="display: none;">
+            <div class="flex items-center justify-between pb-2 border-b border-[#f5efe6]">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#ff9800]"></span>
+                <h3 class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Notifications &amp; Alerts</h3>
+              </div>
+              <button type="button" id="markAllReadBtn" class="text-[10.5px] font-bold text-[#45671d] hover:underline cursor-pointer">
+                Mark all as read
+              </button>
+            </div>
+            <div id="notificationListContainer" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
+            
+            <div class="pt-2 border-t border-[#f5efe6] text-center">
+              <a href="notifications.html" class="text-xs font-extrabold text-[#45671d] hover:underline block py-1">
+                See all notifications →
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compare Mode Button -->
+        <button type="button" id="toggleCompareModeBtn" class="px-4 py-2.5 bg-white border border-[#ebdcd0] hover:border-[#45671d] text-[#45671d] rounded-full text-xs font-extrabold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer">
+          <i class="fa-solid fa-code-compare text-xs"></i> <span id="compareBtnLabel">Compare Mode</span>
+        </button>
+
+        <!-- Public Portal Link -->
+        <a href="PublicWiki.html" target="_blank" class="px-4 py-2.5 bg-white border border-[#ebdcd0] text-[#182811] hover:text-[#45671d] rounded-full text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all">
+          <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> Public Portal
+        </a>
+      </div>
+    </header>
+
+    <!-- Top Diagnostic Statistics Ribbon (3 Clean Cards matching mockup) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="tactile-card p-5 bg-white space-y-1">
+        <span class="text-[10px] uppercase font-extrabold text-[#788673] tracking-wider block">Evaluated Entries</span>
+        <strong id="statTotalCount" class="text-2xl font-black text-[#182811] block">12 Active</strong>
+      </div>
+      <div class="tactile-card p-5 bg-red-50/40 border border-red-200 space-y-1">
+        <span class="text-[10px] uppercase font-extrabold text-red-800 tracking-wider block">Critical Hazards</span>
+        <strong id="statHazardCount" class="text-2xl font-black text-red-700 block">4 Prohibited</strong>
+      </div>
+      <div class="tactile-card p-5 bg-amber-50/40 border border-amber-200 space-y-1">
+        <span class="text-[10px] uppercase font-extrabold text-amber-800 tracking-wider block">Caution Preservatives</span>
+        <strong id="statCautionCount" class="text-2xl font-black text-amber-700 block">4 Monitored</strong>
+      </div>
+    </div>
+
+    <!-- Active Compare Sticky Prompt Bar -->
+    <div id="compareActiveBanner" class="hidden mb-6 p-4 rounded-2xl bg-[#f4f7ee] border-2 border-[#45671d] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm transition-all">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-[#45671d] text-white flex items-center justify-center shrink-0 text-sm">
+          <i class="fa-solid fa-code-compare"></i>
+        </div>
+        <div>
+          <strong class="text-xs font-extrabold text-[#182811] block">Comparison Mode Active</strong>
+          <span class="text-[11px] text-[#586754]" id="compareSelectionPrompt">Select 2 compounds from the grid to compare canine &amp; feline toxicology side-by-side.</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 self-stretch sm:self-auto">
+        <button type="button" id="launchCompareBtn" disabled class="flex-1 sm:flex-initial px-5 py-2 rounded-xl bg-[#45671d] text-white text-xs font-extrabold opacity-50 cursor-not-allowed transition-all shadow-2xs">
+          View Side-by-Side (0/2)
+        </button>
+        <button type="button" id="exitCompareBtn" class="px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-[#788673] hover:text-[#182811] text-xs font-bold cursor-pointer">
+          Exit
+        </button>
+      </div>
+    </div>
+
+    <!-- Species Perspective Switcher Ribbon matching mockup -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 p-3 bg-white rounded-2xl border border-[#ebdcd0] shadow-2xs">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-[#45671d]"></span>
+        <span class="text-xs font-extrabold text-[#182811] uppercase tracking-wide">Toxicological Calibration:</span>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap" id="speciesPerspectiveButtonGroup">
+        <button type="button" class="species-view-btn px-4 py-1.5 rounded-full text-xs font-extrabold bg-[#45671d] text-white shadow-xs cursor-pointer transition-all" data-species="dual">
+          <i class="fa-solid fa-scale-balanced text-[11px] mr-1"></i> Dual-Species Matrix
+        </button>
+        <button type="button" class="species-view-btn px-4 py-1.5 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] cursor-pointer transition-all" data-species="canine">
+          🐶 Canine Focus
+        </button>
+        <button type="button" class="species-view-btn px-4 py-1.5 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] cursor-pointer transition-all" data-species="feline">
+          🐱 Feline Focus
+        </button>
+      </div>
+    </div>
+
+    <!-- Search & Functional Filter Pills Bar -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl border border-[#ebdcd0] shadow-2xs">
+      <div class="relative w-full sm:max-w-md">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#788673] text-xs"></i>
+        <input type="text" id="wikiSearchInput" placeholder="Search by compound name, alias, E-number, or hazard..." class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl pl-9 pr-4 py-2 text-xs font-semibold focus:outline-none focus:border-[#45671d]">
+      </div>
+
+      <div class="flex items-center gap-2 self-stretch sm:self-auto overflow-x-auto pb-1 sm:pb-0" id="wikiFilterButtonGroup">
+        <button type="button" class="wiki-filter-btn px-4 py-2 rounded-full text-xs font-extrabold bg-[#45671d] text-white transition-all shrink-0 shadow-xs cursor-pointer" data-category="all">
+          All Compounds (12)
+        </button>
+        <button type="button" class="wiki-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer" data-category="hazard">
+          Critical Toxins
+        </button>
+        <button type="button" class="wiki-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer" data-category="preservative">
+          Preservatives &amp; Dyes
+        </button>
+        <button type="button" class="wiki-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer" data-category="nutrient">
+          Nutrients &amp; Aminos
+        </button>
+      </div>
+    </div>
+
+    <!-- Full Ingredient Cards Grid (All 12 Dossiers) -->
+    <div id="wikiCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <!-- Dossier 1: Xylitol -->
+      <div class="tactile-card p-6 bg-white space-y-4 cursor-pointer hover:border-[#45671d] transition-all group wiki-card relative" data-category="hazard" data-compound="xylitol" data-canine-hazard="toxic" data-feline-hazard="safe" data-search="xylitol birch sugar wood sugar e967 sweetener lethal fatal dog hypoglycemic collapse">
+        <div class="compare-checkbox-pill hidden absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9.5px] font-extrabold text-[#788673]">
+          + Compare
+        </div>
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider text-red-600 block mb-0.5">Lethal to Canines</span>
+            <h3 class="text-base font-extrabold text-[#182811] group-hover:text-[#45671d] transition-colors">Xylitol</h3>
+            <span class="text-xs text-[#788673] font-medium">Birch Sugar, Wood Sugar, E967</span>
+          </div>
+          <span class="card-score-badge px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-extrabold text-[10px] uppercase border border-red-200">
+            Score: 98
+          </span>
+        </div>
+
+        <p class="text-xs text-[#586754] leading-relaxed line-clamp-3">
+          Artificial sugar alcohol that stimulates a massive, life-threatening release of insulin from the canine pancreas, resulting in acute hypoglycemia and hepatic necrosis.
+        </p>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+          <div class="p-2.5 rounded-xl bg-red-50 border border-red-200 canine-block">
+            <strong class="text-red-700 block font-bold text-[10.5px]">🐶 Canine</strong>
+            <span class="text-red-600 font-semibold text-[10.5px]">Lethal &gt;0.1 g/kg</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 feline-block">
+            <strong class="text-slate-700 block font-bold text-[10.5px]">🐱 Feline</strong>
+            <span class="text-slate-600 font-semibold text-[10.5px]">Low Toxicity</span>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <span class="text-[#788673] font-bold">FDA Recalls: Critical</span>
+          <span class="text-[#45671d] font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+            Read Dossier →
+          </span>
+        </div>
+      </div>
+
+      <!-- Dossier 2: BHA & BHT -->
+      <div class="tactile-card p-6 bg-white space-y-4 cursor-pointer hover:border-[#45671d] transition-all group wiki-card relative" data-category="preservative" data-compound="bha" data-canine-hazard="caution" data-feline-hazard="caution" data-search="bha bht butylated hydroxyanisole hydroxytoluene e320 e321 preservative caution bioaccumulation">
+        <div class="compare-checkbox-pill hidden absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9.5px] font-extrabold text-[#788673]">
+          + Compare
+        </div>
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider text-[#b45309] block mb-0.5">Endocrine Caution</span>
+            <h3 class="text-base font-extrabold text-[#182811] group-hover:text-[#45671d] transition-colors">BHA &amp; BHT</h3>
+            <span class="text-xs text-[#788673] font-medium">Butylated Hydroxyanisole, E320 / E321</span>
+          </div>
+          <span class="card-score-badge px-2.5 py-1 rounded-full bg-orange-100 text-[#b45309] font-extrabold text-[10px] uppercase border border-orange-200">
+            Score: 48
+          </span>
+        </div>
+
+        <p class="text-xs text-[#586754] leading-relaxed line-clamp-3">
+          Synthetic phenolic antioxidants used to preserve fats in commercial kibble. Associated with cumulative tissue bioaccumulation, allergic dermatitis, and liver strain.
+        </p>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+          <div class="p-2.5 rounded-xl bg-orange-50 border border-orange-200 canine-block">
+            <strong class="text-amber-800 block font-bold text-[10.5px]">🐶 Canine</strong>
+            <span class="text-amber-700 font-semibold text-[10.5px]">Bioaccumulation</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-orange-50 border border-orange-200 feline-block">
+            <strong class="text-amber-800 block font-bold text-[10.5px]">🐱 Feline</strong>
+            <span class="text-amber-700 font-semibold text-[10.5px]">Hepatic Strain</span>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <span class="text-[#788673] font-bold">Alternative: Mixed Tocopherols</span>
+          <span class="text-[#45671d] font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+            Read Dossier →
+          </span>
+        </div>
+      </div>
+
+      <!-- Dossier 3: Propylene Glycol -->
+      <div class="tactile-card p-6 bg-white space-y-4 cursor-pointer hover:border-[#45671d] transition-all group wiki-card relative" data-category="hazard" data-compound="propylene-glycol" data-canine-hazard="caution" data-feline-hazard="toxic" data-search="propylene glycol humectant e1520 cat lethal preservative heinz body anemia glucuronidation">
+        <div class="compare-checkbox-pill hidden absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9.5px] font-extrabold text-[#788673]">
+          + Compare
+        </div>
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider text-purple-700 block mb-0.5">Strictly Lethal to Cats</span>
+            <h3 class="text-base font-extrabold text-[#182811] group-hover:text-[#45671d] transition-colors">Propylene Glycol</h3>
+            <span class="text-xs text-[#788673] font-medium">Humectant, E1520</span>
+          </div>
+          <span class="card-score-badge px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 font-extrabold text-[10px] uppercase border border-purple-200">
+            Score: 92 (Cat)
+          </span>
+        </div>
+
+        <p class="text-xs text-[#586754] leading-relaxed line-clamp-3">
+          Used to preserve moisture in semi-moist treats. Cats strictly lack the glucuronidation metabolic pathway required to clear it, triggering fatal Heinz body hemolytic anemia.
+        </p>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 canine-block">
+            <strong class="text-slate-700 block font-bold text-[10.5px]">🐶 Canine</strong>
+            <span class="text-slate-600 font-semibold text-[10.5px]">Tolerated &lt; regulated</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-purple-50 border border-purple-200 feline-block">
+            <strong class="text-purple-800 block font-bold text-[10.5px]">🐱 Feline</strong>
+            <span class="text-purple-700 font-semibold text-[10.5px]">Strictly Prohibited</span>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <span class="text-[#788673] font-bold">FDA Feline Ban: Active</span>
+          <span class="text-[#45671d] font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+            Read Dossier →
+          </span>
+        </div>
+      </div>
+
+      <!-- Dossier 4: Taurine -->
+      <div class="tactile-card p-6 bg-white space-y-4 cursor-pointer hover:border-[#45671d] transition-all group wiki-card relative" data-category="nutrient" data-compound="taurine" data-canine-hazard="safe" data-feline-hazard="safe" data-search="taurine amino acid nutrient essential heart eyes feline optimal dilated cardiomyopathy">
+        <div class="compare-checkbox-pill hidden absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9.5px] font-extrabold text-[#788673]">
+          + Compare
+        </div>
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider text-emerald-700 block mb-0.5">Essential Amino Acid</span>
+            <h3 class="text-base font-extrabold text-[#182811] group-hover:text-[#45671d] transition-colors">Taurine</h3>
+            <span class="text-xs text-[#788673] font-medium">2-aminoethanesulfonic acid</span>
+          </div>
+          <span class="card-score-badge px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px] uppercase border border-emerald-200">
+            Score: 00
+          </span>
+        </div>
+
+        <p class="text-xs text-[#586754] leading-relaxed line-clamp-3">
+          Critical amino sulfonic acid essential for feline retinal function, digestive bile salt formation, and cardiac muscle contraction. Cats cannot synthesize taurine endogenously.
+        </p>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+          <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 canine-block">
+            <strong class="text-emerald-800 block font-bold text-[10.5px]">🐶 Canine</strong>
+            <span class="text-emerald-700 font-semibold text-[10.5px]">Heart Health</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 feline-block">
+            <strong class="text-emerald-800 block font-bold text-[10.5px]">🐱 Feline</strong>
+            <span class="text-emerald-700 font-semibold text-[10.5px]">Mandatory Intake</span>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <span class="text-[#788673] font-bold">FEDIAF Minimum: Required</span>
+          <span class="text-[#45671d] font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+            Read Dossier →
+          </span>
+        </div>
+      </div>
+
+      <!-- Dossier 5: Ethoxyquin -->
+      <div class="tactile-card p-6 bg-white space-y-4 cursor-pointer hover:border-[#45671d] transition-all group wiki-card relative" data-category="preservative" data-compound="ethoxyquin" data-canine-hazard="caution" data-feline-hazard="caution" data-search="ethoxyquin pesticide stabilizer preservative e324 caution fish meal kidney liver">
+        <div class="compare-checkbox-pill hidden absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9.5px] font-extrabold text-[#788673]">
+          + Compare
+        </div>
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider text-[#b45309] block mb-0.5">Synthetic Stabilizer</span>
+            <h3 class="text-base font-extrabold text-[#182811] group-hover:text-[#45671d] transition-colors">Ethoxyquin</h3>
+            <span class="text-xs text-[#788673] font-medium">Pesticide Derivative, E324</span>
+          </div>
+          <span class="card-score-badge px-2.5 py-1 rounded-full bg-orange-100 text-[#b45309] font-extrabold text-[10px] uppercase border border-orange-200">
+            Score: 58
+          </span>
+        </div>
+
+        <p class="text-xs text-[#586754] leading-relaxed line-clamp-3">
+          Originally developed as a pesticide and rubber stabilizer. Commonly added to imported fish meal to prevent spontaneous combustion during shipping; linked to hepatic dysfunction and kidney lesions.
+        </p>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+          <div class="p-2.5 rounded-xl bg-orange-50 border border-orange-200 canine-block">
+            <strong class="text-amber-800 block font-bold text-[10.5px]">🐶 Canine</strong>
+            <span class="text-amber-700 font-semibold text-[10.5px]">Hepatic Strain</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-orange-50 border border-orange-200 feline-block">
+            <strong class="text-amber-800 block font-bold text-[10.5px]">🐱 Feline</strong>
+            <span class="text-amber-700 font-semibold text-[10.5px]">Renal Risk</span>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <span class="text-[#788673] font-bold">FDA Cap: 75 ppm</span>
+          <span class="text-[#45671d] font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+            Read Dossier →
+          </span>
+        </div>
+      </div>
+
+      <!-- Dossier 6: Degraded Carrageenan -->
+      <div class="tactile-card p-6 bg-white space-y-4 cursor-pointer hover:border-[#45671d] transition-all group wiki-card relative" data-category="hazard" data-compound="carrageenan" data-canine-hazard="toxic" data-feline-hazard="toxic" data-search="carrageenan poligeenan seaweed binder thickener gut inflammation hazard ibd colitis">
+        <div class="compare-checkbox-pill hidden absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9.5px] font-extrabold text-[#788673]">
+          + Compare
+        </div>
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider text-red-600 block mb-0.5">GI Mucosal Toxin</span>
+            <h3 class="text-base font-extrabold text-[#182811] group-hover:text-[#45671d] transition-colors">Carrageenan</h3>
+            <span class="text-xs text-[#788673] font-medium">Red Seaweed Extract, E407</span>
+          </div>
+          <span class="card-score-badge px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-extrabold text-[10px] uppercase border border-red-200">
+            Score: 78
+          </span>
+        </div>
+
+        <p class="text-xs text-[#586754] leading-relaxed line-clamp-3">
+          Hydrocolloid thickener derived from red seaweed. In acidic pet digestive tracts, unrefined or degraded forms trigger severe intestinal ulceration, irritable bowel flares, and chronic intestinal lesions.
+        </p>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+          <div class="p-2.5 rounded-xl bg-red-50 border border-red-200 canine-block">
+            <strong class="text-red-700 block font-bold text-[10.5px]">🐶 Canine</strong>
+            <span class="text-red-600 font-semibold text-[10.5px]">Ulcerative Colitis</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-red-50 border border-red-200 feline-block">
+            <strong class="text-red-700 block font-bold text-[10.5px]">🐱 Feline</strong>
+            <span class="text-red-600 font-semibold text-[10.5px]">Severe IBD Trigger</span>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <span class="text-[#788673] font-bold">Alternative: Agar-Agar</span>
+          <span class="text-[#45671d] font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+            Read Dossier →
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Empty Search Results Message -->
+    <div id="wikiNoResults" class="hidden py-16 text-center text-[#788673] space-y-2">
+      <i class="fa-solid fa-magnifying-glass text-3xl mb-2 text-slate-300"></i>
+      <h4 class="font-extrabold text-sm text-[#182811]">No Matching Clinical Dossiers Found</h4>
+      <p class="text-xs">Try searching by a broader chemical term, E-number, or select "All Compounds".</p>
+    </div>
+
+    <!-- Detailed Clinical Dossier Modal -->
+    <div id="wikiDossierModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl border border-[#ebdcd0] shadow-2xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-[#ebdcd0]">
+          <div>
+            <span id="dossierModalCategory" class="text-[10px] font-extrabold uppercase tracking-wider text-[#45671d]">Clinical Dossier</span>
+            <h3 id="dossierModalTitle" class="font-extrabold text-xl text-[#182811]">Compound Name</h3>
+            <span id="dossierModalAliases" class="text-xs text-[#788673]">Chemical Aliases &amp; E-Codes</span>
+          </div>
+          <button type="button" id="closeDossierModalBtn" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#182811] text-sm font-bold flex items-center justify-center transition-colors cursor-pointer">✕</button>
+        </div>
+
+        <div class="space-y-4 text-xs text-[#586754]">
+          <div class="p-4 rounded-2xl bg-[#fbf9f6] border border-[#ebdcd0] space-y-1.5">
+            <strong class="text-[#182811] text-xs font-bold block uppercase tracking-wide">Toxicological Mechanism of Action</strong>
+            <p id="dossierModalMechanism" class="leading-relaxed">Biological description of how this compound behaves in canine and feline metabolisms.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="p-4 rounded-2xl bg-orange-50 border border-orange-200 space-y-1.5">
+              <div class="flex items-center gap-1.5 text-[#b45309]">
+                <i class="fa-solid fa-dog text-sm"></i>
+                <strong class="font-bold uppercase tracking-wide text-[10.5px]">Canine Clinical Response</strong>
+              </div>
+              <p id="dossierModalCanine" class="text-[11.5px] leading-relaxed">Impact on dogs.</p>
+            </div>
+            
+            <div class="p-4 rounded-2xl bg-purple-50 border border-purple-200 space-y-1.5">
+              <div class="flex items-center gap-1.5 text-purple-800">
+                <i class="fa-solid fa-cat text-sm"></i>
+                <strong class="font-bold uppercase tracking-wide text-[10.5px]">Feline Clinical Response</strong>
+              </div>
+              <p id="dossierModalFeline" class="text-[11.5px] leading-relaxed">Impact on cats.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1.5">
+            <strong class="text-emerald-900 text-xs font-bold block uppercase tracking-wide">Recommended Safe Veterinary Alternatives</strong>
+            <p id="dossierModalAlternatives" class="leading-relaxed text-emerald-800">Clean, natural nutritional substitutions for this ingredient.</p>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <span class="text-[#788673] font-semibold">AAFCO &amp; FEDIAF 2026 Reference Ledger</span>
+          <button type="button" id="closeDossierModalBtn2" class="px-5 py-2 bg-[#45671d] hover:bg-[#324c14] text-white rounded-xl font-bold shadow-xs cursor-pointer">
+            Done Reading
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Side-by-Side Comparison Modal -->
+    <div id="wikiCompareModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div class="bg-white rounded-3xl border border-[#ebdcd0] shadow-2xl max-w-6xl w-full p-7 sm:p-8 space-y-6 max-h-[92vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-4 border-b border-[#ebdcd0]">
+          <div>
+            <span class="text-[10.5px] font-extrabold uppercase tracking-wider text-[#45671d] block mb-0.5">Comparative Veterinary Toxicology</span>
+            <h3 class="font-extrabold text-xl text-[#182811]">Side-by-Side Ingredient Comparison</h3>
+          </div>
+          <button type="button" id="closeCompareModalBtn" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-[#182811] text-base font-bold flex items-center justify-center transition-colors cursor-pointer" title="Close">✕</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="compareColumnsContainer"></div>
+
+        <div class="pt-4 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <span class="text-[#788673] font-semibold">Calibrated against 2026 AAFCO &amp; FEDIAF Adequacy Statements</span>
+          <button type="button" id="closeCompareModalBtn2" class="px-6 py-2.5 bg-[#45671d] hover:bg-[#324c14] text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-xs cursor-pointer transition-all">
+            Close Comparison
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+  <script src="notifications.js"></script>
+  <script src="wiki.js"></script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KibbleGuard Mobile — Diagnostic Console</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="mobile-style.css">
+  <style>
+    /* Prevent text wrapping & keep clean horizontal flow on phone */
+    .species-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 16px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .score-card-mobile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+    }
+    #findingDetailDrawer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      max-height: 85vh; border-radius: 28px 28px 0 0;
+      transform: translateY(100%); transition: transform 0.28s ease; z-index: 60;
+    }
+    #findingDetailDrawer.drawer-open { transform: translateY(0); }
+  </style>
+</head>
+<body class="botanical-canvas">
+
+  <!-- Mobile Top Bar -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-[#ebdcd0] flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="Logo" class="w-7 h-7">
+      <div>
+        <h1 class="text-sm font-black text-[#182811] leading-none">Diagnostic Console</h1>
+        <span class="text-[9.5px] font-extrabold text-[#9333ea]">#KG-9102-BF</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="mobile-settings.html" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#182811]">
+        <i class="fa-solid fa-gear"></i>
+      </a>
+      <button onclick="window.print()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#182811]" title="Export Report">
+        <i class="fa-solid fa-file-export"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="p-4 space-y-4">
+
+    <!-- Viewport Box -->
+    <div class="tactile-card p-3.5 space-y-2.5 bg-white">
+      <div class="flex items-center justify-between text-xs">
+        <span class="font-extrabold text-[#788673] text-[10px] uppercase tracking-wider">Captured Packaging Label</span>
+        <div class="flex items-center gap-2">
+          <button type="button" id="headerCameraLink" class="font-bold text-[#45671d] text-xs">Camera</button>
+          <label for="labelUploadInput" class="font-bold text-[#788673] text-xs cursor-pointer">Upload</label>
+          <input type="file" id="labelUploadInput" accept="image/*" class="hidden">
+        </div>
+      </div>
+
+      <div id="packagingBoxTrigger" class="relative w-full aspect-[4/3] bg-[#1e293b] rounded-2xl overflow-hidden p-3.5 flex flex-col justify-between border-2 border-dashed border-slate-600">
+        <video id="liveVideoFeed" autoplay playsinline class="hidden absolute inset-0 w-full h-full object-cover z-10"></video>
+        <img id="capturedImagePreview" class="hidden absolute inset-0 w-full h-full object-cover z-0" alt="Captured Label">
+        <canvas id="snapshotCanvas" class="hidden"></canvas>
+        <div id="ocrLaserBeam" class="hidden ocr-laser-beam"></div>
+
+        <div id="staticViewportGraphic" class="flex flex-col justify-between h-full pointer-events-none z-20">
+          <div class="text-center mt-1">
+            <h3 class="text-xs font-black text-white">BEGGIN' STRIPS</h3>
+            <p class="text-[9.5px] text-slate-400">Smokey Beef Formula for Dogs</p>
+          </div>
+          <div class="space-y-1.5 my-auto">
+            <div class="p-1.5 rounded-lg border border-dashed border-[#ff9800] bg-[#ff9800]/15">
+              <span class="text-[9px] font-mono font-bold text-[#ffb74d] block">TOKEN: BHA (Preservative)</span>
+            </div>
+            <div class="p-1.5 rounded-lg border border-dashed border-[#f44336] bg-[#f44336]/15">
+              <span class="text-[9px] font-mono font-bold text-[#ef5350] block">TOKEN: Propylene Glycol</span>
+            </div>
+          </div>
+          <div id="tapPillContainer" class="self-center bg-black/60 px-3 py-1 rounded-full text-[9.5px] font-bold text-white">
+            <i class="fa-solid fa-camera mr-1"></i> Tap to Open Viewfinder
+          </div>
+        </div>
+
+        <div id="cameraControlsOverlay" class="hidden absolute bottom-3 inset-x-3 z-30 flex items-center justify-between gap-2 bg-black/75 p-2 rounded-xl">
+          <button type="button" id="cancelCameraBtn" class="px-3 py-1 bg-slate-800 text-white font-bold text-[11px] rounded-lg">Cancel</button>
+          <button type="button" id="takeSnapshotBtn" class="px-4 py-1.5 bg-[#4caf50] text-white font-extrabold text-[11px] rounded-lg"><i class="fa-solid fa-circle-dot mr-1"></i> Capture</button>
+          <button type="button" id="retakeCameraBtn" class="hidden px-3 py-1 bg-[#ff9800] text-white font-bold text-[11px] rounded-lg">Retake</button>
+        </div>
+      </div>
+    </div>
+
+<!-- Species Evaluator -->
+    <div class="tactile-card p-3.5 space-y-2.5 bg-white">
+      <span class="text-[10px] font-extrabold uppercase text-[#788673] tracking-wider block">Evaluating Metabolic Risk For</span>
+      
+      <div class="flex flex-col gap-2">
+        <!-- Buster Option -->
+        <div id="targetBusterOption" class="w-full p-3 rounded-2xl border-2 border-[#ff9800] bg-[#fff8ed] flex items-center justify-between cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🐶</span>
+            <div>
+              <h4>Buster (Canine)</h4>
+              <p class="text-[#b45309]">Golden Retriever • 24.5 kg</p>
+            </div>
+          </div>
+          <div id="busterIndicator" class="w-4 h-4 rounded-full border-4 border-[#ff9800] bg-white"></div>
+        </div>
+
+        <!-- Milo Option -->
+        <div id="targetMiloOption" class="w-full p-3 rounded-2xl border border-[#ebdcd0] bg-white opacity-75 flex items-center justify-between cursor-pointer">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🐱</span>
+            <div>
+              <h4>Milo (Feline)</h4>
+              <p class="text-[#788673]">Domestic Shorthair • 4.2 kg</p>
+            </div>
+          </div>
+          <div id="miloIndicator" class="w-4 h-4 rounded-full border-2 border-slate-300"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Score & Verdict: Stacked Vertically so Text Never Gets Squished -->
+    <div class="tactile-card p-5 bg-white score-card-mobile">
+      
+      <!-- Compact Balanced SVG Gauge -->
+      <div class="relative w-28 h-28 shrink-0 flex items-center justify-center">
+        <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="40" stroke="#f1ebe4" stroke-width="11" fill="none"/>
+          <circle id="scoreSvgGauge" cx="50" cy="50" r="40" stroke="#ff9800" stroke-width="11" stroke-dasharray="251.2" stroke-dashoffset="90" stroke-linecap="round" fill="none"/>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span id="scoreNumberDisplay" class="text-3xl font-black text-[#182811]">64</span>
+          <span id="scoreRiskLabel" class="text-[7.5px] font-black uppercase text-[#ff9800] tracking-wider">Caution</span>
+        </div>
+      </div>
+
+      <!-- Full-Width Centered Verdict Description -->
+      <div class="space-y-2 w-full">
+        <div class="flex items-center justify-center gap-2">
+          <span id="cautionPillBadge" class="px-2.5 py-1 rounded-full bg-[#fff3e0] text-[#b45309] font-black text-[9.5px] uppercase border border-[#f59e0b] inline-block">
+            ⚠️ Caution Flag
+          </span>
+          <button type="button" id="emergencyTriageBtn" class="hidden px-2.5 py-1 rounded-full bg-red-600 text-white font-black text-[9.5px] uppercase shadow-xs flex items-center gap-1">
+            <i class="fa-solid fa-triangle-exclamation"></i> Emergency Triage
+          </button>
+        </div>
+
+        <h2 id="verdictHeadline" class="font-extrabold text-sm text-[#182811] leading-snug">
+          Contains Flagged Synthetic Antioxidants &amp; Preservatives
+        </h2>
+        <p id="verdictSubtext" class="text-xs text-[#788673] max-w-xs mx-auto leading-relaxed">
+          Matched against canine toxicological safety baselines.
+        </p>
+
+        <div id="tokenCountsRow" class="flex items-center justify-center gap-3 pt-1 text-[11px] font-bold">
+          <span class="text-[#16a34a] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></span> 18 Safe</span>
+          <span class="text-[#ff9800] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#ff9800]"></span> 2 Caution</span>
+          <span class="text-[#dc2626] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#dc2626]"></span> 0 Fatal</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Extracted Finding Cards -->
+    <div class="space-y-2.5">
+      <div class="flex items-center justify-between">
+        <h3 class="font-extrabold text-xs text-[#182811]">Extracted Findings</h3>
+        <span id="filterFindingsBtn" class="text-[11px] font-bold text-[#45671d] cursor-pointer">Filter ▾</span>
+      </div>
+
+      <!-- BHA Card -->
+      <div class="tactile-card p-3.5 border-l-4 border-l-[#ff9800] flex items-start gap-3 diagnostic-item bg-white cursor-pointer" data-hazard="caution" data-token="bha">
+        <span class="text-xl shrink-0 mt-0.5">🧪</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-1">
+            <h4 class="font-extrabold text-xs text-[#182811] truncate">BHA (Butylated Hydroxyanisole)</h4>
+            <span class="px-1.5 py-0.5 rounded bg-orange-100 text-[#b45309] font-black text-[8.5px] shrink-0">CAUTION</span>
+          </div>
+          <p class="text-[10.5px] text-[#788673] mt-0.5 leading-snug">Associated with chronic tissue bioaccumulation in dogs.</p>
+        </div>
+      </div>
+
+      <!-- Propylene Glycol Card -->
+      <div id="pgFindingCard" class="tactile-card p-3.5 border-l-4 border-l-[#ff9800] flex items-start gap-3 diagnostic-item bg-white cursor-pointer" data-hazard="caution" data-token="pg">
+        <span class="text-xl shrink-0 mt-0.5">💧</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-1">
+            <h4 class="font-extrabold text-xs text-[#182811] truncate">Propylene Glycol</h4>
+            <span id="pgBadge" class="px-1.5 py-0.5 rounded bg-orange-100 text-[#b45309] font-black text-[8.5px] shrink-0">CAUTION</span>
+          </div>
+          <p id="pgBodyText" class="text-[10.5px] text-[#788673] mt-0.5 leading-snug">Tolerated in dogs; strictly fatal to cats (causes Heinz body anemia).</p>
+        </div>
+      </div>
+
+      <!-- Deboned Beef -->
+      <div class="tactile-card p-3.5 border-l-4 border-l-[#4caf50] flex items-start gap-3 diagnostic-item bg-white cursor-pointer" data-hazard="safe" data-token="beef">
+        <span class="text-xl shrink-0 mt-0.5">🥩</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-1">
+            <h4 class="font-extrabold text-xs text-[#182811] truncate">Deboned Beef &amp; Organ Blend</h4>
+            <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-[#15803d] font-black text-[8.5px] shrink-0">SAFE</span>
+          </div>
+          <p class="text-[10.5px] text-[#788673] mt-0.5 leading-snug">High-bioavailability complete animal protein.</p>
+        </div>
+      </div>
+
+      <!-- Brown Rice -->
+      <div class="tactile-card p-3.5 border-l-4 border-l-[#4caf50] flex items-start gap-3 diagnostic-item bg-white cursor-pointer" data-hazard="safe" data-token="rice">
+        <span class="text-xl shrink-0 mt-0.5">🌾</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-1">
+            <h4 class="font-extrabold text-xs text-[#182811] truncate">Whole Grain Brown Rice</h4>
+            <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-[#15803d] font-black text-[8.5px] shrink-0">SAFE</span>
+          </div>
+          <p class="text-[10.5px] text-[#788673] mt-0.5 leading-snug">Provides sustained glycemic release &amp; fiber.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Mobile Bottom Sheet Detail Drawer -->
+  <div id="drawerBackdrop" class="hidden fixed inset-0 bg-black/50 z-50"></div>
+  <aside id="findingDetailDrawer" class="bg-white p-5 shadow-2xl border-t border-[#ebdcd0] overflow-y-auto">
+    <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-3"></div>
+    <div class="flex items-center justify-between pb-3 border-b border-[#ebdcd0]">
+      <div>
+        <span id="drawerBadge" class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase">STATUS</span>
+        <h3 id="drawerTitle" class="text-base font-extrabold text-[#182811] mt-1">Compound</h3>
+        <span id="drawerCategory" class="text-[11px] text-[#788673] block">Category</span>
+      </div>
+      <button type="button" id="closeDrawerBtn" class="w-7 h-7 rounded-full bg-slate-100 font-bold text-xs">✕</button>
+    </div>
+    <div class="space-y-3 mt-4 text-xs">
+      <div class="p-3 bg-slate-50 rounded-xl space-y-1">
+        <strong class="text-[9.5px] uppercase font-bold text-[#182811] block">Toxicological Mechanism</strong>
+        <p id="drawerMechanism" class="text-[11px] text-[#586754] leading-relaxed">Description.</p>
+      </div>
+      <div class="p-3 bg-emerald-50 rounded-xl space-y-1">
+        <strong class="text-[9.5px] uppercase font-bold text-emerald-800 block">Recommended Safe Alternative</strong>
+        <p id="drawerAlternative" class="text-[11px] text-emerald-700 leading-relaxed">Substitutes.</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Emergency Triage Modal -->
+  <div id="emergencyBackdrop" class="hidden fixed inset-0 bg-black/60 z-50"></div>
+  <div id="emergencyTriageModal" class="hidden fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 bg-white rounded-3xl p-5 border-2 border-red-500 shadow-2xl space-y-3">
+    <div class="flex items-center justify-between border-b pb-2">
+      <h3 class="font-black text-sm text-red-600">🚨 EMERGENCY TRIAGE PROTOCOL</h3>
+      <button type="button" id="closeEmergencyModalBtn" class="w-6 h-6 rounded-full bg-slate-100 text-xs">✕</button>
+    </div>
+    <div class="p-3 bg-red-50 rounded-xl text-red-800 text-xs space-y-1 font-bold">
+      <p>DO NOT INDUCE VOMITING[cite: 8, 11]</p>
+      <p class="text-[11px] font-normal leading-relaxed">Never force salt or hydrogen peroxide without direct veterinary guidance[cite: 8, 11].</p>
+    </div>
+    <button onclick="alert('Calling emergency vet clinic...')" class="w-full py-2.5 bg-red-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider">
+      <i class="fa-solid fa-phone mr-1"></i> Call Nearest Vet
+    </button>
+  </div>
+
+  <!-- Floating Center Elevated Dock (Option 03/06) -->
+  <nav class="mobile-bottom-nav">
+    <a href="mobile-index.html" class="mobile-nav-item">
+      <i class="fa-solid fa-shapes"></i>
+      <span>Overview</span>
+    </a>
+    <a href="mobile-wiki.html" class="mobile-nav-item">
+      <i class="fa-solid fa-book-medical"></i>
+      <span>Wiki</span>
+    </a>
+    <a href="mobile-results.html" class="scan-fab-container">
+      <div class="scan-fab-bubble">
+        <i class="fa-solid fa-camera"></i>
+      </div>
+      <span class="scan-fab-label">Scan</span>
+    </a>
+    <a href="mobile-history.html" class="mobile-nav-item">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      <span>Logs</span>
+    </a>
+    <a href="mobile-pets.html" class="mobile-nav-item">
+      <i class="fa-solid fa-paw"></i>
+      <span>Pets</span>
+    </a>
+  </nav>
+
+  <script src="app.js"></script>
+  <script src="results.js"></script>
+</body>
+</html>

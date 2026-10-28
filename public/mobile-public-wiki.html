@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KibbleGuard — Public Veterinary Ingredient Wiki</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      display: block !important;
+      background-color: #fbf9f6;
+    }
+  </style>
+</head>
+<body class="botanical-canvas text-[#182811] antialiased min-h-screen">
+
+  <!-- Public Minimal Header -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-[#ebdcd0] flex items-center justify-between">
+    <a href="mobile-landing.html" class="flex items-center gap-2">
+      <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard Logo" class="w-7 h-7 object-contain">
+      <div>
+        <span class="font-extrabold text-sm text-[#182811] leading-none block">KibbleGuard</span>
+        <span class="text-[9px] font-extrabold text-[#45671d] uppercase tracking-wider">Public Wiki</span>
+      </div>
+    </a>
+    <div class="flex items-center gap-2">
+      <a href="mobile-auth.html?mode=login" class="text-xs font-bold text-slate-600 px-2.5 py-1">Log In</a>
+      <a href="mobile-auth.html?mode=signup" class="px-3 py-1.5 bg-[#45671d] hover:bg-[#324c14] text-white rounded-full text-xs font-extrabold shadow-xs">Sign Up</a>
+    </div>
+  </header>
+
+  <!-- Title & Description Banner -->
+  <main class="p-4 space-y-4">
+    <div class="text-center space-y-1 py-1">
+      <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[10px] font-extrabold text-[#45671d] uppercase tracking-wider shadow-2xs">
+        <i class="fa-solid fa-book-medical"></i> Open Veterinary Standard
+      </div>
+      <h1 class="text-xl font-extrabold text-[#182811]">Veterinary Ingredient Wiki</h1>
+      <p class="text-xs text-[#788673] max-w-xs mx-auto leading-relaxed">
+        Public encyclopedia of chemical preservatives, artificial additives, and species-specific metabolic contraindications.
+      </p>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="relative w-full">
+      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#788673] text-xs"></i>
+      <input type="text" id="publicWikiSearchInput" placeholder="Search compounds (e.g. Xylitol, BHA, Taurine)..." class="w-full bg-white border border-[#ebdcd0] rounded-xl pl-9 pr-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#45671d] shadow-2xs">
+    </div>
+
+    <!-- Category Filter Pills (Scrollable horizontally) -->
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="publicWikiFilterButtonGroup">
+      <button type="button" class="public-filter-btn px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-[#45671d] text-white shrink-0 shadow-xs" data-filter="all">
+        All Compounds
+      </button>
+      <button type="button" class="public-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-filter="danger">
+        Critical Toxic
+      </button>
+      <button type="button" class="public-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-filter="caution">
+        Caution Flags
+      </button>
+      <button type="button" class="public-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-filter="safe">
+        Safe Nutrients
+      </button>
+    </div>
+
+    <!-- Public Dossier Cards Deck -->
+    <div id="publicWikiGrid" class="space-y-3">
+      
+      <!-- Card 1: Xylitol -->
+      <div class="public-wiki-card tactile-card p-4 border-l-4 border-l-red-600 bg-white space-y-2 cursor-pointer shadow-xs" data-hazard="danger" data-compound="xylitol">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-extrabold text-[8.5px] uppercase tracking-wide">Critical Lethal</span>
+            <h3 class="font-extrabold text-sm text-[#182811] mt-1">Xylitol (Birch Sugar)</h3>
+            <span class="text-[10px] text-[#788673] block">Classification: Sugar Alcohol / Artificial Sweetener</span>
+          </div>
+          <span class="font-mono text-[10px] font-black text-red-600 bg-red-50 px-2 py-1 rounded-lg border border-red-200">Score: 98</span>
+        </div>
+        <p class="text-xs text-[#586754] leading-relaxed">
+          Causes rapid, life-threatening insulin surge in dogs, triggering severe hypoglycemia, ataxia, seizures, and acute hepatic failure. Toxic at doses as low as 0.1 g/kg.
+        </p>
+        <div class="pt-2 border-t border-[#f5efe6] flex items-center justify-between text-[10.5px]">
+          <span class="text-[#788673]">Primary Risk: <strong class="text-red-700">Acute Liver Failure</strong></span>
+          <span class="font-bold text-red-600">Canine Prohibited</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Propylene Glycol -->
+      <div class="public-wiki-card tactile-card p-4 border-l-4 border-l-purple-600 bg-white space-y-2 cursor-pointer shadow-xs" data-hazard="danger" data-compound="propylene-glycol">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-extrabold text-[8.5px] uppercase tracking-wide">Lethal to Felines</span>
+            <h3 class="font-extrabold text-sm text-[#182811] mt-1">Propylene Glycol (E1520)</h3>
+            <span class="text-[10px] text-[#788673] block">Classification: Synthetic Humectant &amp; Solvent</span>
+          </div>
+          <span class="font-mono text-[10px] font-black text-purple-700 bg-purple-50 px-2 py-1 rounded-lg border border-purple-200">Score: 92</span>
+        </div>
+        <p class="text-xs text-[#586754] leading-relaxed">
+          Tolerated in minor quantities by dogs, but strictly toxic to cats. Felines lack the hepatic glucuronidation pathway, causing oxidative hemoglobin precipitation and fatal Heinz body hemolytic anemia.
+        </p>
+        <div class="pt-2 border-t border-[#f5efe6] flex items-center justify-between text-[10.5px]">
+          <span class="text-[#788673]">Primary Risk: <strong class="text-purple-700">Heinz Body Anemia</strong></span>
+          <span class="font-bold text-purple-700">Feline Ban</span>
+        </div>
+      </div>
+
+      <!-- Card 3: BHA & BHT -->
+      <div class="public-wiki-card tactile-card p-4 border-l-4 border-l-[#ff9800] bg-white space-y-2 cursor-pointer shadow-xs" data-hazard="caution" data-compound="bha">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="px-2 py-0.5 rounded-full bg-orange-100 text-[#b45309] font-extrabold text-[8.5px] uppercase tracking-wide">Caution Flag</span>
+            <h3 class="font-extrabold text-sm text-[#182811] mt-1">BHA &amp; BHT (E320 / E321)</h3>
+            <span class="text-[10px] text-[#788673] block">Classification: Chemical Fat Stabilizer &amp; Preservative</span>
+          </div>
+          <span class="font-mono text-[10px] font-black text-[#b45309] bg-orange-50 px-2 py-1 rounded-lg border border-orange-200">Score: 48</span>
+        </div>
+        <p class="text-xs text-[#586754] leading-relaxed">
+          Synthetic preservatives commonly used in rendered meat meals. Chronic daily bioaccumulation has been associated with renal filtration stress and endocrine disruption.
+        </p>
+        <div class="pt-2 border-t border-[#f5efe6] flex items-center justify-between text-[10.5px]">
+          <span class="text-[#788673]">Recommended Alternative: <strong class="text-emerald-700">Mixed Tocopherols</strong></span>
+          <span class="font-bold text-[#b45309]">Flagged</span>
+        </div>
+      </div>
+
+      <!-- Card 4: Artificial Dyes -->
+      <div class="public-wiki-card tactile-card p-4 border-l-4 border-l-[#ff9800] bg-white space-y-2 cursor-pointer shadow-xs" data-hazard="caution" data-compound="artificial-dyes">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="px-2 py-0.5 rounded-full bg-orange-100 text-[#b45309] font-extrabold text-[8.5px] uppercase tracking-wide">Caution Flag</span>
+            <h3 class="font-extrabold text-sm text-[#182811] mt-1">Artificial Dyes (Red 40, Yellow 5)</h3>
+            <span class="text-[10px] text-[#788673] block">Classification: Petroleum-Derived Colorants</span>
+          </div>
+          <span class="font-mono text-[10px] font-black text-[#b45309] bg-orange-50 px-2 py-1 rounded-lg border border-orange-200">Score: 42</span>
+        </div>
+        <p class="text-xs text-[#586754] leading-relaxed">
+          Purely cosmetic additives for consumer packaging appeal. Pets cannot perceive food dyes. Associated with allergic pruritus, dermatitis flare-ups, and unnecessary hepatic processing.
+        </p>
+        <div class="pt-2 border-t border-[#f5efe6] flex items-center justify-between text-[10.5px]">
+          <span class="text-[#788673]">Biological Need: <strong class="text-[#b45309]">0% (Zero)</strong></span>
+          <span class="font-bold text-[#b45309]">Avoid</span>
+        </div>
+      </div>
+
+      <!-- Card 5: Taurine -->
+      <div class="public-wiki-card tactile-card p-4 border-l-4 border-l-[#4caf50] bg-white space-y-2 cursor-pointer shadow-xs" data-hazard="safe" data-compound="taurine">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-[#15803d] font-extrabold text-[8.5px] uppercase tracking-wide">Safe &amp; Vital Nutrient</span>
+            <h3 class="font-extrabold text-sm text-[#182811] mt-1">Taurine (Amino Acid)</h3>
+            <span class="text-[10px] text-[#788673] block">Classification: Essential Feline Nutrient</span>
+          </div>
+          <span class="font-mono text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">Score: 00</span>
+        </div>
+        <p class="text-xs text-[#586754] leading-relaxed">
+          Cats cannot synthesize taurine endogenously. Deficiency directly triggers central retinal degeneration (irreversible blindness) and dilated cardiomyopathy (heart failure).
+        </p>
+        <div class="pt-2 border-t border-[#f5efe6] flex items-center justify-between text-[10.5px]">
+          <span class="text-[#788673]">Clinical Role: <strong class="text-emerald-700">Heart &amp; Vision Support</strong></span>
+          <span class="font-bold text-emerald-700">Essential</span>
+        </div>
+      </div>
+
+      <!-- Card 6: Wild Salmon -->
+      <div class="public-wiki-card tactile-card p-4 border-l-4 border-l-[#4caf50] bg-white space-y-2 cursor-pointer shadow-xs" data-hazard="safe" data-compound="wild-salmon">
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-[#15803d] font-extrabold text-[8.5px] uppercase tracking-wide">Safe &amp; Beneficial</span>
+            <h3 class="font-extrabold text-sm text-[#182811] mt-1">Wild Alaskan Salmon</h3>
+            <span class="text-[10px] text-[#788673] block">Classification: Bioavailable Animal Protein</span>
+          </div>
+          <span class="font-mono text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">Score: 02</span>
+        </div>
+        <p class="text-xs text-[#586754] leading-relaxed">
+          High biological value protein rich in EPA and DHA marine Omega-3 fatty acids. Supports renal function in felines and reduces inflammatory skin reactions in canines.
+        </p>
+        <div class="pt-2 border-t border-[#f5efe6] flex items-center justify-between text-[10.5px]">
+          <span class="text-[#788673]">Clinical Benefit: <strong class="text-emerald-700">Omega-3 EPA / DHA</strong></span>
+          <span class="font-bold text-emerald-700">Optimal</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Call to Action Banner -->
+    <div class="tactile-card p-5 bg-gradient-to-r from-emerald-50/70 to-white border border-emerald-200 text-center space-y-2.5">
+      <h3 class="font-extrabold text-sm text-[#182811]">Want to scan your own pet food?</h3>
+      <p class="text-xs text-[#586754] leading-relaxed">
+        Upload or snap a photo of any printed pet food label to automatically cross-reference these additives against your pet's biological profile.
+      </p>
+      <a href="mobile-auth.html?mode=signup" class="inline-block px-5 py-2.5 bg-[#45671d] hover:bg-[#324c14] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-all">
+        Create Free Account &amp; Scan →
+      </a>
+    </div>
+
+  </main>
+
+  <!-- Public Minimal Footer -->
+  <footer class="p-5 text-center text-xs text-[#788673] border-t border-[#ebdcd0] mt-6 bg-white space-y-2">
+    <div class="flex items-center justify-center gap-3 font-bold text-[11px] text-[#45671d]">
+      <a href="mobile-landing.html">Home</a>
+      <span>•</span>
+      <a href="mobile-auth.html?mode=login">Log In</a>
+      <span>•</span>
+      <a href="mobile-auth.html?mode=signup">Register</a>
+    </div>
+    <p class="text-[10px]">© 2026 KibbleGuard Safety Lab • Open Veterinary Database</p>
+  </footer>
+
+  <!-- Search & Filter Logic -->
+  <script>
+    const searchInput = document.getElementById('publicWikiSearchInput');
+    const filterBtns = document.querySelectorAll('.public-filter-btn');
+    const cards = document.querySelectorAll('.public-wiki-card');
+
+    function applyFilters() {
+      const q = searchInput.value.toLowerCase().trim();
+      const activeBtn = document.querySelector('.public-filter-btn.bg-\\[\\#45671d\\]');
+      const filter = activeBtn ? activeBtn.getAttribute('data-filter') : 'all';
+
+      cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        const hazard = card.getAttribute('data-hazard');
+        const matchesQuery = !q || text.includes(q);
+        const matchesHazard = filter === 'all' || hazard === filter;
+
+        if (matchesQuery && matchesHazard) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    if (searchInput) searchInput.addEventListener('input', applyFilters);
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => {
+          b.classList.remove('bg-[#45671d]', 'text-white', 'shadow-xs');
+          b.classList.add('text-[#788673]', 'bg-white');
+        });
+        btn.classList.add('bg-[#45671d]', 'text-white', 'shadow-xs');
+        btn.classList.remove('text-[#788673]', 'bg-white');
+        applyFilters();
+      });
+    });
+  </script>
+</body>
+</html>
