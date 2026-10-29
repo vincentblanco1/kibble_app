@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KibbleGuard Admin - OCR Scan Records</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app.js?v=6"></script>
+<script>restoreThemeState();restoreTableDensityState();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<link rel="stylesheet" href="style.css?v=7">
+</head>
+<body class="bg-[#FAF6EE] text-stone-800 font-sans antialiased min-h-screen flex">
+
+<!-- Sidebar -->
+<aside id="sidebar" class="w-[280px] bg-white border-r border-stone-100 flex flex-col shrink-0 hidden lg:flex h-screen sticky top-0 z-50">
+  <script>restoreSidebarCollapsedState();</script>
+  <div class="logo-row h-20 flex items-center px-8 gap-3 border-b border-stone-50">
+    <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="h-12 w-auto object-contain shrink-0">
+    <div class="flex flex-col sidebar-text">
+      <span class="font-display font-bold text-xl text-dark tracking-tight leading-none">KibbleGuard</span>
+      <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
+    </div>
+  </div>
+  <button id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar" aria-label="Collapse sidebar" class="press absolute top-1/2 -translate-y-1/2 w-7 h-9 rounded-full bg-white border-2 border-stone-200 shadow-md flex items-center justify-center text-stone-500 hover:text-brand hover:border-brand transition-all z-[60]">
+    <i id="collapse-icon" class="fa-solid fa-chevron-left text-[10px]"></i>
+  </button>
+  <nav class="flex-1 px-6 py-8 space-y-2 overflow-y-auto">
+    <a href="dashboard.html" aria-label="Dashboard" data-tooltip="Dashboard" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-chart-pie text-sm w-5 shrink-0"></i> <span class="sidebar-text">Dashboard</span>
+    </a>
+    <a href="ingredient-database.html" aria-label="Ingredient Database" data-tooltip="Ingredient Database" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-dna text-sm w-5 shrink-0"></i> <span class="sidebar-text">Ingredient Database</span>
+    </a>
+    <a href="ocr-scans.html" aria-label="OCR Scan Records" data-tooltip="OCR Scan Records" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl transition-all">
+      <i class="fa-solid fa-camera-retro text-sm w-5 shrink-0"></i> <span class="sidebar-text">OCR Scan Records</span>
+    </a>
+    <a href="safety-rules.html" aria-label="Safety Rules" data-tooltip="Safety Rules" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-shield-halved text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Rules</span>
+    </a>
+    <a href="users-pets.html" aria-label="Users & Pets" data-tooltip="Users & Pets" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-users text-sm w-5 shrink-0"></i> <span class="sidebar-text">Users & Pets</span>
+    </a>
+    <a href="safety-feed.html" aria-label="Safety Feed" data-tooltip="Safety Feed" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-bullhorn text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Feed</span>
+    </a>
+    <a href="inquiries.html" aria-label="Inquiries" data-tooltip="Inquiries" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-headset text-sm w-5 shrink-0"></i> <span class="sidebar-text">Inquiries</span>
+    </a>
+    <a href="activity-log.html" aria-label="Activity Log" data-tooltip="Activity Log" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-clock-rotate-left text-sm w-5 shrink-0"></i> <span class="sidebar-text">Activity Log</span>
+    </a>
+    <a href="settings.html" aria-label="Settings" data-tooltip="Settings" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-gear text-sm w-5 shrink-0"></i> <span class="sidebar-text">Settings</span>
+    </a>
+  </nav>
+  <div class="admin-card-wrapper p-6 border-t border-stone-50">
+    <div class="admin-card flex items-center gap-3 p-3 rounded-2xl bg-stone-100/50 border border-stone-200">
+      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
+        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="Admin">
+        <div class="min-w-0 sidebar-text">
+          <p class="text-xs font-bold text-dark truncate">Dr. Sarah Chen</p>
+          <p class="text-[10px] text-stone-500 font-medium truncate">Chief Admin</p>
+        </div>
+      </a>
+      <button onclick="confirmLogout()" title="Log out" aria-label="Log out" class="press w-8 h-8 rounded-lg hover:bg-white flex items-center justify-center text-stone-400 hover:text-danger transition-all shrink-0">
+        <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="hidden fixed inset-0 bg-stone-900/50 z-[99]"></div>
+
+<!-- Main Content -->
+<main class="paw-field flex-1 flex flex-col h-screen overflow-y-auto">
+  <header class="min-h-20 bg-white border-b border-stone-50 flex flex-wrap items-center justify-between gap-4 px-10 py-4 sticky top-0 z-40">
+    <div class="flex items-center gap-4">
+      <button onclick="toggleMobileSidebar()" aria-label="Open navigation menu" class="lg:hidden press w-10 h-10 rounded-xl bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-dark shrink-0"><i class="fa-solid fa-bars"></i></button>
+      <div>
+      <h1 class="font-display font-bold text-xl text-dark">OCR Scan Records</h1>
+      <p class="text-[11px] text-stone-400 font-bold uppercase tracking-wider">Ingredient Extraction & Classification Audit Trail</p>
+    </div>
+    </div>
+  </header>
+
+  <div class="p-10 max-w-[1600px] w-full mx-auto space-y-10">
+
+    <!-- Audit Trail Health -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-xl"><i class="fa-solid fa-camera-retro"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Scans Logged</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="ocr-kpi-total">-</h4>
+        </div>
+      </div>
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-xl"><i class="fa-solid fa-gauge-high"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Avg. OCR Confidence</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="ocr-kpi-confidence">-</h4>
+        </div>
+      </div>
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-caution/10 text-caution flex items-center justify-center text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Flagged (Caution/Toxic)</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="ocr-kpi-flagged">-</h4>
+        </div>
+      </div>
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-danger/5 text-danger flex items-center justify-center text-xl"><i class="fa-solid fa-flag"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Disputed</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="ocr-kpi-disputed">-</h4>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accuracy Metrics (ISO/IEC 9126 evaluation support) -->
+    <div class="stagger-in bg-white border border-stone-100 rounded-[2.5rem] card-shadow p-8">
+      <div class="flex items-start justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 class="font-display font-bold text-base text-dark">Pipeline Accuracy</h2>
+          <p class="text-xs text-stone-400 font-medium">Computed from the <span id="acc-sample-size">-</span> scans currently in view, against the auto-approve threshold set in Safety Rules</p>
+        </div>
+        <a href="safety-rules.html" class="press text-[10px] font-bold text-brand hover:underline uppercase tracking-widest">Adjust Thresholds</a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="p-5 rounded-2xl border border-stone-200 bg-stone-100/40">
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Extraction</p>
+          <div id="acc-gauge-extraction" role="img" class="min-h-[150px] my-2"></div>
+          <p class="text-[10px] text-stone-400 leading-relaxed">Scans read above the auto-approve confidence threshold, needing no manual correction.</p>
+        </div>
+
+        <div class="p-5 rounded-2xl border border-stone-200 bg-stone-100/40">
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Detection</p>
+          <div id="acc-gauge-detection" role="img" class="min-h-[150px] my-2"></div>
+          <p class="text-[10px] text-stone-400 leading-relaxed">Extracted ingredient tokens successfully matched to a database entry.</p>
+        </div>
+
+        <div class="p-5 rounded-2xl border border-stone-200 bg-stone-100/40">
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Classification</p>
+          <div id="acc-gauge-classification" role="img" class="min-h-[150px] my-2"></div>
+          <p class="text-[10px] text-stone-400 leading-relaxed">Verdicts that stood after review, not overturned by an owner dispute.</p>
+        </div>
+      </div>
+
+      <div class="pt-6 border-t border-stone-50">
+        <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-4">Capture Quality Distribution</p>
+        <div id="capture-quality-breakdown" class="min-h-[240px]"></div>
+        <p class="text-[10px] text-stone-400 mt-4 leading-relaxed"><i class="fa-solid fa-circle-info mr-1"></i>Poor lighting, glare, and curved or reflective packaging are the documented limits on extraction accuracy. Low-clarity captures are where accuracy drops first.</p>
+      </div>
+    </div>
+
+    <!-- Ingredient Detection Frequency -->
+    <div class="stagger-in bg-white border border-stone-100 rounded-[2.5rem] card-shadow p-8">
+      <div class="flex items-start justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 class="font-display font-bold text-base text-dark">Most Frequently Detected Ingredients</h2>
+          <p class="text-xs text-stone-400 font-medium">Ranked by frequency, tallied across every recorded scan -- bars share one scale for accurate comparison</p>
+        </div>
+        <div class="flex items-center gap-1 bg-stone-50 p-1 rounded-xl">
+          <button id="ingfreq-filter-all" onclick="setIngredientFrequencyFilter('all')" class="press px-3 py-1.5 rounded-lg bg-brand text-white text-[10px] font-bold shadow-sm transition-all">All</button>
+          <button id="ingfreq-filter-toxic" onclick="setIngredientFrequencyFilter('Toxic')" class="press px-3 py-1.5 rounded-lg text-stone-500 hover:text-dark text-[10px] font-bold transition-all">Toxic</button>
+          <button id="ingfreq-filter-caution" onclick="setIngredientFrequencyFilter('Caution')" class="press px-3 py-1.5 rounded-lg text-stone-500 hover:text-dark text-[10px] font-bold transition-all">Caution</button>
+          <button id="ingfreq-filter-safe" onclick="setIngredientFrequencyFilter('Safe')" class="press px-3 py-1.5 rounded-lg text-stone-500 hover:text-dark text-[10px] font-bold transition-all">Safe</button>
+        </div>
+      </div>
+      <div id="ingredient-frequency-list" class="min-h-[240px]"></div>
+      <p class="text-[10px] text-stone-400 mt-4"><i class="fa-solid fa-circle-info mr-1"></i>Based on <span id="ingfreq-scan-count">-</span> recorded scans<span id="ingfreq-truncation-note"></span>. Small sample -- treat rankings as illustrative, not statistically conclusive.</p>
+    </div>
+
+    <div id="scan-records-table-card" class="stagger-in bg-white border border-stone-100 rounded-[2.5rem] card-shadow overflow-hidden">
+      <div class="p-6 border-b border-stone-50">
+        <!-- one row: search, the labeled filters beside it, Export on the far right.
+             no-wrap on large screens so the Clear filters button appearing never pushes Export down -->
+        <div class="flex items-end gap-4 flex-wrap lg:flex-nowrap">
+          <div class="w-full lg:flex-1 lg:min-w-[180px] lg:max-w-sm">
+            <label for="records-search" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Search</label>
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xs"></i>
+              <input type="text" id="records-search" oninput="filterRecords()" placeholder="Search Scan ID, User, or Product..." class="w-full pl-10 pr-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs focus:outline-none focus:border-brand transition-all">
+            </div>
+          </div>
+          <div class="w-full sm:w-44 shrink-0">
+            <label for="scan-filter-species" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Species</label>
+            <div class="relative">
+              <select id="scan-filter-species" onchange="setSpeciesFilter(this.value)" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+                <option value="all">All species</option>
+                <option value="canine">Canine (dogs)</option>
+                <option value="feline">Feline (cats)</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+            </div>
+          </div>
+          <div class="w-full sm:w-52 shrink-0">
+            <label for="scan-filter-verdict" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Verdict</label>
+            <div class="relative">
+              <select id="scan-filter-verdict" onchange="setScanFilter(this.value)" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+                <option value="all">All verdicts</option>
+                <option value="safe">Safe</option>
+                <option value="caution">Caution</option>
+                <option value="toxic">Toxic</option>
+                <option value="risk">Toxic + Caution (warnings)</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+            </div>
+          </div>
+          <div class="w-full sm:w-56 shrink-0">
+            <label for="scan-filter-flag" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Flags</label>
+            <div class="relative">
+              <select id="scan-filter-flag" onchange="setFlagFilter(this.value)" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+                <option value="all">No flag filter</option>
+                <option value="disputed">Disputed by owner</option>
+                <option value="unassessed">Has not-rated ingredients</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+            </div>
+          </div>
+          <button id="scan-clear-filters" onclick="clearScanFilters()" class="hidden press shrink-0 whitespace-nowrap px-3 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all"><i class="fa-solid fa-xmark mr-1.5"></i>Clear filters</button>
+          <!-- reuses the verifyTriage permission rather than a dedicated one,
+               so Support Admin can't export scan records but Chief Admin and
+               Ingredient Reviewer (who both already handle scans) can -->
+          <button onclick="openScanExportOptions()" data-perm="verifyTriage" class="press ml-auto shrink-0 whitespace-nowrap px-5 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all"><i class="fa-solid fa-download mr-1.5"></i>Export Report</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+          <thead>
+            <tr class="text-[10px] uppercase tracking-[0.15em] text-stone-500 border-b border-stone-50 bg-stone-50/10">
+              <th class="font-bold px-10 py-5">Scan ID</th>
+              <th class="font-bold px-10 py-5">Captured Label</th>
+              <th class="font-bold px-10 py-5">Owner & Pet</th>
+              <th class="font-bold px-10 py-5">Species</th>
+              <th class="font-bold px-10 py-5">OCR Confidence</th>
+              <th class="font-bold px-10 py-5">Score</th>
+              <th class="font-bold px-10 py-5">Verdict</th>
+              <th class="font-bold px-10 py-5 text-right">Timestamp</th>
+              <th class="font-bold px-10 py-5 text-right sticky right-0 bg-white sticky-col-shadow"></th>
+            </tr>
+          </thead>
+          <!-- data-verdict/data-species/data-disputed/etc drive filterRecords()
+               and computeAccuracyMetrics() -- data-disputed="true" is what
+               marks a row as needing the dispute panel in inspectRecord() -->
+          <tbody class="divide-y divide-stone-50" id="records-table-body">
+            <tr class="feed-row hover:bg-stone-50/50 group" id="row-902144" data-date="2024-05-28" data-verdict="safe" data-species="canine" data-confidence="96" data-search="kb-902144 chicken rice kibble sarah jenkins buster canine">
+              <td class="px-10 py-6 font-mono text-xs text-stone-400 font-bold">#KB-902144</td>
+              <td class="px-10 py-6">
+                <div class="flex items-center gap-4">
+                  <div class="w-11 h-11 rounded-xl bg-stone-100 text-stone-400 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-image"></i></div>
+                  <div>
+                    <p class="font-bold text-dark italic">Chicken & Rice Kibble</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-10 py-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-brand-light text-brand flex items-center justify-center text-[10px] font-bold">SA</div>
+                  <div>
+                    <p class="text-xs font-bold text-dark">Sarah Jenkins</p>
+                    <p class="text-[10px] text-stone-500 italic">Pet: Buster (Goldie)</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-10 py-6">
+                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-stone-600"><i class="fa-solid fa-dog text-[#03C4C9]"></i> Canine</span>
+              </td>
+              <td class="px-10 py-6 text-xs font-bold text-stone-600 tabular-nums">96%</td>
+              <td class="px-10 py-6"><span class="text-sm font-display font-bold text-safe tabular-nums">100</span><span class="text-[10px] text-stone-400">/100</span></td>
+              <td class="px-10 py-6"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-safe/10 text-safe border-safe/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-circle-check"></i> Safe</span></td>
+              <td class="px-10 py-6 text-right text-stone-400 font-mono text-xs">2024-05-28 14:42</td>
+              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
+                <button onclick="inspectRecord('KB-902144')" class="press px-4 py-2 text-xs font-bold text-stone-400 hover:text-dark transition-all">Inspect</button>
+              </td>
+            </tr>
+            <tr class="feed-row hover:bg-stone-50/50 group" id="row-902143" data-date="2024-05-28" data-verdict="toxic" data-disputed="true" data-species="feline" data-confidence="91" data-search="kb-902143 organic beef pate linda wu misty feline dispute disputed">
+              <td class="px-10 py-6 font-mono text-xs text-stone-400 font-bold">#KB-902143</td>
+              <td class="px-10 py-6">
+                <div class="flex items-center gap-4">
+                  <div class="w-11 h-11 rounded-xl bg-stone-100 text-stone-400 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-image"></i></div>
+                  <div>
+                    <p class="font-bold text-dark italic flex items-center gap-2">Organic Beef Paté
+                      <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[8px] font-bold uppercase tracking-widest border border-amber-100" id="dispute-badge-902143">Disputed</span>
+                    </p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-10 py-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-brand-light text-brand flex items-center justify-center text-[10px] font-bold">LI</div>
+                  <div>
+                    <p class="text-xs font-bold text-dark">Linda Wu</p>
+                    <p class="text-[10px] text-stone-500 italic">Pet: Misty (Maine C.)</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-10 py-6">
+                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-stone-600"><i class="fa-solid fa-cat text-[#B57EDC]"></i> Feline</span>
+              </td>
+              <td class="px-10 py-6 text-xs font-bold text-stone-600 tabular-nums">91%</td>
+              <td class="px-10 py-6"><span class="text-sm font-display font-bold text-danger tabular-nums">45</span><span class="text-[10px] text-stone-400">/100</span></td>
+              <td class="px-10 py-6"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-danger/10 text-danger border-danger/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-skull"></i> Toxic</span></td>
+              <td class="px-10 py-6 text-right text-stone-400 font-mono text-xs">2024-05-28 14:15</td>
+              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
+                <button onclick="inspectRecord('KB-902143')" class="press px-4 py-2 text-xs font-bold text-stone-400 hover:text-dark transition-all">Inspect</button>
+              </td>
+            </tr>
+            <tr class="feed-row hover:bg-stone-50/50 group" id="row-902142" data-date="2024-05-28" data-verdict="caution" data-species="canine" data-confidence="88" data-search="kb-902142 salmon delight treats marcus thorne rocky canine">
+              <td class="px-10 py-6 font-mono text-xs text-stone-400 font-bold">#KB-902142</td>
+              <td class="px-10 py-6">
+                <div class="flex items-center gap-4">
+                  <div class="w-11 h-11 rounded-xl bg-stone-100 text-stone-400 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-image"></i></div>
+                  <div>
+                    <p class="font-bold text-dark italic">Salmon Delight Treats</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-10 py-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-brand-light text-brand flex items-center justify-center text-[10px] font-bold">MA</div>
+                  <div>
+                    <p class="text-xs font-bold text-dark">Marcus Thorne</p>
+                    <p class="text-[10px] text-stone-500 italic">Pet: Rocky (Beagle)</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-10 py-6">
+                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-stone-600"><i class="fa-solid fa-dog text-[#03C4C9]"></i> Canine</span>
+              </td>
+              <td class="px-10 py-6 text-xs font-bold text-stone-600 tabular-nums">88%</td>
+              <td class="px-10 py-6"><span class="text-sm font-display font-bold text-caution tabular-nums">82</span><span class="text-[10px] text-stone-400">/100</span></td>
+              <td class="px-10 py-6"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-caution/10 text-caution border-caution/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-triangle-exclamation"></i> Caution</span></td>
+              <td class="px-10 py-6 text-right text-stone-400 font-mono text-xs">2024-05-28 13:58</td>
+              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
+                <button onclick="inspectRecord('KB-902142')" class="press px-4 py-2 text-xs font-bold text-stone-400 hover:text-dark transition-all">Inspect</button>
+              </td>
+            </tr>
+            <tr class="feed-row hover:bg-stone-50/50 group" id="row-902141" data-date="2024-05-27" data-verdict="toxic" data-species="feline" data-confidence="79" data-search="kb-902141 grape oat trail mix vincent gregg blanco luna feline">
+              <td class="px-10 py-6 font-mono text-xs text-stone-400 font-bold">#KB-902141</td>
+              <td class="px-10 py-6">
+                <div class="flex items-center gap-4">
+                  <div class="w-11 h-11 rounded-xl bg-stone-100 text-stone-400 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-image"></i></div>
+                  <div>
+                    <p class="font-bold text-dark italic">Grape & Oat Trail Mix</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-10 py-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-brand-light text-brand flex items-center justify-center text-[10px] font-bold">VI</div>
+                  <div>
+                    <p class="text-xs font-bold text-dark">Vincent Gregg Blanco</p>
+                    <p class="text-[10px] text-stone-500 italic">Pet: Luna (Puspin)</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-10 py-6">
+                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-stone-600"><i class="fa-solid fa-cat text-[#B57EDC]"></i> Feline</span>
+              </td>
+              <td class="px-10 py-6 text-xs font-bold text-stone-600 tabular-nums">79%</td>
+              <td class="px-10 py-6"><span class="text-sm font-display font-bold text-danger tabular-nums">45</span><span class="text-[10px] text-stone-400">/100</span></td>
+              <td class="px-10 py-6"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-danger/10 text-danger border-danger/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-skull"></i> Toxic</span></td>
+              <td class="px-10 py-6 text-right text-stone-400 font-mono text-xs">2024-05-27 09:21</td>
+              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
+                <button onclick="inspectRecord('KB-902141')" class="press px-4 py-2 text-xs font-bold text-stone-400 hover:text-dark transition-all">Inspect</button>
+              </td>
+            </tr>
+            <tr id="records-empty-row" class="hidden" data-empty-row="true">
+              <td colspan="10" class="px-10 py-16 text-center">
+                <div class="w-14 h-14 mx-auto mb-3 relative">
+                  <svg class="w-full h-full text-stone-300" viewBox="0 0 24 24" fill="currentColor">
+                    <ellipse cx="12" cy="16.2" rx="5" ry="4.1"/>
+                    <ellipse cx="5.6" cy="9.2" rx="2.1" ry="2.7" transform="rotate(-18 5.6 9.2)"/>
+                    <ellipse cx="10.4" cy="6" rx="2.1" ry="2.7" transform="rotate(-6 10.4 6)"/>
+                    <ellipse cx="15.6" cy="6" rx="2.1" ry="2.7" transform="rotate(6 15.6 6)"/>
+                    <ellipse cx="19.4" cy="9.2" rx="2.1" ry="2.7" transform="rotate(18 19.4 9.2)"/>
+                  </svg>
+                </div>
+                <p class="text-sm font-bold text-dark">No scans match your filters</p>
+                <p class="text-[11px] text-stone-400 mt-1">Try a different Scan ID, user, or product name.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="p-8 border-t border-stone-50 flex items-center justify-between bg-stone-50/10">
+        <span class="text-xs font-bold text-stone-400 uppercase tracking-widest" id="records-count-label">Displaying all 4 historical scans</span>
+        <div class="flex items-center gap-2" id="records-pagination-controls"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="ocr-scans.js?v=8"></script>
+
+</body>
+</html>

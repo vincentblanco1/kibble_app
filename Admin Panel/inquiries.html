@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KibbleGuard Admin - Inquiries</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app.js?v=6"></script>
+<script>restoreThemeState();restoreTableDensityState();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="style.css?v=7">
+</head>
+<body class="bg-[#FAF6EE] text-stone-800 font-sans antialiased min-h-screen flex">
+
+<!-- Sidebar -->
+<aside id="sidebar" class="w-[280px] bg-white border-r border-stone-100 flex flex-col shrink-0 hidden lg:flex h-screen sticky top-0 z-50">
+  <script>restoreSidebarCollapsedState();</script>
+  <div class="logo-row h-20 flex items-center px-8 gap-3 border-b border-stone-50">
+    <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="h-12 w-auto object-contain shrink-0">
+    <div class="flex flex-col sidebar-text">
+      <span class="font-display font-bold text-xl text-dark tracking-tight leading-none">KibbleGuard</span>
+      <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
+    </div>
+  </div>
+  <button id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar" aria-label="Collapse sidebar" class="press absolute top-1/2 -translate-y-1/2 w-7 h-9 rounded-full bg-white border-2 border-stone-200 shadow-md flex items-center justify-center text-stone-500 hover:text-brand hover:border-brand transition-all z-[60]">
+    <i id="collapse-icon" class="fa-solid fa-chevron-left text-[10px]"></i>
+  </button>
+  <nav class="flex-1 px-6 py-8 space-y-2 overflow-y-auto">
+    <a href="dashboard.html" aria-label="Dashboard" data-tooltip="Dashboard" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-chart-pie text-sm w-5 shrink-0"></i> <span class="sidebar-text">Dashboard</span>
+    </a>
+    <a href="ingredient-database.html" aria-label="Ingredient Database" data-tooltip="Ingredient Database" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-dna text-sm w-5 shrink-0"></i> <span class="sidebar-text">Ingredient Database</span>
+    </a>
+    <a href="ocr-scans.html" aria-label="OCR Scan Records" data-tooltip="OCR Scan Records" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-camera-retro text-sm w-5 shrink-0"></i> <span class="sidebar-text">OCR Scan Records</span>
+    </a>
+    <a href="safety-rules.html" aria-label="Safety Rules" data-tooltip="Safety Rules" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-shield-halved text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Rules</span>
+    </a>
+    <a href="users-pets.html" aria-label="Users & Pets" data-tooltip="Users & Pets" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-users text-sm w-5 shrink-0"></i> <span class="sidebar-text">Users & Pets</span>
+    </a>
+    <a href="safety-feed.html" aria-label="Safety Feed" data-tooltip="Safety Feed" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-bullhorn text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Feed</span>
+    </a>
+    <a href="inquiries.html" aria-label="Inquiries" data-tooltip="Inquiries" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl transition-all">
+      <i class="fa-solid fa-headset text-sm w-5 shrink-0"></i> <span class="sidebar-text">Inquiries</span>
+    </a>
+    <a href="activity-log.html" aria-label="Activity Log" data-tooltip="Activity Log" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-clock-rotate-left text-sm w-5 shrink-0"></i> <span class="sidebar-text">Activity Log</span>
+    </a>
+    <a href="settings.html" aria-label="Settings" data-tooltip="Settings" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-gear text-sm w-5 shrink-0"></i> <span class="sidebar-text">Settings</span>
+    </a>
+  </nav>
+  <!-- name/role/avatar text below are placeholders replaced by
+       applySidebarIdentity() in app.js with whoever's actually logged in -->
+  <div class="admin-card-wrapper p-6 border-t border-stone-50">
+    <div class="admin-card flex items-center gap-3 p-3 rounded-2xl bg-stone-100/50 border border-stone-200">
+      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
+        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="Admin">
+        <div class="min-w-0 sidebar-text">
+          <p class="text-xs font-bold text-dark truncate">Dr. Sarah Chen</p>
+          <p class="text-[10px] text-stone-500 font-medium truncate">Chief Admin</p>
+        </div>
+      </a>
+      <button onclick="confirmLogout()" title="Log out" aria-label="Log out" class="press w-8 h-8 rounded-lg hover:bg-white flex items-center justify-center text-stone-400 hover:text-danger transition-all shrink-0">
+        <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="hidden fixed inset-0 bg-stone-900/50 z-[99]"></div>
+
+<!-- Main Content -->
+<main class="paw-field flex-1 flex flex-col h-screen overflow-y-auto">
+  <header class="min-h-20 bg-white border-b border-stone-50 flex flex-wrap items-center justify-between gap-4 px-10 py-4 sticky top-0 z-40">
+    <div class="flex items-center gap-4">
+      <button onclick="toggleMobileSidebar()" aria-label="Open navigation menu" class="lg:hidden press w-10 h-10 rounded-xl bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-dark shrink-0"><i class="fa-solid fa-bars"></i></button>
+      <div>
+      <h1 class="font-display font-bold text-xl text-dark">Inquiries</h1>
+      <p class="text-[11px] text-stone-400 font-bold uppercase tracking-wider">Pet Owner Help, Support &amp; Inquiries Requests</p>
+    </div>
+    </div>
+  </header>
+
+  <div class="p-10 max-w-[1600px] w-full mx-auto space-y-10">
+
+    <!-- Highlights -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-xl"><i class="fa-solid fa-inbox"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Total Inquiries</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="inquiries-total-kpi">-</h4>
+        </div>
+      </div>
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-caution/10 text-caution flex items-center justify-center text-xl"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Pending Review</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="inquiries-pending-kpi">-</h4>
+        </div>
+      </div>
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-safe/10 text-safe flex items-center justify-center text-xl"><i class="fa-solid fa-circle-check"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Resolved</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="inquiries-resolved-kpi">-</h4>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="stagger-in bg-white border border-stone-100 rounded-[2.5rem] card-shadow overflow-hidden">
+      <div class="p-6 border-b border-stone-50">
+        <!-- one row: search + labeled dropdown filters. no-wrap on large screens so the
+             Clear filters button appearing never shifts anything onto a second line -->
+        <div class="flex items-end gap-4 flex-wrap lg:flex-nowrap">
+          <div class="w-full lg:flex-1 lg:min-w-[180px] lg:max-w-sm">
+            <label for="inquiry-search" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Search</label>
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xs"></i>
+              <input type="text" id="inquiry-search" oninput="filterInquiries()" placeholder="Search by name, email or ID..." class="w-full pl-10 pr-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs focus:outline-none focus:border-brand transition-all">
+            </div>
+          </div>
+          <div class="w-full sm:w-64 shrink-0">
+            <label for="inquiry-category-filter" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Category</label>
+            <div class="relative">
+              <select id="inquiry-category-filter" onchange="setInquiryCategoryFilter()" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+                <option value="all">All categories</option>
+                <option value="Account Flag / Suspension Appeal">Account Flag / Suspension Appeal</option>
+                <option value="Application Bug / OCR Issue">Application Bug / OCR Issue</option>
+                <option value="Suggest Missing Ingredient for Encyclopedia">Suggest Missing Ingredient</option>
+                <option value="General Complaint / Feedback">General Complaint / Feedback</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+            </div>
+          </div>
+          <div class="w-full sm:w-44 shrink-0">
+            <label for="inquiry-filter-status" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Status</label>
+            <div class="relative">
+              <select id="inquiry-filter-status" onchange="setInquiryStatusFilter(this.value)" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+                <option value="all">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="resolved">Resolved</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+            </div>
+          </div>
+          <button id="inquiry-clear-filters" onclick="clearInquiryFilters()" class="hidden press shrink-0 whitespace-nowrap px-3 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all"><i class="fa-solid fa-xmark mr-1.5"></i>Clear filters</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+          <thead>
+            <tr class="text-[10px] uppercase tracking-[0.15em] text-stone-500 border-b border-stone-50 bg-stone-50/10">
+              <th class="font-bold px-10 py-5">Inquiry</th>
+              <th class="font-bold px-10 py-5">Pet Owner</th>
+              <th class="font-bold px-10 py-5">Category</th>
+              <th class="font-bold px-10 py-5">Status</th>
+              <th class="font-bold px-10 py-5 text-right">Submitted</th>
+              <th class="font-bold px-10 py-5 text-right sticky right-0 bg-white sticky-col-shadow"></th>
+            </tr>
+          </thead>
+          <!-- rendered entirely by renderInquiriesTable() in inquiries.js, from
+               INQUIRY_RECORDS (app.js) + whatever's been resolved/replied to in
+               localStorage since -- there is no static seed markup here to drift
+               out of sync with, unlike some of the other tables in this app -->
+          <tbody class="divide-y divide-stone-50" id="inquiry-table-body"></tbody>
+        </table>
+      </div>
+      <div class="p-8 border-t border-stone-50 flex items-center justify-between bg-stone-50/10">
+        <span class="text-xs font-bold text-stone-400 uppercase tracking-widest" id="inquiry-count-label">Showing all inquiries</span>
+        <div class="flex items-center gap-2" id="inquiry-pagination-controls"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="inquiries.js?v=3"></script>
+
+</body>
+</html>

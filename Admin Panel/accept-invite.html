@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KibbleGuard Admin - Accept Invite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app.js?v=6"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .font-display { font-family: 'DM Sans', sans-serif; }
+  /* hide the browser's own reveal/clear icons so only our eye shows */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear { display: none; }
+  .press { transition: transform 120ms ease, box-shadow 120ms ease; }
+  .press:active { transform: scale(0.97); }
+  @keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-up { animation: fade-up 480ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .shake { animation: shake 400ms ease; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+</style>
+</head>
+<body class="bg-[#FAF6EE] text-stone-800 antialiased min-h-screen flex items-center justify-center p-6">
+
+<div class="w-full max-w-md fade-up">
+
+  <div class="flex items-center gap-3 justify-center mb-10">
+    <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="h-12 w-auto object-contain shrink-0">
+    <div class="flex flex-col">
+      <span class="font-display font-bold text-xl text-dark leading-none">KibbleGuard</span>
+      <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
+    </div>
+  </div>
+
+  <div id="invite-content" class="bg-white border border-stone-100 rounded-[2rem] card-shadow p-8"></div>
+
+</div>
+
+<script>
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('token');
+  var container = document.getElementById('invite-content');
+
+  // shown for a missing token, or one that's already been used/revoked
+  function renderInvalidState() {
+    container.innerHTML =
+      '<div class="text-center py-4">' +
+        '<div class="w-14 h-14 rounded-2xl bg-danger/10 text-danger flex items-center justify-center text-xl mx-auto mb-4"><i class="fa-solid fa-link-slash"></i></div>' +
+        '<h1 class="font-display font-bold text-xl text-dark mb-2">Invite Not Found</h1>' +
+        '<p class="text-sm text-stone-500 leading-relaxed mb-6">This invite link is invalid, has already been used, or was revoked. Ask your Chief Admin to send a new one.</p>' +
+        '<a href="auth.html" class="press inline-block px-6 py-3 text-sm font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Go to Log In</a>' +
+      '</div>';
+  }
+
+  // builds the actual "set your password" form once a valid, still-pending
+  // invite is confirmed -- shows what role-based access they're about to get
+  function renderSetPasswordForm(account) {
+    var summaries = (typeof ROLE_ACCESS_SUMMARY !== 'undefined') ? ROLE_ACCESS_SUMMARY : {};
+    var accessSummary = summaries[roleStringToKey(account.role)] || 'Access varies by role.';
+    container.innerHTML =
+      '<h1 class="font-display font-bold text-xl text-dark mb-1">Set Your Password</h1>' +
+      '<p class="text-sm text-stone-500 mb-6">Finish setting up your ' + account.role + ' account for KibbleGuard.</p>' +
+      '<div class="mb-5 p-4 rounded-xl bg-stone-100 border border-stone-200">' +
+        '<p class="text-sm font-bold text-dark">' + account.name + '</p>' +
+        '<p class="text-xs text-stone-500">' + account.email + '</p>' +
+      '</div>' +
+      '<div class="mb-5 p-4 rounded-xl bg-brand-light border border-brand/10">' +
+        '<p class="text-[10px] font-bold text-brand uppercase tracking-widest mb-1">As ' + account.role + ', you will have access to:</p>' +
+        '<p class="text-xs text-stone-600 leading-relaxed">' + accessSummary + '</p>' +
+      '</div>' +
+      '<form id="accept-form" onsubmit="handleAcceptSubmit(event)" novalidate>' +
+        '<div class="mb-3">' +
+          '<label for="new-password" class="text-[11px] font-bold text-stone-500 uppercase tracking-widest">New Password</label>' +
+          '<div class="relative mt-1.5">' +
+            '<input type="password" id="new-password" oninput="updatePasswordRequirements()" autocomplete="new-password" placeholder="Create a password" class="w-full px-4 py-3 pr-11 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all">' +
+            passwordToggleButtonHtml('new-password') +
+          '</div>' +
+        '</div>' +
+        '<div class="mb-5">' +
+          '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-2">Password Security Rules</p>' +
+          '<div class="grid grid-cols-2 gap-x-3 gap-y-1.5" id="password-requirements">' +
+            passwordRequirementHtml('req-length', 'At least 8 characters') +
+            passwordRequirementHtml('req-mixedCase', 'Mixed case (upper &amp; lower)') +
+            passwordRequirementHtml('req-number', 'At least 1 number (0-9)') +
+            passwordRequirementHtml('req-special', 'At least 1 special symbol (!@#$%^&amp;*)') +
+          '</div>' +
+        '</div>' +
+        '<div class="mb-2">' +
+          '<label for="confirm-password" class="text-[11px] font-bold text-stone-500 uppercase tracking-widest">Confirm Password</label>' +
+          '<div class="relative mt-1.5">' +
+            '<input type="password" id="confirm-password" oninput="updateConfirmMatch()" autocomplete="new-password" placeholder="Re-enter your password" class="w-full px-4 py-3 pr-11 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all">' +
+            passwordToggleButtonHtml('confirm-password') +
+          '</div>' +
+          '<p id="confirm-match" class="hidden text-[11px] font-semibold mt-2 flex items-center gap-1.5"></p>' +
+        '</div>' +
+        '<p id="accept-error" class="hidden text-xs font-bold text-danger mb-4 flex items-center gap-1.5"><i class="fa-solid fa-circle-exclamation"></i><span id="accept-error-text"></span></p>' +
+        '<button type="submit" id="accept-submit-btn" class="press w-full mt-4 px-6 py-3.5 text-sm font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Set Password &amp; Continue</button>' +
+      '</form>';
+  }
+
+  // lights up each password rule green with a check mark as it's satisfied
+  // (see updatePasswordRequirementList in app.js), and re-checks the
+  // confirm field too, since changing the first password can break a match
+  function updatePasswordRequirements() {
+    updatePasswordRequirementList('req-', document.getElementById('new-password').value);
+    document.getElementById('accept-error').classList.add('hidden');
+    updateConfirmMatch();
+  }
+
+  // live "Passwords match / don't match" line under the confirm field --
+  // stays hidden until something's been typed there
+  function updateConfirmMatch() {
+    var el = document.getElementById('confirm-match');
+    var password = document.getElementById('new-password').value;
+    var confirm = document.getElementById('confirm-password').value;
+    document.getElementById('accept-error').classList.add('hidden');
+    if (!confirm) { el.classList.add('hidden'); return; }
+    var matches = password === confirm;
+    el.classList.remove('hidden');
+    el.className = 'text-[11px] font-semibold mt-2 flex items-center gap-1.5 ' + (matches ? 'text-safe' : 'text-danger');
+    el.innerHTML = (matches ? PW_REQ_CHECK_SVG : '<i class="fa-solid fa-circle-exclamation"></i>') + '<span>' + (matches ? 'Passwords match' : 'Passwords do not match yet') + '</span>';
+  }
+
+  function showAcceptError(message) {
+    document.getElementById('accept-error-text').textContent = message;
+    var errorEl = document.getElementById('accept-error');
+    errorEl.classList.remove('hidden');
+    var form = document.getElementById('accept-form');
+    form.classList.remove('shake');
+    void form.offsetWidth;
+    form.classList.add('shake');
+  }
+
+  // validates the password rules and match, then activates the account for
+  // real and drops the invite token so this same link can't be reused
+  function handleAcceptSubmit(event) {
+    event.preventDefault();
+    var password = document.getElementById('new-password').value;
+    var confirm = document.getElementById('confirm-password').value;
+    document.getElementById('accept-error').classList.add('hidden');
+
+    var checks = getPasswordChecks(password);
+    if (!checks.length || !checks.mixedCase || !checks.number || !checks.special) {
+      showAcceptError('Password doesn\'t meet all the requirements above.');
+      return;
+    }
+    if (password !== confirm) {
+      showAcceptError('Passwords do not match.');
+      return;
+    }
+
+    var accounts = getAdminAccounts();
+    var account = accounts.find(function (a) { return a.inviteToken === token; });
+    if (!account) { renderInvalidState(); return; }
+
+    account.status = 'active';
+    account.password = password;
+    account.joinedDate = new Date().toISOString();
+    delete account.inviteToken;
+    saveAdminAccounts(accounts);
+    logAdminAction(account.name + ' accepted their invite and activated their account', 'security');
+
+    window.location.href = 'auth.html?activated=1';
+  }
+
+  // only a pending account with a token matching the URL gets the real
+  // form -- anything else (missing, wrong, or already-used token) shows
+  // the same invalid-invite state
+  (function init() {
+    if (!token) { renderInvalidState(); return; }
+    var account = getAdminAccounts().find(function (a) { return a.inviteToken === token && a.status === 'pending'; });
+    if (!account) { renderInvalidState(); return; }
+    renderSetPasswordForm(account);
+  })();
+</script>
+
+</body>
+</html>

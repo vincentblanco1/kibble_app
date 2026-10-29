@@ -1,0 +1,414 @@
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+:root {
+  /* shared easing curves, reused across most transitions/animations in this file */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.card-shadow { box-shadow: 0 4px 24px -4px rgba(42, 36, 28, 0.08), 0 1px 2px rgba(42, 36, 28, 0.05); }
+.card-shadow-lg { box-shadow: 0 12px 40px -8px rgba(42, 36, 28, 0.20), 0 2px 6px rgba(42, 36, 28, 0.08); }
+.sticky-col-shadow { box-shadow: -8px 0 12px -8px rgba(42, 36, 28, 0.12); }
+.sidebar-link.active { background-color: #45671D; color: #ffffff; font-weight: 600; }
+
+.press { transition: transform 150ms var(--ease-out); }
+.press:active { transform: scale(0.97); }
+
+.feed-row { transition: background-color 180ms var(--ease-out), transform 180ms var(--ease-out); }
+.feed-row:hover { transform: translateX(2px); }
+
+.lift-card { transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out); }
+.lift-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px -10px rgba(42, 36, 28, 0.22); }
+
+.chevron-reveal { opacity: 0; transform: translateX(-4px); transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out); }
+
+/* Risk badges nested inside always-dark cards (like the ingredient preview's
+   Canine/Feline sections) need the bright, dark-context colors regardless of
+   the page's own theme, since .bg-dark cards never actually go light. */
+.bg-dark .text-safe { color: #4ade80 !important; }
+.bg-dark .text-caution { color: #f0a942 !important; }
+.bg-dark .text-danger { color: #fb8888 !important; }
+.bg-dark .bg-safe\/10 { background-color: rgba(74, 222, 128, 0.15) !important; }
+.bg-dark .bg-caution\/10 { background-color: rgba(240, 169, 66, 0.15) !important; }
+.bg-dark .bg-danger\/10 { background-color: rgba(251, 136, 136, 0.15) !important; }
+.bg-dark .border-safe\/10 { border-color: rgba(74, 222, 128, 0.3) !important; }
+.bg-dark .border-caution\/10 { border-color: rgba(240, 169, 66, 0.3) !important; }
+.bg-dark .border-danger\/10 { border-color: rgba(251, 136, 136, 0.3) !important; }
+
+.chart-legend-dot-safe { background: #15803D; }
+.chart-legend-dot-caution { background: #C17817; }
+.chart-legend-dot-toxic { background: #B91C1C; }
+html.dark-theme .chart-legend-dot-safe { background: #4ade80; }
+html.dark-theme .chart-legend-dot-caution { background: #f0a942; }
+html.dark-theme .chart-legend-dot-toxic { background: #ef4444; }
+
+/* the sidebar's red notification dot - shown/hidden by renderNavBadges() in
+   app.js, positioned differently when the sidebar is collapsed */
+.nav-notify-dot {
+  position: absolute;
+  top: 8px;
+  left: 26px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #fff;
+  pointer-events: none;
+}
+.sidebar-link.active .nav-notify-dot { border-color: #45671D; }
+#sidebar.collapsed .nav-notify-dot { left: 34px; }
+html.dark-theme .nav-notify-dot { border-color: #17181b; }
+html.dark-theme .sidebar-link.active .nav-notify-dot { border-color: #45671D; }
+.feed-row:hover .chevron-reveal { opacity: 1; transform: translateX(0); }
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.live-pulse { animation: live-pulse 2.2s ease-in-out infinite; }
+
+/* applied by checkOverdueToxicCases() in dashboard.js to a Toxic case that's
+   been sitting unresolved past the threshold */
+.overdue-toxic-case { border-left: 3px solid #B91C1C; background-color: rgba(185, 28, 28, 0.03); }
+
+/* toggled by setTableDensity() in app.js, from the density switch in Settings */
+html.compact-density table td.px-10,
+html.compact-density table th.px-10 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+
+.scroll-fade-right, .scroll-fade-left {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 200ms var(--ease-out);
+  z-index: 5;
+}
+.scroll-fade-right { right: 0; background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.92) 70%); }
+.scroll-fade-left { left: 0; background: linear-gradient(to left, transparent, rgba(255, 255, 255, 0.92) 70%); }
+.scroll-fade-right.hidden-fade, .scroll-fade-left.hidden-fade { opacity: 0; }
+html.dark-theme .scroll-fade-right { background: linear-gradient(to right, transparent, rgba(35, 36, 40, 0.92) 70%) !important; }
+html.dark-theme .scroll-fade-left { background: linear-gradient(to left, transparent, rgba(35, 36, 40, 0.92) 70%) !important; }
+
+@keyframes sidebar-slide-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@media (max-width: 1023px) {
+  #sidebar.mobile-open {
+    display: flex !important;
+    position: fixed !important;
+    inset: 0 auto 0 0;
+    z-index: 100;
+    animation: sidebar-slide-in 220ms var(--ease-out);
+  }
+  #mobile-sidebar-backdrop.open { display: block; }
+}
+
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(0.95) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-modal-in { animation: modal-pop 240ms var(--ease-out); }
+
+@keyframes modal-pop-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(4px); }
+}
+.animate-modal-out { animation: modal-pop-out 160ms var(--ease-in-out) forwards; }
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger-in { opacity: 0; animation: rise-in 480ms var(--ease-out) forwards; }
+.stagger-in:nth-child(1) { animation-delay: 0ms; }
+.stagger-in:nth-child(2) { animation-delay: 60ms; }
+.stagger-in:nth-child(3) { animation-delay: 120ms; }
+.stagger-in:nth-child(4) { animation-delay: 180ms; }
+
+.paw-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 24 24'%3E%3Cg fill='%2345671D' fill-opacity='0.09'%3E%3Cellipse cx='12' cy='16.2' rx='5' ry='4.1'/%3E%3Cellipse cx='5.6' cy='9.2' rx='2.1' ry='2.7' transform='rotate(-18 5.6 9.2)'/%3E%3Cellipse cx='10.4' cy='6' rx='2.1' ry='2.7' transform='rotate(-6 10.4 6)'/%3E%3Cellipse cx='15.6' cy='6' rx='2.1' ry='2.7' transform='rotate(6 15.6 6)'/%3E%3Cellipse cx='19.4' cy='9.2' rx='2.1' ry='2.7' transform='rotate(18 19.4 9.2)'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 72px 72px;
+}
+
+#sidebar { transition: width 220ms var(--ease-out); }
+#sidebar.collapsed { width: 5.5rem; }
+
+/* Positioning this with "right: -14px" would measure from the sidebar's
+   own right edge -- and since that edge slides for the full 220ms of the
+   width transition above, the button would be a moving target on screen
+   the whole time, so a second click during that window could land on
+   where the button used to be and miss it entirely (the "sometimes
+   doesn't respond / feels delayed" problem). Two fixed "left" positions
+   instead (one per state) swap the instant the class changes, with
+   position excluded from its own transition -- so it jumps straight to
+   the right spot immediately, rather than sliding there over the
+   sidebar's animation. */
+#sidebar-collapse-btn {
+  left: 266px; /* 280px expanded sidebar width, minus the 14px it hangs outside the edge */
+  transition: color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; /* deliberately no left here, overrides the transition-all utility class */
+}
+#sidebar.collapsed #sidebar-collapse-btn {
+  left: 74px; /* 88px collapsed width (5.5rem), minus the same 14px */
+}
+/* This button needs transform: translateY(-50%) at all times just to stay
+   vertically centered (see -translate-y-1/2 on the button itself). But the
+   shared .press:active rule that gives every button its "shrink on click"
+   feedback sets transform: scale(0.97) -- and a single transform property
+   can only hold one value, so during the mousedown-to-mouseup window,
+   scale(0.97) was completely REPLACING translateY(-50%), not combining
+   with it. That made the button visually jump away from the centered
+   position for the instant you were actually pressing it, which is
+   exactly when a click needs the target to stay still. Overriding
+   :active here so it keeps its centering AND the shrink feedback together
+   in one transform value. */
+#sidebar-collapse-btn:active {
+  transform: translateY(-50%) scale(0.97);
+}
+#sidebar.collapsed .sidebar-text { display: none; }
+#sidebar.collapsed .logo-row { justify-content: center; padding-left: 1rem; padding-right: 1rem; }
+#sidebar.collapsed .sidebar-link { justify-content: center; }
+#sidebar.collapsed #collapse-icon { transform: rotate(180deg); }
+#sidebar.collapsed .admin-card-wrapper { padding: 1rem 0.75rem; }
+#sidebar.collapsed .admin-card { flex-direction: column; gap: 0.5rem; }
+#sidebar.collapsed .admin-card-link { justify-content: center; }
+
+/* Custom icon tooltip -- only relevant once the sidebar is collapsed to
+   icons-only, since the label already sits next to the icon otherwise. A
+   ::after pseudo-element on each .sidebar-link would sit inside the nav,
+   which has overflow-y-auto -- and CSS forces overflow-x to clip too
+   whenever overflow-y isn't "visible" -- so a tooltip built that way
+   would get cut off by the nav's own scroll box the moment it tried to
+   render past the sidebar's right edge. A single element appended to
+   <body> instead (see initSidebarIconTooltips in app.js), positioned
+   with getBoundingClientRect() on hover, lives outside the nav entirely
+   so no ancestor's overflow can ever clip it. */
+.sidebar-icon-tooltip {
+  position: fixed;
+  background: #2A241C;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 7px 12px;
+  border-radius: 10px;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(-6px);
+  transition: opacity 140ms ease, transform 140ms ease;
+  z-index: 9999;
+}
+.sidebar-icon-tooltip.visible {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+/* small caret connecting the tooltip back to its icon */
+.sidebar-icon-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-right-color: #2A241C;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .press, .feed-row, .lift-card, .animate-modal-in, .animate-modal-out, .stagger-in, .chevron-reveal, #sidebar, .live-pulse, .scroll-fade-right, .scroll-fade-left { animation: none !important; transition: opacity 150ms linear !important; transform: none !important; }
+  /* the blanket ".press { transform: none }" above would otherwise strip
+     this button's required translateY(-50%) centering for anyone with
+     reduced-motion on, reintroducing the exact same click-eating jump the
+     :active override above exists to prevent -- so it needs its own
+     carve-out here too. */
+  #sidebar-collapse-btn { transform: translateY(-50%) !important; }
+  .sidebar-icon-tooltip { transition: opacity 150ms linear !important; transform: translateY(-50%) !important; }
+  .stagger-in { opacity: 1; }
+}
+
+/* Dark theme: overrides the utility classes already used app-wide via one
+   .dark-theme class on <html>, rather than adding dark: variants everywhere.
+   Covers every structural surface; doesn't reach one-off arbitrary colors. */
+html.dark-theme { color-scheme: dark; }
+html.dark-theme body { background-color: #17181b !important; color: #d7d7da !important; }
+html.dark-theme body.text-stone-800 { color: #d7d7da !important; }
+html.dark-theme body.bg-\[\#FAF6EE\] { background-color: #17181b !important; }
+
+/* Caution/warning-tinted UI (badges, dispute panels, trending indicators) */
+html.dark-theme .bg-amber-50 { background-color: rgba(193, 120, 23, 0.16) !important; }
+html.dark-theme .text-amber-500 { color: #e0a352 !important; }
+html.dark-theme .text-amber-600 { color: #e0a352 !important; }
+html.dark-theme .text-amber-700 { color: #e6b06a !important; }
+html.dark-theme .border-amber-100 { border-color: rgba(193, 120, 23, 0.35) !important; }
+html.dark-theme .bg-amber-50\/50 { background-color: rgba(193, 120, 23, 0.18) !important; }
+
+/* Danger hover/text states used outside the semantic danger/ opacity tokens */
+html.dark-theme .text-red-600 { color: #f87171 !important; }
+html.dark-theme .hover\:text-red-600:hover { color: #f87171 !important; }
+html.dark-theme .hover\:bg-red-600:hover { background-color: #dc2626 !important; }
+
+/* Taxonomy icon accents (Safety Rules category picker) -- already reasonably
+   visible on the dark icon box, lightened slightly for contrast */
+html.dark-theme .text-blue-500 { color: #7aa2f7 !important; }
+
+/* Light-mode-only text colors for badges sitting on pale tinted backgrounds
+   (allergen tags, vaccination status, trending indicators) -- darker shades
+   of the same hue, needed since the original tone only reaches about 3:1
+   against these pale backgrounds, short of the 4.5:1 text needs for
+   accessible contrast. Text only, borders and solid fills keep the original
+   brand colors. Scoped with a plain selector (no html.dark-theme prefix)
+   so it doesn't touch dark mode's own separate override further below. */
+html:not(.dark-theme) .text-safe { color: #116932 !important; }
+html:not(.dark-theme) .text-caution { color: #8a530f !important; }
+html:not(.dark-theme) .text-amber-600 { color: #92400e !important; }
+html:not(.dark-theme) .text-amber-500 { color: #92400e !important; }
+
+input[type="range"] { background: #f5f4f2; }
+html.dark-theme input[type="range"] { background: #3a3b40 !important; }
+/* --slider-color is set inline by updateSliderFill() in safety-rules.js
+   (green for auto-approve, red for hazard floor) - falls back to brand
+   green if that never runs */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--slider-color, #45671D);
+  box-shadow: 0 1px 4px rgba(42, 36, 28, 0.25);
+  cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--slider-color, #45671D);
+  box-shadow: 0 1px 4px rgba(42, 36, 28, 0.25);
+  cursor: pointer;
+}
+input[type="range"]:disabled::-webkit-slider-thumb { opacity: 0.6; }
+input[type="range"]:disabled::-moz-range-thumb { opacity: 0.6; }
+html.dark-theme .text-pink-500 { color: #f2a6cf !important; }
+/* dog color = the logo's dog ear. Rows saved in the browser before the change still carry the old class name,
+   so it is mapped to the new color here instead of leaving those icons blue-grey */
+.text-\[\#5C7A99\] { color: #03C4C9 !important; }
+html.dark-theme .text-\[\#5C7A99\], html.dark-theme .text-\[\#03C4C9\] { color: #3DD9DD !important; }
+/* cat color = the logo's cat ear; saved rows still carry the old class name, so it is mapped here too */
+.text-\[\#9B6B9E\] { color: #B57EDC !important; }
+html.dark-theme .text-\[\#9B6B9E\], html.dark-theme .text-\[\#B57EDC\] { color: #D4A8F0 !important; }
+
+/* Theme-aware row flash. Inline JS background styles would win over any CSS
+   override, including !important, so this uses a class instead. */
+.flash-highlight { background-color: #E9EDE4; transition: background-color 0.8s; }
+html.dark-theme .flash-highlight { background-color: rgba(91, 123, 79, 0.3) !important; }
+
+/* Gradient banners use Tailwind's from-/via-/to- utilities, which set
+   background-image, not background-color -- the .bg-brand-light override
+   above never touches them. Flatten to a solid dark surface instead. */
+html.dark-theme .gradient-card { background-image: none !important; background-color: #232428 !important; }
+
+/* Dark info cards read as highlighted against the cream page in light mode.
+   In dark mode they'd blend into the background, so give them a lifted
+   surface plus a brand-tinted edge to keep the same "this stands out" role. */
+html.dark-theme .bg-dark { background-color: #2e2f34 !important; border: 1px solid rgba(91, 123, 79, 0.35) !important; }
+
+html.dark-theme .bg-white { background-color: #232428 !important; }
+html.dark-theme .bg-white\/10 { background-color: rgba(35, 36, 40, 0.5) !important; }
+html.dark-theme .bg-white\/60 { background-color: rgba(0, 0, 0, 0.25) !important; }
+html.dark-theme .bg-white\/5 { background-color: rgba(35, 36, 40, 0.3) !important; }
+html.dark-theme .bg-stone-50 { background-color: #1c1d20 !important; }
+html.dark-theme .bg-stone-50\/10 { background-color: rgba(28, 29, 32, 0.4) !important; }
+html.dark-theme .bg-stone-50\/20 { background-color: rgba(28, 29, 32, 0.5) !important; }
+html.dark-theme .bg-stone-50\/40 { background-color: rgba(28, 29, 32, 0.55) !important; }
+html.dark-theme .bg-stone-50\/50 { background-color: rgba(28, 29, 32, 0.6) !important; }
+
+/* Row hover states use Tailwind's hover:/group-hover: variants, which
+   compile as their own separate selectors from the plain class above, so
+   they need their own explicit dark-mode override too -- this covers
+   hovering any of the ~17 tables across the system. */
+html.dark-theme .hover\:bg-stone-50\/50:hover,
+html.dark-theme .group:hover .group-hover\:bg-stone-50\/50 { background-color: rgba(28, 29, 32, 0.6) !important; }
+
+/* text-brand needs its own dark-mode override, since it's used in 109
+   places system-wide, including the Info severity badge on Safety Feed. */
+html.dark-theme .text-brand { color: #ABBB99 !important; }
+html.dark-theme .bg-stone-100 { background-color: #2a2b2f !important; }
+html.dark-theme .bg-stone-100\/50 { background-color: rgba(42, 43, 47, 0.6) !important; }
+html.dark-theme .bg-stone-100\/40 { background-color: rgba(42, 43, 47, 0.55) !important; }
+html.dark-theme .bg-stone-200 { background-color: #35363b !important; }
+html.dark-theme .bg-stone-300 { background-color: #45464b !important; }
+html.dark-theme .bg-brand-light { background-color: rgba(91, 123, 79, 0.18) !important; }
+html.dark-theme .bg-brand-light\/40 { background-color: rgba(91, 123, 79, 0.12) !important; }
+
+html.dark-theme .text-dark { color: #f5f5f6 !important; }
+html.dark-theme .text-stone-600 { color: #dcdce0 !important; }
+html.dark-theme .text-stone-500 { color: #bcbcc2 !important; }
+html.dark-theme .text-stone-400 { color: #a0a0a7 !important; }
+html.dark-theme .text-stone-300 { color: #8a8a91 !important; }
+
+html.dark-theme .border-stone-50 { border-color: #232428 !important; }
+html.dark-theme .divide-stone-50 > :not([hidden]) ~ :not([hidden]) { border-color: #2f3034 !important; }
+html.dark-theme .border-stone-100 { border-color: #2f3034 !important; }
+
+/* Colored borders (brand/safe/caution/danger) need genuinely lighter
+   variants in dark mode, not just less transparency -- their original low
+   opacity is under 1.4:1 contrast against dark cards, since the muted
+   source hues stay too close in luminance to the dark background even at
+   full opacity. */
+html.dark-theme .border-brand,
+html.dark-theme .border-brand\/10,
+html.dark-theme .border-brand\/20,
+html.dark-theme .border-brand\/30 { border-color: #7D9561 !important; }
+html.dark-theme .border-safe,
+html.dark-theme .border-safe\/10 { border-color: #4ade80 !important; }
+html.dark-theme .border-danger,
+html.dark-theme .border-danger\/10,
+html.dark-theme .border-danger\/20 { border-color: #ef4444 !important; }
+html.dark-theme .border-caution,
+html.dark-theme .border-caution\/10,
+html.dark-theme .border-caution\/20 { border-color: #f0a942 !important; }
+
+/* Status badge text colors -- drives Safe/Caution/Toxic and
+   Verified/Flagged across every table in the system, so needs its own
+   dark-mode override. Danger uses a brighter red than its border/chart
+   counterpart since body text needs 4.5:1 contrast, not the 3:1 a border
+   needs. */
+html.dark-theme .text-safe { color: #4ade80 !important; }
+html.dark-theme .text-caution { color: #f0a942 !important; }
+html.dark-theme .text-danger { color: #fb8888 !important; }
+html.dark-theme .bg-safe\/10 { background-color: rgba(74, 222, 128, 0.15) !important; }
+html.dark-theme .bg-caution\/10 { background-color: rgba(240, 169, 66, 0.15) !important; }
+html.dark-theme .bg-danger\/10 { background-color: rgba(251, 136, 136, 0.15) !important; }
+html.dark-theme .bg-danger\/5 { background-color: rgba(251, 136, 136, 0.08) !important; }
+html.dark-theme .hover\:bg-danger\/20:hover { background-color: rgba(251, 136, 136, 0.25) !important; }
+html.dark-theme .bg-safe\/5 { background-color: rgba(74, 222, 128, 0.08) !important; }
+html.dark-theme .bg-caution\/5 { background-color: rgba(240, 169, 66, 0.08) !important; }
+html.dark-theme .border-stone-200 { border-color: #3a3b40 !important; }
+
+html.dark-theme #sidebar { background-color: #1c1d20 !important; border-color: #2a2b2f !important; }
+/* the generic .border-stone-200 dark override (#3a3b40) is meant to be
+   subtle on big card edges, but this button's own face is ALSO dark
+   (bg-white gets recolored to #232428 in dark theme) and it sits on the
+   sidebar's dark background too -- #3a3b40 next to those two is barely
+   distinguishable, which is why the border reads as invisible. Giving
+   this one button a specifically lighter, clearly-visible border instead. */
+html.dark-theme #sidebar-collapse-btn { border-color: #54565c !important; }
+html.dark-theme #sidebar-collapse-btn:hover { border-color: #7D9561 !important; }
+html.dark-theme .paw-field { opacity: 0.7; }
+html.dark-theme .card-shadow { box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.45) !important; }
+html.dark-theme .card-shadow-lg { box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.55) !important; }
+html.dark-theme ::-webkit-scrollbar-thumb { background: #7a7b81; }
+html.dark-theme ::-webkit-scrollbar-thumb:hover { background: #93949a; }
+
+/* hide the browser's built-in password reveal/clear icons -- the app draws its
+   own eye toggle (see togglePasswordField in app.js), and Edge's own icon
+   shows the eye crossed out when the password is VISIBLE, the opposite of ours */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear { display: none; }
+
+/* the logo's black outline disappears on the dark sidebar, so give it a thin light edge in dark mode */
+html.dark-theme #sidebar .logo-row img { filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.95)); }

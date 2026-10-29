@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KibbleGuard Admin - Activity Log</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app.js?v=6"></script>
+<script>restoreThemeState();restoreTableDensityState();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="style.css?v=7">
+</head>
+<body class="bg-[#FAF6EE] text-stone-800 font-sans antialiased min-h-screen flex">
+
+<!-- Sidebar -->
+<aside id="sidebar" class="w-[280px] bg-white border-r border-stone-100 flex flex-col shrink-0 hidden lg:flex h-screen sticky top-0 z-50">
+  <script>restoreSidebarCollapsedState();</script>
+  <div class="logo-row h-20 flex items-center px-8 gap-3 border-b border-stone-50">
+    <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="h-12 w-auto object-contain shrink-0">
+    <div class="flex flex-col sidebar-text">
+      <span class="font-display font-bold text-xl text-dark tracking-tight leading-none">KibbleGuard</span>
+      <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
+    </div>
+  </div>
+  <button id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar" aria-label="Collapse sidebar" class="press absolute top-1/2 -translate-y-1/2 w-7 h-9 rounded-full bg-white border-2 border-stone-200 shadow-md flex items-center justify-center text-stone-500 hover:text-brand hover:border-brand transition-all z-[60]">
+    <i id="collapse-icon" class="fa-solid fa-chevron-left text-[10px]"></i>
+  </button>
+  <nav class="flex-1 px-6 py-8 space-y-2 overflow-y-auto">
+    <a href="dashboard.html" aria-label="Dashboard" data-tooltip="Dashboard" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-chart-pie text-sm w-5 shrink-0"></i> <span class="sidebar-text">Dashboard</span>
+    </a>
+    <a href="ingredient-database.html" aria-label="Ingredient Database" data-tooltip="Ingredient Database" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-dna text-sm w-5 shrink-0"></i> <span class="sidebar-text">Ingredient Database</span>
+    </a>
+    <a href="ocr-scans.html" aria-label="OCR Scan Records" data-tooltip="OCR Scan Records" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-camera-retro text-sm w-5 shrink-0"></i> <span class="sidebar-text">OCR Scan Records</span>
+    </a>
+    <a href="safety-rules.html" aria-label="Safety Rules" data-tooltip="Safety Rules" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-shield-halved text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Rules</span>
+    </a>
+    <a href="users-pets.html" aria-label="Users & Pets" data-tooltip="Users & Pets" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-users text-sm w-5 shrink-0"></i> <span class="sidebar-text">Users & Pets</span>
+    </a>
+    <a href="safety-feed.html" aria-label="Safety Feed" data-tooltip="Safety Feed" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-bullhorn text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Feed</span>
+    </a>
+    <a href="inquiries.html" aria-label="Inquiries" data-tooltip="Inquiries" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-headset text-sm w-5 shrink-0"></i> <span class="sidebar-text">Inquiries</span>
+    </a>
+    <a href="activity-log.html" aria-label="Activity Log" data-tooltip="Activity Log" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl transition-all">
+      <i class="fa-solid fa-clock-rotate-left text-sm w-5 shrink-0"></i> <span class="sidebar-text">Activity Log</span>
+    </a>
+    <a href="settings.html" aria-label="Settings" data-tooltip="Settings" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-gear text-sm w-5 shrink-0"></i> <span class="sidebar-text">Settings</span>
+    </a>
+  </nav>
+  <div class="admin-card-wrapper p-6 border-t border-stone-50">
+    <div class="admin-card flex items-center gap-3 p-3 rounded-2xl bg-stone-100/50 border border-stone-200">
+      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
+        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="Admin">
+        <div class="min-w-0 sidebar-text">
+          <p class="text-xs font-bold text-dark truncate">Dr. Sarah Chen</p>
+          <p class="text-[10px] text-stone-500 font-medium truncate">Chief Admin</p>
+        </div>
+      </a>
+      <button onclick="confirmLogout()" title="Log out" aria-label="Log out" class="press w-8 h-8 rounded-lg hover:bg-white flex items-center justify-center text-stone-400 hover:text-danger transition-all shrink-0">
+        <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="hidden fixed inset-0 bg-stone-900/50 z-[99]"></div>
+
+<!-- Main Content -->
+<main class="paw-field flex-1 flex flex-col h-screen overflow-y-auto">
+  <header class="min-h-20 bg-white border-b border-stone-50 flex flex-wrap items-center justify-between gap-4 px-10 py-4 sticky top-0 z-40">
+    <div class="flex items-center gap-4">
+      <button onclick="toggleMobileSidebar()" aria-label="Open navigation menu" class="lg:hidden press w-10 h-10 rounded-xl bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-dark shrink-0"><i class="fa-solid fa-bars"></i></button>
+      <div>
+      <h1 class="font-display font-bold text-xl text-dark">Activity Log</h1>
+      <p class="text-[11px] text-stone-400 font-bold uppercase tracking-wider">Admin Action Audit Trail</p>
+    </div>
+    </div>
+  </header>
+
+  <div class="p-10 max-w-[1600px] w-full mx-auto space-y-10">
+
+    <!-- Log Health -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-xl"><i class="fa-solid fa-calendar-day"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Actions Today</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="log-kpi-today">-</h4>
+        </div>
+      </div>
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-xl"><i class="fa-solid fa-calendar-week"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Actions This Week</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="log-kpi-week">-</h4>
+        </div>
+      </div>
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-xl"><i class="fa-solid fa-user-check"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Most Active Admin</p>
+          <h4 class="text-sm font-display font-bold text-dark mt-1.5" id="log-kpi-top-admin">-</h4>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters + Log -->
+    <div class="stagger-in bg-white border border-stone-100 rounded-[2.5rem] card-shadow overflow-hidden">
+      <div class="p-7 border-b border-stone-50 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="font-display font-bold text-base text-dark">Recent Actions</h2>
+            <p class="text-[10px] text-stone-400 font-bold uppercase tracking-widest mt-1">Newest first &middot; kept locally on this device</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <p class="text-xs font-bold text-brand bg-brand-light px-4 py-2 rounded-xl"><i class="fa-solid fa-filter mr-1.5"></i><span id="log-visible-count">-</span></p>
+            <button onclick="openActivityExportOptions()" class="press px-5 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all"><i class="fa-solid fa-download mr-1.5"></i>Export Log</button>
+          </div>
+        </div>
+        <div class="flex items-end gap-4 flex-wrap lg:flex-nowrap">
+          <div class="w-full sm:w-44 shrink-0">
+            <label for="log-filter-category" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Category</label>
+            <div class="relative">
+              <select id="log-filter-category" onchange="setLogCategoryFilter(this.value)" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+              <option value="all">All categories</option>
+              <option value="verify">Verification</option>
+              <option value="content">Content</option>
+              <option value="users">Users</option>
+              <option value="security">Security</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+            </div>
+          </div>
+          <div class="w-full sm:w-48 shrink-0">
+            <label for="log-admin-filter" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Admin</label>
+            <div class="relative">
+              <select id="log-admin-filter" onchange="renderActivityLog()" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+              <option value="all">All admins</option>
+              <option value="Dr. Sarah Chen">Dr. Sarah Chen</option>
+              <option value="Jamie Benwick">Jamie Benwick</option>
+              <option value="Alex Rivera">Alex Rivera</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+            </div>
+          </div>
+          <div class="w-full sm:w-40 shrink-0">
+            <label for="log-date-from" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">From date</label>
+            <input type="date" id="log-date-from" onchange="renderActivityLog()" aria-label="From date" class="w-full px-3.5 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all">
+          </div>
+          <div class="w-full sm:w-40 shrink-0">
+            <label for="log-date-to" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">To date</label>
+            <input type="date" id="log-date-to" onchange="renderActivityLog()" aria-label="To date" class="w-full px-3.5 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all">
+          </div>
+          <button id="log-clear-filters" onclick="clearLogFilters()" class="hidden press shrink-0 whitespace-nowrap px-3 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all"><i class="fa-solid fa-xmark mr-1.5"></i>Clear filters</button>
+        </div>
+      </div>
+      <div class="divide-y divide-stone-50" id="activity-log-list"></div>
+      <div class="hidden p-16 text-center" id="activity-log-empty">
+        <div class="w-14 h-14 mx-auto mb-3 relative">
+                  <svg class="w-full h-full text-stone-300" viewBox="0 0 24 24" fill="currentColor">
+                    <ellipse cx="12" cy="16.2" rx="5" ry="4.1"/>
+                    <ellipse cx="5.6" cy="9.2" rx="2.1" ry="2.7" transform="rotate(-18 5.6 9.2)"/>
+                    <ellipse cx="10.4" cy="6" rx="2.1" ry="2.7" transform="rotate(-6 10.4 6)"/>
+                    <ellipse cx="15.6" cy="6" rx="2.1" ry="2.7" transform="rotate(6 15.6 6)"/>
+                    <ellipse cx="19.4" cy="9.2" rx="2.1" ry="2.7" transform="rotate(18 19.4 9.2)"/>
+                  </svg>
+                </div>
+        <p class="text-sm font-bold text-dark">No matching actions</p>
+        <p class="text-[11px] text-stone-400 mt-1">Try a different filter or admin.</p>
+      </div>
+      <div class="p-6 border-t border-stone-50 flex items-center justify-end bg-stone-50/10" id="log-pagination-controls"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<script src="activity-log.js?v=5"></script>
+
+</body>
+</html>

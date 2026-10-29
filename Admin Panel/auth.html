@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KibbleGuard Admin - Log In</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app.js?v=6"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .font-display { font-family: 'DM Sans', sans-serif; }
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear { display: none; }
+  .press { transition: transform 120ms ease, box-shadow 120ms ease; }
+  .press:active { transform: scale(0.97); }
+  @keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-up { animation: fade-up 480ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .shake { animation: shake 400ms ease; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+</style>
+</head>
+<body class="bg-[#FAF6EE] text-stone-800 antialiased min-h-screen">
+
+<div class="min-h-screen flex">
+
+  <!-- Left: context panel -->
+  <div class="hidden lg:flex lg:w-[42%] bg-dark text-white flex-col justify-between p-14 relative overflow-hidden">
+    <div class="absolute inset-0 opacity-[0.04]" style="background-image: radial-gradient(circle, #fff 1.5px, transparent 1.5px); background-size: 28px 28px;"></div>
+
+    <div class="relative z-10 flex items-center gap-3">
+      <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="h-12 w-auto object-contain shrink-0" style="filter: drop-shadow(0 0 1px rgba(255,255,255,0.95));">
+      <div class="flex flex-col">
+        <span class="font-display font-bold text-xl leading-none">KibbleGuard</span>
+        <span class="text-[10px] font-bold text-brand-light/80 uppercase tracking-widest mt-1">Admin Panel</span>
+      </div>
+    </div>
+
+    <div class="relative z-10 max-w-sm">
+      <p class="font-display font-bold text-[28px] leading-[1.25] mb-5">What you confirm here reaches a pet owner's app within minutes.</p>
+      <p class="text-sm text-white/60 leading-relaxed">Verifying a mapping, replying to a dispute, or banning an account all take effect immediately. If you're on a shared or public device, log out when you're finished, and never share your password -- even with another admin.</p>
+    </div>
+
+    <div class="relative z-10 flex items-center gap-3 pt-8 border-t border-white/10">
+      <i class="fa-solid fa-lock text-brand-light/70"></i>
+      <p class="text-xs text-white/50">Sessions stay signed in until you log out -- close this tab when you're finished on a shared device.</p>
+    </div>
+  </div>
+
+  <!-- Right: login form -->
+  <div class="flex-1 flex items-center justify-center p-8">
+    <div class="w-full max-w-sm fade-up">
+
+      <div class="lg:hidden flex items-center gap-3 mb-10">
+        <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="h-12 w-auto object-contain shrink-0">
+        <div class="flex flex-col">
+          <span class="font-display font-bold text-xl text-dark leading-none">KibbleGuard</span>
+          <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
+        </div>
+      </div>
+
+      <h1 class="font-display font-bold text-[26px] text-dark mb-2">Log in</h1>
+      <p class="text-sm text-stone-500 mb-6">Enter your admin credentials to continue.</p>
+
+      <!-- shown when redirected here from accept-invite.html with ?activated=1
+           in the URL, see the inline script further down this file -->
+      <p id="activated-banner" class="hidden text-xs font-bold text-safe bg-safe/10 border border-safe/10 rounded-xl px-4 py-3 mb-6 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i>Account activated. Log in with your new password.</p>
+
+      <p id="deactivated-banner" class="hidden text-xs font-bold text-caution bg-caution/10 border border-caution/10 rounded-xl px-4 py-3 mb-6 flex items-center gap-2"><i class="fa-solid fa-user-slash"></i>Your admin access was deactivated. A Chief Admin can restore it.</p>
+
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" novalidate>
+        <div class="mb-5">
+          <label for="login-email" class="text-[11px] font-bold text-stone-500 uppercase tracking-widest">Email Address</label>
+          <input type="email" id="login-email" autocomplete="username" placeholder="you@kibbleguard.app" class="w-full mt-1.5 px-4 py-3 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all">
+        </div>
+        <div class="mb-2">
+          <label for="login-password" class="text-[11px] font-bold text-stone-500 uppercase tracking-widest">Password</label>
+          <div class="relative mt-1.5">
+            <input type="password" id="login-password" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" class="w-full px-4 py-3 pr-11 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all">
+            <button type="button" onclick="togglePasswordVisibility()" aria-label="Show password" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-dark transition-colors">
+              <i id="password-icon-hidden-state" class="fa-solid fa-eye-slash text-xs"></i>
+              <i id="password-icon-visible-state" class="fa-solid fa-eye text-xs hidden"></i>
+            </button>
+          </div>
+        </div>
+
+        <p id="login-error" class="hidden text-xs font-bold text-danger mb-4 flex items-center gap-1.5"><i class="fa-solid fa-circle-exclamation"></i><span id="login-error-text">Incorrect email or password.</span></p>
+
+        <button type="submit" id="login-submit-btn" class="press w-full mt-4 px-6 py-3.5 text-sm font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all flex items-center justify-center gap-2">
+          <span id="login-submit-label">Log In</span>
+        </button>
+      </form>
+
+      <p class="text-[11px] text-stone-400 text-center mt-8 leading-relaxed">Restricted to authorized KibbleGuard staff.<br>Locked out or need access? Contact your Chief Admin.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  if (new URLSearchParams(window.location.search).get('activated') === '1') {
+    document.getElementById('activated-banner').classList.remove('hidden');
+  }
+  if (new URLSearchParams(window.location.search).get('deactivated') === '1') {
+    document.getElementById('deactivated-banner').classList.remove('hidden');
+  }
+
+  // the eye icon on the password field
+  function togglePasswordVisibility() {
+    var input = document.getElementById('login-password');
+    var hiddenStateIcon = document.getElementById('password-icon-hidden-state');
+    var visibleStateIcon = document.getElementById('password-icon-visible-state');
+    var willBeVisible = input.type === 'password';
+    input.type = willBeVisible ? 'text' : 'password';
+    hiddenStateIcon.classList.toggle('hidden', willBeVisible);
+    visibleStateIcon.classList.toggle('hidden', !willBeVisible);
+  }
+
+  // shows the error banner and gives the form a quick shake, re-triggerable
+  // even on repeated failed attempts (the offsetWidth read forces the
+  // shake animation to restart instead of only playing once)
+  function showLoginError(message) {
+    var errorEl = document.getElementById('login-error');
+    document.getElementById('login-error-text').textContent = message;
+    errorEl.classList.remove('hidden');
+    var card = document.getElementById('login-form');
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+  }
+
+  function handleLoginSubmit(event) {
+    event.preventDefault();
+    var email = document.getElementById('login-email').value.trim().toLowerCase();
+    var password = document.getElementById('login-password').value;
+    document.getElementById('login-error').classList.add('hidden');
+
+    if (!email || !password) {
+      showLoginError('Enter both your email and password.');
+      return;
+    }
+
+    var btn = document.getElementById('login-submit-btn');
+    var label = document.getElementById('login-submit-label');
+    btn.disabled = true;
+    btn.classList.add('opacity-70', 'cursor-not-allowed');
+    label.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+
+    // stubbed with a short delay to feel like a real request; checks against
+    // the same shared admin accounts store Settings > Invite Admin and
+    // accept-invite.html both read and write. a real backend replaces this
+    // whole block with something like:
+    //   const res = await fetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    //   if (!res.ok) { showLoginError('Incorrect email or password.'); return; }
+    //   const { token } = await res.json();
+    //   localStorage.setItem('kibbleguard-session-token', token);
+    setTimeout(function () {
+      btn.disabled = false;
+      btn.classList.remove('opacity-70', 'cursor-not-allowed');
+      label.textContent = 'Log In';
+
+      var account = getAdminAccounts().find(function (a) { return a.email === email; });
+      if (account && account.status === 'deactivated') {
+        showLoginError('This admin account was deactivated. Ask a Chief Admin to restore your access.');
+        return;
+      }
+      if (account && account.status === 'pending') {
+        showLoginError('Your invite is still pending. Use the link you were sent to set your password first.');
+        return;
+      }
+      if (!account || account.password !== password) {
+        showLoginError('Incorrect email or password.');
+        return;
+      }
+      localStorage.setItem('kibbleguard-admin-email', email);
+      var lastLogins = {};
+      try { lastLogins = JSON.parse(localStorage.getItem('kibbleguard-last-logins')) || {}; } catch (e) { lastLogins = {}; }
+      lastLogins[email] = new Date().toISOString();
+      localStorage.setItem('kibbleguard-last-logins', JSON.stringify(lastLogins));
+      window.location.href = 'dashboard.html';
+    }, 500);
+  }
+</script>
+
+</body>
+</html>

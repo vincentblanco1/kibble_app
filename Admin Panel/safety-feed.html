@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KibbleGuard Admin - Safety Feed</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app.js?v=6"></script>
+<script>restoreThemeState();restoreTableDensityState();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="style.css?v=7">
+</head>
+<body class="bg-[#FAF6EE] text-stone-800 font-sans antialiased min-h-screen flex">
+
+<!-- Sidebar -->
+<aside id="sidebar" class="w-[280px] bg-white border-r border-stone-100 flex flex-col shrink-0 hidden lg:flex h-screen sticky top-0 z-50">
+  <script>restoreSidebarCollapsedState();</script>
+  <div class="logo-row h-20 flex items-center px-8 gap-3 border-b border-stone-50">
+    <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="h-12 w-auto object-contain shrink-0">
+    <div class="flex flex-col sidebar-text">
+      <span class="font-display font-bold text-xl text-dark tracking-tight leading-none">KibbleGuard</span>
+      <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
+    </div>
+  </div>
+  <button id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar" aria-label="Collapse sidebar" class="press absolute top-1/2 -translate-y-1/2 w-7 h-9 rounded-full bg-white border-2 border-stone-200 shadow-md flex items-center justify-center text-stone-500 hover:text-brand hover:border-brand transition-all z-[60]">
+    <i id="collapse-icon" class="fa-solid fa-chevron-left text-[10px]"></i>
+  </button>
+  <nav class="flex-1 px-6 py-8 space-y-2 overflow-y-auto">
+    <a href="dashboard.html" aria-label="Dashboard" data-tooltip="Dashboard" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-chart-pie text-sm w-5 shrink-0"></i> <span class="sidebar-text">Dashboard</span>
+    </a>
+    <a href="ingredient-database.html" aria-label="Ingredient Database" data-tooltip="Ingredient Database" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-dna text-sm w-5 shrink-0"></i> <span class="sidebar-text">Ingredient Database</span>
+    </a>
+    <a href="ocr-scans.html" aria-label="OCR Scan Records" data-tooltip="OCR Scan Records" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-camera-retro text-sm w-5 shrink-0"></i> <span class="sidebar-text">OCR Scan Records</span>
+    </a>
+    <a href="safety-rules.html" aria-label="Safety Rules" data-tooltip="Safety Rules" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-shield-halved text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Rules</span>
+    </a>
+    <a href="users-pets.html" aria-label="Users & Pets" data-tooltip="Users & Pets" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-users text-sm w-5 shrink-0"></i> <span class="sidebar-text">Users & Pets</span>
+    </a>
+    <a href="safety-feed.html" aria-label="Safety Feed" data-tooltip="Safety Feed" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl transition-all">
+      <i class="fa-solid fa-bullhorn text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Feed</span>
+    </a>
+    <a href="inquiries.html" aria-label="Inquiries" data-tooltip="Inquiries" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-headset text-sm w-5 shrink-0"></i> <span class="sidebar-text">Inquiries</span>
+    </a>
+    <a href="activity-log.html" aria-label="Activity Log" data-tooltip="Activity Log" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-clock-rotate-left text-sm w-5 shrink-0"></i> <span class="sidebar-text">Activity Log</span>
+    </a>
+    <a href="settings.html" aria-label="Settings" data-tooltip="Settings" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
+      <i class="fa-solid fa-gear text-sm w-5 shrink-0"></i> <span class="sidebar-text">Settings</span>
+    </a>
+  </nav>
+  <div class="admin-card-wrapper p-6 border-t border-stone-50">
+    <div class="admin-card flex items-center gap-3 p-3 rounded-2xl bg-stone-100/50 border border-stone-200">
+      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
+        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="Admin">
+        <div class="min-w-0 sidebar-text">
+          <p class="text-xs font-bold text-dark truncate">Dr. Sarah Chen</p>
+          <p class="text-[10px] text-stone-500 font-medium truncate">Chief Admin</p>
+        </div>
+      </a>
+      <button onclick="confirmLogout()" title="Log out" aria-label="Log out" class="press w-8 h-8 rounded-lg hover:bg-white flex items-center justify-center text-stone-400 hover:text-danger transition-all shrink-0">
+        <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="hidden fixed inset-0 bg-stone-900/50 z-[99]"></div>
+
+<!-- Main Content -->
+<main class="paw-field flex-1 flex flex-col h-screen overflow-y-auto">
+  <header class="min-h-20 bg-white border-b border-stone-50 flex flex-wrap items-center justify-between gap-4 px-10 py-4 sticky top-0 z-40">
+    <div class="flex items-center gap-4">
+      <button onclick="toggleMobileSidebar()" aria-label="Open navigation menu" class="lg:hidden press w-10 h-10 rounded-xl bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-dark shrink-0"><i class="fa-solid fa-bars"></i></button>
+      <div>
+      <h1 class="font-display font-bold text-xl text-dark">Safety Feed</h1>
+      <p class="text-[11px] text-stone-400 font-bold uppercase tracking-wider">Publish Recall Alerts & Safety Updates</p>
+    </div>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <button onclick="openAlertForm('add')" data-perm="manageSafetyFeed" class="press bg-brand hover:bg-brand-hover text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-brand/20 transition-all flex items-center gap-2">
+        <i class="fa-solid fa-bullhorn text-[10px]"></i> Publish New Alert
+      </button>
+    </div>
+  </header>
+
+  <div class="p-10 max-w-[1600px] w-full mx-auto space-y-10">
+
+    <!-- Highlights -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-safe/10 text-safe flex items-center justify-center text-xl"><i class="fa-solid fa-bullhorn"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Live Alerts</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="live-alerts-kpi">2</h4>
+        </div>
+      </div>
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-stone-100 text-stone-500 flex items-center justify-center text-xl"><i class="fa-solid fa-file-pen"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Draft Alerts</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="draft-alerts-kpi">0</h4>
+        </div>
+      </div>
+      <div class="stagger-in lift-card bg-white p-6 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Registered Pet Owners</p>
+          <!-- renamed from "Pet Owners Reached" - this system doesn't track
+               who actually saw a published alert, so "reached" would be a claim
+               this data can't back up. what it CAN honestly show is how many
+               pet owners are registered, same real number as Dashboard's
+               "Registered Pet Owners" card. data-target starts at the real
+               seed count (4); refreshKpiFromPersistedRows (app.js) overwrites
+               it with however many are actually saved -->
+          <h4 class="text-xl font-display font-bold text-dark" id="pet-owners-reached-kpi" data-target="4">4</h4>
+        </div>
+      </div>
+    </div>
+
+    <div class="stagger-in bg-dark p-8 rounded-[2rem] flex items-start gap-6 card-shadow">
+      <div class="w-12 h-12 rounded-2xl bg-white/10 text-brand flex items-center justify-center shrink-0 text-xl"><i class="fa-solid fa-info-circle"></i></div>
+      <div>
+        <h3 class="text-base font-display font-bold text-white mb-1">How this connects to the app</h3>
+        <p class="text-xs text-stone-400 font-medium leading-relaxed max-w-4xl">Alerts marked <strong class="text-stone-200">Live</strong> appear immediately in the Safety Feed widget on every pet owner's dashboard, filtered to the species they've selected. Use <strong class="text-stone-200">Draft</strong> to prepare an alert before it's ready to publish.</p>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="stagger-in bg-white border border-stone-100 rounded-[2.5rem] card-shadow overflow-hidden">
+      <div class="p-7 border-b border-stone-50">
+        <!-- one row: search + labeled dropdown filters. no-wrap on large screens so the
+             Clear filters button appearing never shifts anything onto a second line -->
+        <div class="flex items-end gap-4 flex-wrap lg:flex-nowrap">
+          <div class="w-full lg:flex-1 lg:min-w-[180px] lg:max-w-sm">
+            <label for="feed-search" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Search</label>
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xs"></i>
+              <input type="text" id="feed-search" oninput="filterAlerts()" placeholder="Search alerts by title, type, or species..." class="w-full pl-10 pr-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs focus:outline-none focus:border-brand transition-all">
+            </div>
+          </div>
+          <div class="w-full sm:w-44 shrink-0">
+            <label for="feed-filter-status" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Status</label>
+            <div class="relative">
+              <select id="feed-filter-status" onchange="setFeedStatusFilter(this.value)" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+                <option value="all">All statuses</option>
+                <option value="live">Live</option>
+                <option value="draft">Draft</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+            </div>
+          </div>
+          <div class="w-full sm:w-44 shrink-0">
+            <label for="feed-filter-severity" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Severity</label>
+            <div class="relative">
+              <select id="feed-filter-severity" onchange="setFeedSeverityFilter(this.value)" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+                <option value="all">All severities</option>
+                <option value="Urgent">Urgent</option>
+                <option value="Info">Info</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+            </div>
+          </div>
+          <button id="feed-clear-filters" onclick="clearFeedFilters()" class="hidden press shrink-0 whitespace-nowrap px-3 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all"><i class="fa-solid fa-xmark mr-1.5"></i>Clear filters</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+          <thead>
+            <tr class="text-[10px] uppercase tracking-[0.15em] text-stone-500 border-b border-stone-50 bg-stone-50/10">
+              <th class="font-bold px-10 py-5">Alert</th>
+              <th class="font-bold px-10 py-5">Type</th>
+              <th class="font-bold px-10 py-5">Severity</th>
+              <th class="font-bold px-10 py-5">Species</th>
+              <th class="font-bold px-10 py-5">Status</th>
+              <th class="font-bold px-10 py-5 text-right">Published</th>
+              <th class="font-bold px-10 py-5 text-right sticky right-0 bg-white sticky-col-shadow"></th>
+            </tr>
+          </thead>
+          <!-- data-status ("live"/"draft") drives filterAlerts() and is what
+               Dashboard's own alert preview checks too -->
+          <tbody class="divide-y divide-stone-50" id="feed-table-body">
+            <tr class="feed-row hover:bg-stone-50/50 group" id="alert-1" data-status="live" data-search="batch #af92 recalled for salmonella risk recall both" data-body="Independent lab testing has confirmed Salmonella contamination in Batch #AF92 of this product. Affected packages were distributed nationwide over the past three weeks. If you have this batch, stop feeding it immediately and contact the manufacturer for a refund. Watch for symptoms including vomiting, diarrhea, fever, and lethargy in your pet, and consult a veterinarian if any appear.">
+              <td class="px-10 py-6 max-w-sm">
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-stone-100 text-stone-500 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                  <p class="font-bold text-dark text-sm leading-snug whitespace-normal" data-field="title">Batch #AF92 Recalled for Salmonella Risk</p>
+                </div>
+              </td>
+              <td class="px-10 py-6 text-xs font-bold text-stone-600" data-field="type">Recall</td>
+              <td class="px-10 py-6"><span class="px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border bg-danger/10 text-danger border-danger/10" data-field="severity-badge">Urgent</span></td>
+              <td class="px-10 py-6 text-xs font-bold text-stone-600" data-field="species">Both</td>
+              <td class="px-10 py-6"><span class="status-badge px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border bg-safe/10 text-safe border-safe/10" data-field="status-badge">Live</span></td>
+              <td class="px-10 py-6 text-right text-stone-400 font-mono text-xs" data-field="published">2 days ago</td>
+              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
+                <div class="flex items-center justify-end gap-1">
+                  <button onclick="previewAlert('alert-1')" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Preview"><i class="fa-solid fa-eye text-xs"></i></button>
+                  <button onclick="toggleAlertStatus('alert-1')" data-perm="manageSafetyFeed" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Toggle Live/Draft"><i class="fa-solid fa-toggle-on text-xs"></i></button>
+                  <button onclick="editAlert('alert-1')" data-perm="manageSafetyFeed" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>
+                  <button onclick="deleteAlert('alert-1')" data-perm="manageSafetyFeed" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-danger transition-all" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
+                </div>
+              </td>
+            </tr>
+            <tr class="feed-row hover:bg-stone-50/50 group" id="alert-2" data-status="live" data-search="new study on synthetic dyes & feline sensitivities study feline" data-body="A peer-reviewed veterinary study has linked certain artificial red and yellow dyes to heightened sensitivity reactions in a subset of cats, including mild gastrointestinal upset and skin irritation. Cats are metabolically less equipped to process synthetic dyes than dogs. If your cat's food contains artificial coloring and you notice recurring digestive or skin issues, consider switching to a naturally-colored formula and discuss it with your veterinarian.">
+              <td class="px-10 py-6 max-w-sm">
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-stone-100 text-stone-500 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-flask"></i></div>
+                  <p class="font-bold text-dark text-sm leading-snug whitespace-normal" data-field="title">New Study on Synthetic Dyes & Feline Sensitivities</p>
+                </div>
+              </td>
+              <td class="px-10 py-6 text-xs font-bold text-stone-600" data-field="type">Study</td>
+              <td class="px-10 py-6"><span class="px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border bg-brand-light text-brand border-brand/20" data-field="severity-badge">Info</span></td>
+              <td class="px-10 py-6 text-xs font-bold text-stone-600" data-field="species">Feline</td>
+              <td class="px-10 py-6"><span class="status-badge px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border bg-safe/10 text-safe border-safe/10" data-field="status-badge">Live</span></td>
+              <td class="px-10 py-6 text-right text-stone-400 font-mono text-xs" data-field="published">5 days ago</td>
+              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
+                <div class="flex items-center justify-end gap-1">
+                  <button onclick="previewAlert('alert-2')" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Preview"><i class="fa-solid fa-eye text-xs"></i></button>
+                  <button onclick="toggleAlertStatus('alert-2')" data-perm="manageSafetyFeed" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Toggle Live/Draft"><i class="fa-solid fa-toggle-on text-xs"></i></button>
+                  <button onclick="editAlert('alert-2')" data-perm="manageSafetyFeed" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>
+                  <button onclick="deleteAlert('alert-2')" data-perm="manageSafetyFeed" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-danger transition-all" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
+                </div>
+              </td>
+            </tr>
+            <tr id="feed-empty-row" class="hidden" data-empty-row="true">
+              <td colspan="8" class="px-10 py-16 text-center">
+                <div class="w-14 h-14 mx-auto mb-3 relative">
+                  <svg class="w-full h-full text-stone-300" viewBox="0 0 24 24" fill="currentColor">
+                    <ellipse cx="12" cy="16.2" rx="5" ry="4.1"/>
+                    <ellipse cx="5.6" cy="9.2" rx="2.1" ry="2.7" transform="rotate(-18 5.6 9.2)"/>
+                    <ellipse cx="10.4" cy="6" rx="2.1" ry="2.7" transform="rotate(-6 10.4 6)"/>
+                    <ellipse cx="15.6" cy="6" rx="2.1" ry="2.7" transform="rotate(6 15.6 6)"/>
+                    <ellipse cx="19.4" cy="9.2" rx="2.1" ry="2.7" transform="rotate(18 19.4 9.2)"/>
+                  </svg>
+                </div>
+                <p class="text-sm font-bold text-dark">No safety alerts yet</p>
+                <p class="text-[11px] text-stone-400 mt-1">Publish an alert and it will appear here.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="p-8 border-t border-stone-50 flex items-center justify-between bg-stone-50/10">
+        <span class="text-xs font-bold text-stone-400 uppercase tracking-widest" id="feed-count-label">Showing all 2 alerts</span>
+        <div class="flex items-center gap-2" id="feed-pagination-controls"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="safety-feed.js?v=6"></script>
+
+</body>
+</html>
