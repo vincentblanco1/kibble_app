@@ -437,9 +437,17 @@ app.post('/api/login', (req, res) => {
   db.get(query, [cleanEmail, password, password], (err, user) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
-    if (user.is_banned) {
-      return res.status(403).json({ error: `Account suspended: ${user.ban_reason || 'Please contact support.'}` });
-    }
+    const isBanned =
+  user.is_banned === true ||
+  user.is_banned === 1 ||
+  user.is_banned === '1' ||
+  user.is_banned === 'true';
+
+if (isBanned) {
+  return res.status(403).json({
+    error: `Account suspended: ${user.ban_reason || 'Please contact support.'}`
+  });
+}
 
     console.log(`[AUTH] User logged in: \({user.email} (\){user.role})`);
     res.json({
