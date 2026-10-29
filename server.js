@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const path = require('path');
 const crypto = require('crypto');
 const multer = require('multer');
@@ -42,14 +42,79 @@ app.get('/Dashboard.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'Dashboard.html'));
 });
 
-// Connect to SQLite
-const db = new sqlite3.Database(path.join(__dirname, 'petfood.db'), (err) => {
-  if (err) {
-    console.error('Error opening database:', err.message);
-  } else {
-    console.log('Connected to SQLite database: petfood.db');
-  }
+// Connect to Supabase PostgreSQL. Set DATABASE_URL in Render's Environment settings.
+if (!process.env.DATABASE_URL) {
+  console.error('DATABASE_URL is missing. Add the Supabase connection string in your environment.');
+  process.exit(1);
+}
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // Supabase pooler connections use TLS.
+  ssl: { rejectUnauthorized: false },
+  max: 5,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 15000
 });
+pool.on('error', (err) => console.error('[PostgreSQL] Idle client error:', err.message));
+
+// Small callback-compatible adapter so existing route handlers can migrate incrementally.
+// Queries are serialized to preserve the original SQLite schema/seed initialization order.
+let dbQueue = Promise.resolve();
+function postgresSql(sql) {
+  let q = String(sql)
+    .replace(/INSERT\s+OR\s+IGNORE\s+INTO/ig, 'INSERT INTO')
+    .replace(/INSERT\s+OR\s+REPLACE\s+INTO/ig, 'INSERT INTO')
+    .replace(/datetime\(\s*'now'\s*\)/ig, 'CURRENT_TIMESTAMP')
+    .replace(/\s+COLLATE\s+NOCASE/ig, '');
+  q = q.replace(/INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT/ig, 'SERIAL PRIMARY KEY');
+  let n = 0;
+  q = q.replace(/\?/g, () => '$' + (++n));
+  if (/INSERT\s+OR\s+IGNORE/i.test(sql)) q += ' ON CONFLICT DO NOTHING';
+  if (/INSERT\s+OR\s+REPLACE\s+INTO\s+users/i.test(sql)) {
+    q += ' ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, password = EXCLUDED.password, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role';
+  }
+  return q;
+}
+function runQuery(sql, params = []) {
+  const task = dbQueue.then(async () => {
+    let query = postgresSql(sql);
+    // Callbacks use this.lastID for inserted records.
+    if (/^\s*INSERT\s+INTO/i.test(query) && !/\bRETURNING\b/i.test(query)) query += ' RETURNING id';
+    return pool.query(query, params);
+  });
+  dbQueue = task.then(() => undefined, () => undefined);
+  return task;
+}
+const db = {
+  serialize(fn) { fn(); },
+  run(sql, params, callback) {
+    if (typeof params === 'function') { callback = params; params = []; }
+    params = params || [];
+    runQuery(sql, params).then(result => {
+      if (callback) callback.call({ lastID: result.rows?.[0]?.id ?? null, changes: result.rowCount || 0 }, null);
+    }).catch(err => { if (callback) callback.call({ lastID: null, changes: 0 }, err); else console.error('[PostgreSQL]', err.message); });
+    return this;
+  },
+  get(sql, params, callback) {
+    if (typeof params === 'function') { callback = params; params = []; }
+    runQuery(sql, params || []).then(result => callback && callback(null, result.rows[0])).catch(err => callback && callback(err));
+  },
+  all(sql, params, callback) {
+    if (typeof params === 'function') { callback = params; params = []; }
+    runQuery(sql, params || []).then(result => callback && callback(null, result.rows)).catch(err => callback && callback(err));
+  },
+  prepare(sql) {
+    return {
+      run(params, callback) {
+        if (!Array.isArray(params)) { callback = typeof params === 'function' ? params : callback; params = []; }
+        db.run(sql, params, callback);
+        return this;
+      },
+      finalize(callback) { if (callback) callback(null); }
+    };
+  }
+};
+console.log('[PostgreSQL] Configured Supabase connection.');
 
 // --- SCHEMA SETUP & AUTO-MIGRATION ---
 db.serialize(() => {

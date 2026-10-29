@@ -5,7 +5,8 @@
   "description": "Kibble app backend and static frontend",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "import:supabase": "node migrate-sqlite-to-supabase.js"
   },
   "engines": {
     "node": ">=20"
@@ -17,6 +18,7 @@
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.10.0",
+    "pg": "^8.13.1",
     "sqlite3": "^5.1.7"
   }
 }
