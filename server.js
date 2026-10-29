@@ -955,19 +955,26 @@ app.get('/api/history', (req, res) => {
       petName: r.pet_name || null,
       tokens,
       allergy: hasAllergy,
-      createdAt: new Date(String(r.created_at).replace(' ', 'T') + 'Z').toISOString(),
+      createdAt: Number.isNaN(new Date(r.created_at).getTime())
+        ? new Date().toISOString()
+        : new Date(r.created_at).toISOString(),
       flagged,
       score: r.risk_score,
       productName: r.product_name,
       batchNumber: 'Scan #' + r.id,
       species: r.species || 'Canine',
-      date: new Date(String(r.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      date: Number.isNaN(new Date(r.created_at).getTime())
+        ? 'Unknown date'
+        : new Date(r.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }),
       result: r.rating
       };
     }));
   });
 });
-
 // One saved scan in full (photo + every ingredient), used when you click Inspect in History
 app.get('/api/history/:id', (req, res) => {
   const userId = req.query.user_id || 1;
