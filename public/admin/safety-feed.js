@@ -149,7 +149,7 @@ function openAlertForm(mode, rowId) {
     bodyHtml:
       '<div class="space-y-4">' +
         '<div><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Alert Title</label>' +
-          '<input id="f-alert-title" value="' + (existing ? existing.title : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand" placeholder="e.g. Batch #123 Recalled for..."></div>' +
+          '<input id="f-alert-title" value="' + escapeHTML(existing ? existing.title : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand" placeholder="e.g. Batch #123 Recalled for..."></div>' +
         '<div class="grid grid-cols-3 gap-4">' +
           '<div><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Type</label>' +
             '<select id="f-alert-type" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand">' + typeOptions + '</select></div>' +
@@ -159,7 +159,7 @@ function openAlertForm(mode, rowId) {
             '<select id="f-alert-species" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand">' + speciesOptions + '</select></div>' +
         '</div>' +
         '<div><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Details</label>' +
-          '<textarea id="f-alert-body" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm h-24 resize-none focus:outline-none focus:border-brand" placeholder="What pet owners need to know...">' + (existing ? existing.body : '') + '</textarea></div>' +
+          '<textarea id="f-alert-body" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm h-24 resize-none focus:outline-none focus:border-brand" placeholder="What pet owners need to know...">' + escapeHTML(existing ? existing.body : '') + '</textarea></div>' +
       '</div>',
     footerHtml:
       '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
@@ -351,12 +351,12 @@ function previewAlert(rowId) {
   var reach = getAlertReach(species);
   var reachLine = reach
     ? 'Can reach ' + reach.targeted + ' of ' + reach.total + ' registered pet owner' + (reach.total === 1 ? '' : 's')
-    : 'Owner data not loaded yet';
+    : 'Owner data unavailable';
   var reachNote = reach
     ? (species === 'Both'
         ? 'Every registered owner who is not banned. '
         : 'Owners with at least one ' + (species === 'Canine' ? 'dog' : 'cat') + ' registered, not banned. ') + 'This counts who the alert targets. The system does not track whether an owner has opened it.'
-    : 'Open Users & Pets once so owner and pet records are available here.';
+    : 'Owner and pet records could not be loaded right now.';
 
   openModal({
     title: title,

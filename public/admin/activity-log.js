@@ -33,16 +33,7 @@ var LOG_ROWS_PER_PAGE = 10;
 // example entries so this page isn't empty before anything real has
 // happened yet. actual logged actions (from logAdminAction in app.js)
 // get added on top of these when the page renders
-var SEEDED_ACTIVITY = [
-  { text: 'Verified OCR mapping for "Xyli-Extract" &rarr; Xylitol', category: 'verify', admin: 'Dr. Sarah Chen', time: '2026-08-27T09:14:00' },
-  { text: 'Merged duplicate entry "Onion Extract" into Allium Cepa', category: 'merge', admin: 'Jamie Benwick', time: '2026-08-26T16:02:00' },
-  { text: 'Published recall alert: Batch #AF92 Salmonella Risk', category: 'publish', admin: 'Dr. Sarah Chen', time: '2026-08-26T11:30:00' },
-  { text: 'Banned account: repeated fraudulent scan disputes', category: 'ban', admin: 'Dr. Sarah Chen', time: '2026-08-25T14:47:00' },
-  { text: 'Added new ingredient: Macadamia Nuts', category: 'add', admin: 'Jamie Benwick', time: '2026-08-24T10:05:00' },
-  { text: 'Updated Critical Hazard Floor threshold to 15%', category: 'settings', admin: 'Dr. Sarah Chen', time: '2026-08-22T08:40:00' },
-  { text: 'Force password reset issued to a flagged account', category: 'security', admin: 'Dr. Sarah Chen', time: '2026-08-20T13:12:00' },
-  { text: 'Edited species-specific advice text for Feline, Toxic tier', category: 'edit', admin: 'Jamie Benwick', time: '2026-08-18T15:55:00' }
-];
+var SEEDED_ACTIVITY = [];
 
 // merges the real, logged entries with the seed examples, newest first
 function getAllActivityEntries() {
@@ -143,8 +134,32 @@ function clearLogFilters() {
 // resetPage defaults to true (any filter/search change starts back at page
 // 1); only the Previous/Next buttons themselves pass false so paging
 // forward doesn't get immediately reset by its own re-render.
+// the Admin dropdown used to be three hardcoded names, so anyone invited later never
+// appeared in it. It's now built from the real admin team plus every name already in the log
+// (that keeps people who were removed later, and "Unknown admin", filterable).
+// Only rebuilt when the list actually changes, and the current choice is kept.
+function populateLogAdminFilter() {
+  var select = document.getElementById('log-admin-filter');
+  if (!select) return;
+  var names = [];
+  function add(n) { if (n && names.indexOf(n) === -1) names.push(n); }
+  getAdminAccounts().forEach(function (a) { if (a.status !== 'pending') add(a.name); });
+  getAllActivityEntries().forEach(function (e) { add(e.admin); });
+  names.sort(function (a, b) { return a.localeCompare(b); });
+
+  var current = select.value || 'all';
+  var signature = names.join('|');
+  if (select.dataset.signature === signature) return;
+  select.dataset.signature = signature;
+  select.innerHTML = '<option value="all">All admins</option>' + names.map(function (n) {
+    return '<option value="' + escapeHTML(n) + '">' + escapeHTML(n) + '</option>';
+  }).join('');
+  select.value = names.indexOf(current) !== -1 ? current : 'all';
+}
+
 function renderActivityLog(resetPage) {
   var countEl = document.getElementById('log-visible-count');
+  populateLogAdminFilter();
   syncLogFilterUI();
   computeLogKpis();
   if (resetPage !== false) currentLogPage = 1;

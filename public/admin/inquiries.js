@@ -32,6 +32,20 @@ function inquiryStatusBadgeHtml(resolved) {
     : '<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-caution/10 text-caution border-caution/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-hourglass-half"></i> Pending</span>';
 }
 
+// how long a still-pending inquiry has been waiting, so an old unanswered one doesn't
+// look the same as one that just arrived. Under a day is neutral, 1-2 days is amber,
+// 3 days or more is red. Resolved inquiries show nothing (the clock stopped).
+function inquiryAgeHtml(iso) {
+  var ms = Date.now() - new Date(iso).getTime();
+  if (isNaN(ms) || ms < 0) return '';
+  var hours = Math.floor(ms / 3600000);
+  var days = Math.floor(hours / 24);
+  var label = hours < 1 ? 'under 1h' : (hours < 24 ? hours + 'h' : days + 'd');
+  var cls = days >= 3 ? 'text-danger' : (days >= 1 ? 'text-caution' : 'text-stone-400');
+  var icon = days >= 3 ? 'fa-circle-exclamation' : 'fa-clock';
+  return '<p class="text-[10px] font-bold mt-1.5 ' + cls + '"><i class="fa-solid ' + icon + ' mr-1"></i>Waiting ' + label + '</p>';
+}
+
 // same "2024-05-28 14:42" style already used for timestamps on OCR Scan
 // Records, just computed here since these come from ISO strings, not
 // hand-typed seed text
@@ -142,7 +156,7 @@ function renderInquiriesTable() {
         '</div>' +
       '</td>' +
       '<td class="px-10 py-6">' + inquiryCategoryBadgeHtml(d.category) + '</td>' +
-      '<td class="px-10 py-6">' + inquiryStatusBadgeHtml(resolved) + '</td>' +
+      '<td class="px-10 py-6">' + inquiryStatusBadgeHtml(resolved) + (resolved ? '' : inquiryAgeHtml(d.timestamp)) + '</td>' +
       '<td class="px-10 py-6 text-right text-stone-400 font-mono text-xs">' + formatInquiryTimestamp(d.timestamp) + '</td>' +
       '<td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">' +
         '<button onclick="openInquiryDetail(\'' + id + '\')" class="press px-4 py-2 text-xs font-bold text-stone-400 hover:text-dark transition-all">Review</button>' +
@@ -207,7 +221,7 @@ function openInquiryDetail(inquiryId) {
       '<div class="p-5 rounded-2xl bg-brand-light/40 border border-brand/10 mb-6">' +
         '<div class="flex items-center gap-2 mb-2"><i class="fa-solid fa-flask text-brand"></i><span class="text-xs font-bold text-brand uppercase tracking-widest">Suggested Ingredient</span></div>' +
         '<p class="text-sm font-bold text-dark mb-3">&ldquo;' + escapeHTML(d.suggestedIngredient) + '&rdquo;</p>' +
-        '<button onclick="window.location.href=\'ingredient-database.html?new=' + encodeURIComponent(d.suggestedIngredient) + '\'" data-perm="manageIngredients" class="px-4 py-2 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl transition-all">Add to Ingredient Database</button>' +
+        '<button onclick="window.location.href=\'ingredient-database.html?new=' + encodeURIComponent(d.suggestedIngredient).replace(/'/g, '%27') + '\'" data-perm="manageIngredients" class="px-4 py-2 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl transition-all">Add to Ingredient Database</button>' +
       '</div>';
   }
 

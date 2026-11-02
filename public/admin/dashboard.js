@@ -202,6 +202,66 @@ function countAxisOptions(seriesList) {
 
 var mainChart = null;
 var pieChartInstance = null;
+
+/* ---------- Species Exposure donut ----------
+   Thick ring with small gaps between the slices, the total scan count in the middle (hover a
+   slice and the middle shows that species' count), and a legend beside it with each species'
+   share. Uses the same real scan counts as before; with no scans it shows an empty grey ring
+   and 0% instead of nothing. */
+function speciesDonutConfig(counts) {
+  var dark = document.documentElement.classList.contains('dark-theme');
+  var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var total = counts.canine + counts.feline;
+  var colors = dark ? ['#3DD9DD', '#D4A8F0'] : ['#03C4C9', '#B57EDC'];
+  return {
+    series: total > 0 ? [counts.canine, counts.feline] : [1],
+    labels: total > 0 ? ['Canine', 'Feline'] : ['No scans'],
+    colors: total > 0 ? colors : [dark ? '#35363b' : '#ece9e1'],
+    chart: {
+      type: 'donut', height: 160, fontFamily: 'Inter',
+      animations: { enabled: !reduceMotion, easing: 'easeinout', speed: 800, animateGradually: { enabled: true, delay: 150 }, dynamicAnimation: { enabled: true, speed: 450 } }
+    },
+    stroke: { show: true, width: 4, colors: [dark ? '#232428' : '#ffffff'] },
+    plotOptions: {
+      pie: {
+        expandOnClick: false,
+        donut: {
+          size: '68%',
+          labels: {
+            show: true,
+            name: { show: true, fontSize: '11px', fontWeight: 600, offsetY: 18, color: dark ? '#bcbcc2' : '#78716c' },
+            value: { show: true, fontSize: '26px', fontWeight: 700, fontFamily: 'DM Sans', offsetY: -8, color: dark ? '#f5f5f6' : '#2A241C', formatter: function (v) { return total > 0 ? v : 0; } },
+            total: { show: true, showAlways: true, label: 'Scans', fontSize: '11px', fontWeight: 600, color: dark ? '#bcbcc2' : '#78716c', formatter: function () { return total; } }
+          }
+        }
+      }
+    },
+    states: { hover: { filter: { type: 'lighten', value: 0.06 } }, active: { filter: { type: 'none' } } },
+    dataLabels: { enabled: false },
+    legend: { show: false },
+    tooltip: { enabled: total > 0, fillSeriesColor: false, theme: dark ? 'dark' : 'light', y: { formatter: function (v) { return v + ' scan' + (v === 1 ? '' : 's'); } } }
+  };
+}
+
+function renderSpeciesLegend(counts) {
+  var el = document.getElementById('pie-legend');
+  if (!el) return;
+  var dark = document.documentElement.classList.contains('dark-theme');
+  var colors = dark ? ['#3DD9DD', '#D4A8F0'] : ['#03C4C9', '#B57EDC'];
+  var total = counts.canine + counts.feline;
+  el.innerHTML = [['Canine', counts.canine, colors[0]], ['Feline', counts.feline, colors[1]]].map(function (r) {
+    var pct = total > 0 ? Math.round((r[1] / total) * 100) : 0;
+    return '<div class="flex items-center justify-between gap-3" title="' + r[1] + ' scan' + (r[1] === 1 ? '' : 's') + '">' +
+      '<span class="flex items-center gap-2.5 text-sm font-medium text-stone-500"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:' + r[2] + '"></span>' + r[0] + '</span>' +
+      '<span class="text-sm font-bold text-dark tabular-nums">' + pct + '%</span>' +
+    '</div>';
+  }).join('') + (total === 0 ? '<p class="text-[10px] text-stone-400 leading-relaxed pt-1">No scans in the latest week yet.</p>' : '');
+}
+
+function updateSpeciesDonut(counts) {
+  renderSpeciesLegend(counts);
+  if (pieChartInstance) pieChartInstance.updateOptions(speciesDonutConfig(counts), true, true);
+}
 // the long-form label for each column of the Assessment Activity chart
 // ("Mon, May 27, 2024"), kept here so the hover tooltip can read it
 var mainChartFullLabels = [];
@@ -421,11 +481,23 @@ window.addEventListener('load', function() {
     mainChart = new ApexCharts(document.querySelector("#main-chart"), {
       series: mainChartSeries(initialData),
       chart: {
-        height: 320, type: 'line', toolbar: { show: false }, fontFamily: 'Inter',
+        height: 320, type: 'area', toolbar: { show: false }, fontFamily: 'Inter',
         animations: { enabled: !reduceMotion, speed: 450 }
       },
-      stroke: { curve: 'straight', width: 2.5, lineCap: 'round' },
-      markers: { size: 4, strokeWidth: 0, hover: { size: 6 } },
+      // smooth curves + a soft vertical gradient under each line (strong at the
+      // line, fading to almost nothing at the axis), like the reference design
+      stroke: { curve: 'smooth', width: 2, lineCap: 'round' },
+      fill: {
+        type: 'gradient',
+        gradient: {
+          shadeIntensity: 1,
+          type: 'vertical',
+          opacityFrom: p.dark ? 0.38 : 0.32,
+          opacityTo: 0.02,
+          stops: [0, 95, 100]
+        }
+      },
+      markers: { size: 3.5, strokeWidth: 2, strokeColors: p.dark ? '#232428' : '#ffffff', hover: { size: 6 } },
       dataLabels: { enabled: false },
       colors: p.colors,
       xaxis: {
@@ -493,23 +565,16 @@ window.addEventListener('load', function() {
       renderVerdictSplitForRange(0, 0);
     }
 
-    var isDark = p.dark;
-    pieChartInstance = new ApexCharts(document.querySelector("#pie-chart"), {
-      series: [speciesSplit.species.canine, speciesSplit.species.feline],
-      labels: ['Canine', 'Feline'],
-      chart: { type: 'donut', height: 220, fontFamily: 'Inter' },
-      colors: isDark ? ['#3DD9DD', '#D4A8F0'] : ['#03C4C9', '#B57EDC'],
-      legend: { show: false },
-      dataLabels: { enabled: false },
-      stroke: { show: false },
-      plotOptions: { pie: { donut: { size: '75%' } } }
-    });
+    pieChartInstance = new ApexCharts(document.querySelector("#pie-chart"), speciesDonutConfig(speciesSplit.species));
     pieChartInstance.render();
+    renderSpeciesLegend(speciesSplit.species);
   } catch(e) {}
 
 
   animateAllCountUps();
 });
+
+
 
 
 /* ---------- Dashboard-specific interactions ---------- */
@@ -730,7 +795,7 @@ function verifyTriage(rowId) {
   var confidence = row.dataset.confidence;
   var isToxic = row.dataset.severity === 'Toxic';
   var priorityBanner = isToxic
-    ? '<div class="flex items-center gap-2 p-3 rounded-xl bg-danger/10 border border-danger/20 mb-4"><i class="fa-solid fa-triangle-exclamation text-danger"></i><p class="text-xs font-bold text-danger">Possible toxic match -- review before lower-priority scans in the queue.</p></div>'
+    ? '<div class="flex items-center gap-2 p-3 rounded-xl bg-danger/10 border border-danger/20 mb-4"><i class="fa-solid fa-triangle-exclamation text-danger"></i><p class="text-xs font-bold text-danger">Possible toxic match: review before lower-priority scans in the queue.</p></div>'
     : '';
   openModal({
     title: 'Manual Verification',
@@ -744,17 +809,17 @@ function verifyTriage(rowId) {
         '</div>' +
         '<div>' +
           priorityBanner +
-          '<p class="text-sm text-stone-600 leading-relaxed mb-4">Comparing the photo against the label, the OCR engine read <span class="font-bold text-dark">' + name +
+          '<p class="text-sm text-stone-600 leading-relaxed mb-4">Comparing the photo against the label, the OCR engine read <span class="font-bold text-dark">' + escapeHTML(name) +
           '</span> and matched it to this ingredient in the database:</p>' +
           '<div class="flex items-center gap-3 p-4 rounded-2xl bg-stone-100 border border-stone-200 mb-4">' +
             '<div class="w-9 h-9 rounded-xl bg-white text-brand flex items-center justify-center text-sm shrink-0 shadow-sm"><i class="fa-solid fa-flask"></i></div>' +
-            '<div><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Suggested Match</p><p class="text-sm font-bold text-dark">' + suggestedMatch + '</p></div>' +
+            '<div><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Suggested Match</p><p class="text-sm font-bold text-dark">' + escapeHTML(suggestedMatch) + '</p></div>' +
           '</div>' +
           '<p class="text-xs text-stone-500 leading-relaxed mb-4">This match is below the auto-approve threshold, so it needs your confirmation before the scan\'s verdict is finalized.</p>' +
           '<div class="space-y-3">' +
             '<label id="mapping-confirm-label" onclick="updateMappingChoiceStyle(\'confirm\')" class="flex items-center gap-3 p-4 rounded-2xl border-2 border-brand bg-brand-light cursor-pointer">' +
               '<input type="radio" name="mapping" id="mapping-confirm" value="confirm" checked class="accent-brand w-4 h-4">' +
-              '<div><p class="text-xs font-bold text-dark">Confirm suggested mapping</p><p class="text-[10px] text-stone-400">Accept ' + suggestedMatch + ' as the correct ingredient node</p></div>' +
+              '<div><p class="text-xs font-bold text-dark">Confirm suggested mapping</p><p class="text-[10px] text-stone-400">Accept ' + escapeHTML(suggestedMatch) + ' as the correct ingredient node</p></div>' +
             '</label>' +
             '<label id="mapping-unrecognized-label" onclick="updateMappingChoiceStyle(\'unrecognized\')" class="flex items-center gap-3 p-4 rounded-2xl border border-stone-100 hover:border-stone-200 cursor-pointer">' +
               '<input type="radio" name="mapping" id="mapping-unrecognized" value="unrecognized" class="accent-brand w-4 h-4">' +
@@ -813,9 +878,9 @@ function submitTriageResolution(rowId) {
         scan: scanRef,
         message: "We're double-checking one of the ingredients on your scan before finalizing the result. This may take a bit longer than usual."
       }).then(function () {
-        logAdminAction('Flagged OCR mapping as unrecognized for scan ' + scanRef + ': "' + cleanName + '" -- pet owner notified their scan remains pending', 'verify');
+        logAdminAction('Flagged OCR mapping as unrecognized for scan ' + scanRef + ': "' + cleanName + '" (pet owner notified, scan remains pending)', 'verify');
       }).catch(function () {
-        logAdminAction('Flagged OCR mapping as unrecognized for scan ' + scanRef + ': "' + cleanName + '" -- pet owner notification failed to queue', 'verify');
+        logAdminAction('Flagged OCR mapping as unrecognized for scan ' + scanRef + ': "' + cleanName + '" (pet owner notification failed to queue)', 'verify');
       });
       setTimeout(function () {
         window.location.href = 'ingredient-database.html?new=' + encodeURIComponent(cleanName) + '&forScan=' + encodeURIComponent(scanRef);
@@ -871,10 +936,10 @@ function resolveTriage(rowId) {
     message: 'Your scan result is ready: ' + suggestedMatch + ' was identified and classified as ' + severity + '.'
   }).then(function () {
     showToast('Mapping verified, pet owner notified of the finalized result', 'success');
-    logAdminAction('Verified OCR mapping for scan ' + scanRef + ' as ' + suggestedMatch + ' (' + severity + ') -- pet owner notified', 'verify');
+    logAdminAction('Verified OCR mapping for scan ' + scanRef + ' as ' + suggestedMatch + ' (' + severity + '), pet owner notified', 'verify');
   }).catch(function () {
     showToast('Mapping verified, but notifying the pet owner failed', 'danger');
-    logAdminAction('Verified OCR mapping for scan ' + scanRef + ' as ' + suggestedMatch + ' (' + severity + ') -- pet owner notification failed', 'verify');
+    logAdminAction('Verified OCR mapping for scan ' + scanRef + ' as ' + suggestedMatch + ' (' + severity + '), pet owner notification failed', 'verify');
   });
 }
 
@@ -1020,9 +1085,9 @@ function refreshActiveAlertsFromSafetyFeed() {
   container.innerHTML = liveAlerts.slice(0, 2).map(function (a) {
     var iconWrap = a.severe ? 'bg-danger/10 text-danger' : 'bg-brand-light text-brand';
     return '<div class="p-5"><div class="flex items-start gap-3">' +
-      '<div class="w-9 h-9 rounded-xl ' + iconWrap + ' flex items-center justify-center text-sm shrink-0"><i class="' + a.icon + '"></i></div>' +
-      '<div><p class="text-xs font-bold text-dark leading-snug">' + a.title + '</p>' +
-      '<p class="text-[10px] text-stone-400 mt-1">' + a.type + ' &middot; ' + a.species + ' &middot; ' + a.published + '</p></div>' +
+      '<div class="w-9 h-9 rounded-xl ' + iconWrap + ' flex items-center justify-center text-sm shrink-0"><i class="' + escapeHTML(a.icon) + '"></i></div>' +
+      '<div><p class="text-xs font-bold text-dark leading-snug">' + escapeHTML(a.title) + '</p>' +
+      '<p class="text-[10px] text-stone-400 mt-1">' + escapeHTML(a.type) + ' &middot; ' + escapeHTML(a.species) + ' &middot; ' + escapeHTML(a.published) + '</p></div>' +
     '</div></div>';
   }).join('');
 }
@@ -1120,6 +1185,7 @@ applyRoleState();
 prioritizeTriageQueue();
 removeResolvedTriageCards();
 
+// the icon uses the species color (dog teal, cat purple, same as everywhere else); the verdict stays in the colored word on the right
 // Live Assessment Stream: the 3 most recent real scans from OCR Scan Records'
 // saved rows. If nothing is saved yet (OCR Scan Records not opened in this
 // browser), the static sample markup stays.
@@ -1148,18 +1214,11 @@ function refreshLiveStreamFromScans() {
   items.sort(function (a, b) { return a.time < b.time ? 1 : -1; });
   liveStreamItems = items.slice(0, 3);
   if (!liveStreamItems.length) return;
-  renderLiveStream();
-}
-// draws liveStreamItems into the Live Assessment Stream (shared by the saved-data
-// version above and the live database version at the bottom of this file)
-function renderLiveStream() {
-  var list = document.getElementById('live-stream-list');
-  if (!list || !liveStreamItems.length) return;
   var tone = { Safe: ['safe', 'safe'], Caution: ['caution', 'caution'], Toxic: ['danger', 'danger'] };
   list.innerHTML = liveStreamItems.map(function (it, i) {
     var t = tone[it.verdict][0];
     return '<div class="feed-row p-6 flex items-center justify-between cursor-pointer" onclick="openLiveStreamItem(' + i + ')">' +
-      '<div class="flex items-center gap-4"><div class="w-9 h-9 rounded-xl bg-' + t + '/10 text-' + t + ' flex items-center justify-center text-sm shrink-0"><i class="fa-solid ' + (it.species === 'feline' ? 'fa-cat' : 'fa-dog') + '"></i></div>' +
+      '<div class="flex items-center gap-4"><div class="w-9 h-9 rounded-xl ' + (it.species === 'feline' ? 'bg-[#B57EDC]/10 text-[#B57EDC]' : 'bg-[#03C4C9]/10 text-[#03C4C9]') + ' flex items-center justify-center text-sm shrink-0"><i class="fa-solid ' + (it.species === 'feline' ? 'fa-cat' : 'fa-dog') + '"></i></div>' +
       '<div><p class="text-sm font-bold text-dark leading-none">' + escapeHTML(it.product) + '</p><p class="text-[11px] text-stone-400 mt-1">' + escapeHTML(it.owner) + (it.pet ? ' (' + escapeHTML(it.pet) + ')' : '') + ' &middot; ' + escapeHTML(it.time) + '</p></div></div>' +
       '<div class="flex items-center gap-3"><span class="text-[10px] font-bold text-' + t + ' uppercase tracking-widest">' + it.verdict + '</span><i class="chevron-reveal fa-solid fa-chevron-right text-[10px] text-stone-300"></i></div></div>';
   }).join('');
@@ -1188,6 +1247,29 @@ function syncTriageKpi() {
   if (empty) empty.classList.toggle('hidden', n !== 0);
 }
 
+/* ---------- Welcome line ----------
+   "Welcome back, Dr. Sarah": the signed-in admin's real name (a leading title such as Dr.
+   is kept with the first name), then today's date. Redrawn on Refresh so a name change
+   shows up. Pending items are deliberately not repeated here: the bell in the header
+   already lists them. */
+function greetingNameFor(fullName) {
+  var parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '';
+  var isTitle = /^(dr|mr|mrs|ms|mx|prof|engr|atty)\.?$/i.test(parts[0]);
+  return (isTitle && parts.length > 1) ? parts[0] + ' ' + parts[1] : parts[0];
+}
+function renderDashboardGreeting() {
+  var title = document.getElementById('greeting-title');
+  var sub = document.getElementById('greeting-sub');
+  if (!title || !sub) return;
+  var account = (typeof getLoggedInAdmin === 'function') ? getLoggedInAdmin() : null;
+  var name = account ? greetingNameFor(account.name) : '';
+  title.innerHTML = name ? 'Welcome back, <span class="kg-wordmark-guard">' + escapeHTML(name) + '</span>' : 'Welcome back';
+  var today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  sub.innerHTML = '<i class="fa-regular fa-calendar mr-1.5"></i>' + escapeHTML(today);
+}
+renderDashboardGreeting();
+
 function refreshDashboardCharts() {
   var today = new Date(); today.setHours(0, 0, 0, 0);
   var records = getStoredScanRecords();
@@ -1215,7 +1297,7 @@ function refreshDashboardCharts() {
 
   // Species Exposure + Weekly Safety Verdict Split
   var split = computeSpeciesSplit();
-  if (pieChartInstance) pieChartInstance.updateSeries([split.species.canine, split.species.feline]);
+  updateSpeciesDonut(split.species);
   var vFrom = document.getElementById('verdict-date-from');
   var vTo = document.getElementById('verdict-date-to');
   if (verdictRangeCustom && vFrom.value && vTo.value) {
@@ -1231,6 +1313,7 @@ function refreshDashboardCharts() {
 }
 
 function refreshDashboard() {
+  renderDashboardGreeting();
   // triage queue: read straight from saved rows (an empty saved list is real, it means everything was resolved)
   var triageList = document.getElementById('triage-list');
   var savedTriage = null;
@@ -1255,17 +1338,31 @@ function refreshDashboard() {
 }
 initRefreshControl({ key: 'dashboard', label: 'Dashboard', onRefresh: refreshDashboard, auto: true });
 
+/* ---------- Jump to High-Risk Triage from the notification bell ----------
+   The bell links to dashboard.html#high-risk-triage-section. The browser's own hash scroll
+   fires before the charts and the scrolling pane have settled, so it can land in the wrong
+   place. Scrolling again once the page has loaded (and on later hash changes, for when you
+   are already on the Dashboard) puts the Triage card at the top reliably. */
+(function () {
+  var TARGET = '#high-risk-triage-section';
+  function go() {
+    if (window.location.hash !== TARGET) return;
+    var el = document.getElementById('high-risk-triage-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  if (document.readyState === 'complete') setTimeout(go, 300);
+  else window.addEventListener('load', function () { setTimeout(go, 500); });
+  window.addEventListener('hashchange', go);
+})();
 
-// --- LIVE BACKEND CONNECTOR ---
-// Pulls real numbers from /api/admin/dashboard-stats and fills the KPI cards and the
-// Live Assessment Stream. If the request fails or returns nothing, the saved/sample
-// data above stays on screen exactly as before.
+
+// --- LIVE BACKEND CONNECTOR (from the Oct 22 build) ---
+// Pulls the real totals from /api/admin/dashboard-stats and fills the KPI cards.
+// If the request fails, the numbers worked out from the saved lists stay on screen.
 var liveDashboardData = null;
 
 function applyLiveDashboardStats(data) {
   if (!data) return;
-
-  // 1. KPI cards
   [['kpi-scans', data.total_scans], ['kpi-owners', data.total_users], ['kpi-ingredients', data.total_ingredients]].forEach(function (pair) {
     var el = document.getElementById(pair[0]);
     if (el && pair[1] != null) {
@@ -1273,28 +1370,9 @@ function applyLiveDashboardStats(data) {
       el.textContent = Number(pair[1]).toLocaleString();
     }
   });
-
-  // 2. Live Assessment Stream (same row design, same click-through)
-  if (Array.isArray(data.recent_scans) && data.recent_scans.length > 0) {
-    liveStreamItems = data.recent_scans.slice(0, 3).map(function (scan) {
-      var sp = String(scan.species || '').toLowerCase();
-      var rating = ['Safe', 'Caution', 'Toxic'].indexOf(scan.rating) !== -1 ? scan.rating : 'Safe';
-      return {
-        product: scan.product_name || 'Unknown Product',
-        owner: scan.owner_name || 'Unknown Owner',
-        pet: scan.pet_name || '',
-        time: scan.time_ago || 'Just now',
-        verdict: rating,
-        species: (sp === 'cat' || sp === 'feline') ? 'feline' : 'canine',
-        scanId: 'KB-' + (scan.id != null ? scan.id : '')
-      };
-    });
-    renderLiveStream();
-  }
 }
 
-// called at the end of refreshDashboard(): put the last database values back straight away
-// (so nothing flickers back to the sample numbers), then ask the server for fresh ones
+// put the last database values back straight away (nothing flickers), then ask the server for fresh ones
 function reapplyLiveDashboardStats() {
   applyLiveDashboardStats(liveDashboardData);
   fetchLiveDashboardStats();

@@ -266,14 +266,14 @@ function inspectRecord(scanId) {
       '<div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-stone-400 shrink-0"><i class="fa-solid fa-flask"></i></div>' +
       '<div class="flex-1 min-w-0">' +
         '<div class="flex items-center justify-between gap-3 mb-1">' +
-          '<p class="text-sm font-bold text-dark truncate">' + s.name + '</p>' +
+          '<p class="text-sm font-bold text-dark truncate">' + escapeHTML(s.name) + '</p>' +
           '<div class="flex items-center gap-2 shrink-0">' +
             '<span class="text-[10px] font-bold tabular-nums ' + ptsColor + '">' + ptsLabel + '</span>' +
             riskBadgeHtml(s.level) +
           '</div>' +
         '</div>' +
-        '<p class="text-[10px] text-stone-400 uppercase tracking-widest font-bold mb-1">' + s.category + '</p>' +
-        '<p class="text-xs text-stone-500 leading-relaxed">' + s.note + '</p>' +
+        '<p class="text-[10px] text-stone-400 uppercase tracking-widest font-bold mb-1">' + escapeHTML(s.category) + '</p>' +
+        '<p class="text-xs text-stone-500 leading-relaxed">' + escapeHTML(s.note) + '</p>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -294,7 +294,7 @@ function inspectRecord(scanId) {
     : '';
 
   var jsonLines = data.substances.map(function (s, i) {
-    return '{"token": "' + s.name.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '", "map_node": "' + s.name + '", "risk": "' + s.level + '"}' + (i < data.substances.length - 1 ? ',' : '');
+    return '{"token": "' + s.name.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '", "map_node": "' + escapeHTML(s.name) + '", "risk": "' + s.level + '"}' + (i < data.substances.length - 1 ? ',' : '');
   }).join('\n  ');
 
   openModal({
@@ -315,20 +315,20 @@ function inspectRecord(scanId) {
       '</div>' +
       unratedBannerHtml +
       '<div class="grid grid-cols-3 gap-4 mb-6">' +
-        '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Image Clarity</p><p class="text-sm font-bold text-dark">' + data.clarity + '</p></div>' +
-        '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">OCR Confidence</p><p class="text-sm font-bold text-dark">' + data.confidence + '</p></div>' +
-        '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Species</p><p class="text-sm font-bold text-dark capitalize">' + data.species + '</p></div>' +
+        '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Image Clarity</p><p class="text-sm font-bold text-dark">' + escapeHTML(data.clarity) + '</p></div>' +
+        '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">OCR Confidence</p><p class="text-sm font-bold text-dark">' + escapeHTML(data.confidence) + '</p></div>' +
+        '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Species</p><p class="text-sm font-bold text-dark capitalize">' + escapeHTML(data.species) + '</p></div>' +
       '</div>' +
       labelPhotoHtml(data.imageUrl) +
       '<details class="mb-6" open><summary class="cursor-pointer text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-3"><i class="fa-solid fa-magnifying-glass mr-1"></i>OCR Audit: Raw Text vs. Parsed Output</summary>' +
         '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">' +
           '<div class="p-4 rounded-2xl bg-dark">' +
             '<p class="text-[9px] font-bold text-stone-500 uppercase tracking-widest mb-2">Raw OCR Extraction</p>' +
-            '<p class="text-[11px] text-stone-300 font-mono leading-relaxed">' + data.rawOcrText + '</p>' +
+            '<p class="text-[11px] text-stone-300 font-mono leading-relaxed">' + escapeHTML(data.rawOcrText) + '</p>' +
           '</div>' +
           '<div class="p-4 rounded-2xl bg-brand-light border border-brand/10">' +
             '<p class="text-[9px] font-bold text-brand uppercase tracking-widest mb-2">Parsed & Matched Ingredients</p>' +
-            '<p class="text-[11px] text-dark leading-relaxed">' + data.substances.map(function (s) { return s.name; }).join(', ') + '</p>' +
+            '<p class="text-[11px] text-dark leading-relaxed">' + data.substances.map(function (s) { return escapeHTML(s.name); }).join(', ') + '</p>' +
           '</div>' +
         '</div>' +
       '</details>' +
@@ -361,7 +361,7 @@ function disputePanelHtml(scanId, dispute, substances) {
   }, null);
   var ingredientName = disputedIngredient ? disputedIngredient.name : '';
   var reviewButton = ingredientName
-    ? '<button onclick="window.location.href=\'ingredient-database.html?edit-name=' + encodeURIComponent(ingredientName) + '\'" data-perm="manageIngredients" class="px-4 py-2 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl transition-all">Review "' + escapeHTML(ingredientName) + '" Entry</button>'
+    ? '<button onclick="window.location.href=\'ingredient-database.html?edit-name=' + encodeURIComponent(ingredientName).replace(/'/g, '%27') + '\'" data-perm="manageIngredients" class="px-4 py-2 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl transition-all">Review "' + escapeHTML(ingredientName) + '" Entry</button>'
     : '';
   return '<div class="p-5 rounded-2xl bg-amber-50/50 border border-amber-100 mb-6" id="dispute-panel-' + scanId + '">' +
     '<div class="flex items-center gap-2 mb-3"><i class="fa-solid fa-comment-dots text-amber-500"></i><span class="text-xs font-bold text-amber-700 uppercase tracking-widest">Pet Owner Dispute: ' + escapeHTML(dispute.owner) + '</span></div>' +
@@ -660,7 +660,7 @@ function renderAccuracyGauge(elId, label, value) {
   var isDark = document.documentElement.classList.contains('dark-theme');
   accuracyGaugeInstances[elId] = new ApexCharts(el, {
     series: [value],
-    chart: { type: 'radialBar', height: 160, sparkline: { enabled: true }, fontFamily: 'Inter' },
+    chart: { type: 'radialBar', height: 210, sparkline: { enabled: true }, fontFamily: 'Inter' },
     plotOptions: {
       radialBar: {
         startAngle: -120,
@@ -671,7 +671,7 @@ function renderAccuracyGauge(elId, label, value) {
           name: { show: false },
           value: {
             offsetY: 8,
-            fontSize: '28px',
+            fontSize: '34px',
             fontWeight: 700,
             fontFamily: 'DM Sans',
             color: isDark ? '#f5f5f6' : '#2A241C',
@@ -1202,7 +1202,7 @@ function overturnDispute(scanId) {
     if (ownerEmail) appendMessageHistory(ownerEmail, { subject: 'Re: your dispute on ' + scanId + ' (verdict corrected to ' + after.verdict + ')', body: response, alsoEmail: true, time: new Date().toISOString() });
     var deliveries = [queueInAppNotification({ type: 'dispute-overturned', scan: scanId, to: ownerEmail, name: ownerName, message: response, newVerdict: after.verdict })];
     if (ownerEmail) deliveries.push(sendSystemEmail({ type: 'dispute-overturned', scan: scanId, to: ownerEmail, name: ownerName, message: response, newVerdict: after.verdict }));
-    var logText = 'Overturned dispute on ' + scanId + ': ' + target.name + ' ' + oldLevel + ' -> Safe for this scan, verdict ' + before.verdict + ' -> ' + after.verdict + ' -- "' + response + '"';
+    var logText = 'Overturned dispute on ' + scanId + ': ' + target.name + ' ' + oldLevel + ' -> Safe for this scan, verdict ' + before.verdict + ' -> ' + after.verdict + '. Reason: "' + response + '"';
     Promise.all(deliveries).then(function () {
       logAdminAction(logText + ' (owner notified)', 'dispute');
       showToast('Dispute overturned, ' + ownerName + ' notified', 'success');

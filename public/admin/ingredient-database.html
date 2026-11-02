@@ -11,13 +11,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KibbleGuard Admin - Ingredient Database</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="app.js?v=6"></script>
+<script src="db-sync.js?v=1"></script>
+<script src="app.js?v=16-db"></script>
 <script>restoreThemeState();restoreTableDensityState();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body class="bg-[#FAF6EE] text-stone-800 font-sans antialiased min-h-screen flex">
 
@@ -31,10 +32,26 @@
       <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
     </div>
   </div>
+  <!-- who is signed in (name, role, photo) sits at the top, under the logo, so the role you are acting under is always visible;
+       the text below is a placeholder that applySidebarIdentity() in app.js replaces with the real account on every page load.
+       Log out lives in the account menu at the top right of the header. -->
+  <div class="admin-card-wrapper px-6 pt-6 pb-5">
+    <div class="admin-card flex items-center gap-3 px-4">
+      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
+        <span class="relative shrink-0"><img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-11 h-11 rounded-full object-cover" alt="Admin"></span>
+        <div class="min-w-0 sidebar-text">
+          <p data-admin-name class="text-sm font-bold text-dark truncate">Dr. Sarah Chen</p>
+          <p data-admin-role class="text-xs text-stone-500 font-medium truncate">Chief Admin</p>
+        </div>
+      </a>
+    </div>
+  </div>
   <button id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar" aria-label="Collapse sidebar" class="press absolute top-1/2 -translate-y-1/2 w-7 h-9 rounded-full bg-white border-2 border-stone-200 shadow-md flex items-center justify-center text-stone-500 hover:text-brand hover:border-brand transition-all z-[60]">
     <i id="collapse-icon" class="fa-solid fa-chevron-left text-[10px]"></i>
   </button>
-  <nav class="flex-1 px-6 py-8 space-y-2 overflow-y-auto">
+  <nav class="flex-1 px-6 pt-5 pb-8 space-y-2 overflow-y-auto">
+    <div class="nav-group space-y-2">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">Main Menu</p>
     <a href="dashboard.html" aria-label="Dashboard" data-tooltip="Dashboard" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-chart-pie text-sm w-5 shrink-0"></i> <span class="sidebar-text">Dashboard</span>
     </a>
@@ -47,6 +64,9 @@
     <a href="safety-rules.html" aria-label="Safety Rules" data-tooltip="Safety Rules" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-shield-halved text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Rules</span>
     </a>
+    </div>
+    <div class="nav-group space-y-2 mt-3">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">Users &amp; Support</p>
     <a href="users-pets.html" aria-label="Users & Pets" data-tooltip="Users & Pets" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-users text-sm w-5 shrink-0"></i> <span class="sidebar-text">Users & Pets</span>
     </a>
@@ -56,27 +76,17 @@
     <a href="inquiries.html" aria-label="Inquiries" data-tooltip="Inquiries" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-headset text-sm w-5 shrink-0"></i> <span class="sidebar-text">Inquiries</span>
     </a>
+    </div>
+    <div class="nav-group space-y-2 mt-3">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">System</p>
     <a href="activity-log.html" aria-label="Activity Log" data-tooltip="Activity Log" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-clock-rotate-left text-sm w-5 shrink-0"></i> <span class="sidebar-text">Activity Log</span>
     </a>
     <a href="settings.html" aria-label="Settings" data-tooltip="Settings" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-gear text-sm w-5 shrink-0"></i> <span class="sidebar-text">Settings</span>
     </a>
-  </nav>
-  <div class="admin-card-wrapper p-6 border-t border-stone-50">
-    <div class="admin-card flex items-center gap-3 p-3 rounded-2xl bg-stone-100/50 border border-stone-200">
-      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
-        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="Admin">
-        <div class="min-w-0 sidebar-text">
-          <p class="text-xs font-bold text-dark truncate">Dr. Sarah Chen</p>
-          <p class="text-[10px] text-stone-500 font-medium truncate">Chief Admin</p>
-        </div>
-      </a>
-      <button onclick="confirmLogout()" title="Log out" aria-label="Log out" class="press w-8 h-8 rounded-lg hover:bg-white flex items-center justify-center text-stone-400 hover:text-danger transition-all shrink-0">
-        <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
-      </button>
     </div>
-  </div>
+  </nav>
 </aside>
 
 <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="hidden fixed inset-0 bg-stone-900/50 z-[99]"></div>
@@ -102,7 +112,7 @@
 
     <!-- Guidelines + Registry Health (asymmetric 8/4) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <div class="stagger-in lg:col-span-8 bg-dark p-8 rounded-[2rem] flex items-start gap-6 card-shadow">
+      <div class="stagger-in lg:col-span-8 bg-dark p-6 sm:p-8 rounded-[2rem] flex flex-col sm:flex-row items-start gap-4 sm:gap-6 card-shadow">
         <div class="w-12 h-12 rounded-2xl bg-white/10 text-brand flex items-center justify-center shrink-0 text-xl"><i class="fa-solid fa-info-circle"></i></div>
         <div>
           <h3 class="text-base font-display font-bold text-white mb-1">Registry Guidelines</h3>
@@ -164,7 +174,7 @@
         <!-- one row: search, the three labeled filters beside it, Export pushed to the far right.
              items-end lines the search box up with the bottom of the dropdowns, so the
              small labels sit above their selects without pushing the search out of line -->
-        <div class="flex items-end gap-4 flex-wrap lg:flex-nowrap">
+        <div class="flex items-end gap-4 flex-wrap xl:flex-nowrap">
           <div class="w-full lg:flex-1 lg:min-w-[180px] lg:max-w-sm">
             <label for="ingredient-search" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Search</label>
             <div class="relative">
@@ -207,7 +217,17 @@
             <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
           </div>
         </div>
-          
+        <div class="w-full sm:w-48 shrink-0">
+          <label for="ingredient-filter-age" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Last updated</label>
+          <div class="relative">
+            <select id="ingredient-filter-age" onchange="setIngredientAgeFilter(this.value)" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+              <option value="all">Any time</option>
+              <option value="stale6">Not updated in 6 months</option>
+              <option value="stale12">Not updated in 1 year</option>
+            </select>
+            <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+          </div>
+        </div>
           <button id="ingredient-clear-filters" onclick="clearIngredientFilters()" class="hidden press shrink-0 whitespace-nowrap px-3 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all"><i class="fa-solid fa-xmark mr-1.5"></i>Clear filters</button>
           <button onclick="openIngredientExportOptions()" data-perm="manageIngredients" class="press ml-auto shrink-0 whitespace-nowrap px-5 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all"><i class="fa-solid fa-download mr-1.5"></i>Export Report</button>
         </div>
@@ -231,136 +251,11 @@
                export -- data-search is a lowercased blob of name+category+
                aliases that filterIngredients() matches against -->
           <tbody class="divide-y divide-stone-50" id="ingredient-table-body">
-            <tr class="feed-row hover:bg-stone-50/50 group" id="row-xylitol" data-canine="Toxic" data-feline="Caution" data-risk-index="5.0" data-metabolic="Triggers rapid, massive insulin release in dogs, leading to life-threatening hypoglycemia and potential liver failure. Feline-specific research is limited, so it is treated as a caution pending further study." data-symptoms="Vomiting, Loss of coordination, Hypoglycemic seizures, Acute lethargy" data-alternatives="Stevia, Monk Fruit, Manuka Honey" data-source="ASPCA Animal Poison Control (2021)" data-reg-verified="true" data-reg-body="Regulatory Compliance" data-aliases="Birch Sugar Alcohol, E967, Wood Sugar" data-search="xylitol birch sugar / sweetener sweeteners & sugars birch sugar alcohol e967 wood sugar">
-              <td class="px-10 py-6">
-                <div>
-                  <p class="font-bold text-dark text-base" data-field="name">Xylitol</p>
-                  <p class="text-[11px] text-stone-400 font-medium italic" data-field="subtitle">Birch Sugar / Sweetener</p>
-                  <p class="text-[10px] text-stone-400 mt-1" data-field="aliases-line"><span class="font-bold">aka</span> Birch Sugar Alcohol, E967, Wood Sugar</p>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">Sweeteners &amp; Sugars</span>
-                  <span data-field="reg-badge" class="inline-flex items-center gap-1 text-[9px] font-bold text-safe ml-1" title="Regulatory Compliance Verified"><i class="fa-solid fa-circle-check"></i></span>
-              </td>
-              <td class="px-10 py-6" data-field="canine"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-danger/10 text-danger border-danger/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-skull"></i> Toxic</span></td>
-              <td class="px-10 py-6" data-field="feline"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-500 border-amber-100 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-triangle-exclamation"></i> Caution</span></td>
-              <td class="px-10 py-6 text-stone-600 font-bold text-xs tabular-nums" data-field="risk-index-cell">5.0 / 5.0</td>
-              <td class="px-10 py-6 text-stone-500 text-xs tabular-nums" data-field="scan-count">-</td>
-              <td class="px-10 py-6 text-right text-stone-400 font-mono text-xs" data-field="modified">28 May, 2024</td>
-              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
-                <div class="flex items-center justify-end gap-1">
-                  <button onclick="previewIngredient('row-xylitol')" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Preview in Risk Library"><i class="fa-solid fa-eye text-xs"></i></button>
-                  <button onclick="openMergeForm('row-xylitol')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Merge with another ingredient"><i class="fa-solid fa-code-merge text-xs"></i></button>
-                  <button onclick="editIngredient('row-xylitol')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>
-                  <button onclick="confirmDeleteIngredient('row-xylitol')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-danger transition-all" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr class="feed-row hover:bg-stone-50/50 group" id="row-theobromine" data-canine="Toxic" data-feline="Toxic" data-risk-index="4.2" data-metabolic="Slowly metabolized by both species; accumulates and overstimulates the heart and central nervous system." data-symptoms="Vomiting, Rapid heart rate, Tremors, Seizures" data-alternatives="Carob-based treats" data-source="Villaverde & Chandler (2022)" data-reg-verified="true" data-reg-body="Regulatory Compliance" data-aliases="Cocoa Alkaloid, Cacao Extract" data-search="theobromine cocoa derivative toxic food ingredients cocoa alkaloid cacao extract">
-              <td class="px-10 py-6">
-                <div>
-                  <p class="font-bold text-dark text-base" data-field="name">Theobromine</p>
-                  <p class="text-[11px] text-stone-400 font-medium italic" data-field="subtitle">Cocoa Derivative</p>
-                  <p class="text-[10px] text-stone-400 mt-1" data-field="aliases-line"><span class="font-bold">aka</span> Cocoa Alkaloid, Cacao Extract</p>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">Toxic Food Ingredients</span>
-                  <span data-field="reg-badge" class="inline-flex items-center gap-1 text-[9px] font-bold text-safe ml-1" title="Regulatory Compliance Verified"><i class="fa-solid fa-circle-check"></i></span>
-              </td>
-              <td class="px-10 py-6" data-field="canine"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-danger/10 text-danger border-danger/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-skull"></i> Toxic</span></td>
-              <td class="px-10 py-6" data-field="feline"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-danger/10 text-danger border-danger/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-skull"></i> Toxic</span></td>
-              <td class="px-10 py-6 text-stone-600 font-bold text-xs tabular-nums" data-field="risk-index-cell">4.2 / 5.0</td>
-              <td class="px-10 py-6 text-stone-500 text-xs tabular-nums" data-field="scan-count">-</td>
-              <td class="px-10 py-6 text-right text-stone-400 font-mono text-xs" data-field="modified">25 May, 2024</td>
-              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
-                <div class="flex items-center justify-end gap-1">
-                  <button onclick="previewIngredient('row-theobromine')" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Preview in Risk Library"><i class="fa-solid fa-eye text-xs"></i></button>
-                  <button onclick="openMergeForm('row-theobromine')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Merge with another ingredient"><i class="fa-solid fa-code-merge text-xs"></i></button>
-                  <button onclick="editIngredient('row-theobromine')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>
-                  <button onclick="confirmDeleteIngredient('row-theobromine')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-danger transition-all" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr class="feed-row hover:bg-stone-50/50 group" id="row-allium" data-canine="Toxic" data-feline="Toxic" data-risk-index="3.8" data-metabolic="Damages red blood cells through oxidative stress, leading to hemolytic anemia in both species." data-symptoms="Weakness, Pale gums, Elevated heart rate" data-alternatives="Plain cooked meat without seasoning" data-source="Villaverde & Chandler (2022)" data-reg-verified="true" data-reg-body="Regulatory Compliance" data-aliases="Onion Extract, Onion Powder, Dehydrated Onion" data-search="allium cepa onion / garlic compounds toxic plants & fruits onion extract onion powder dehydrated onion">
-              <td class="px-10 py-6">
-                <div>
-                  <p class="font-bold text-dark text-base" data-field="name">Allium Cepa</p>
-                  <p class="text-[11px] text-stone-400 font-medium italic" data-field="subtitle">Onion / Garlic Compounds</p>
-                  <p class="text-[10px] text-stone-400 mt-1" data-field="aliases-line"><span class="font-bold">aka</span> Onion Extract, Onion Powder, Dehydrated Onion</p>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">Toxic Plants &amp; Fruits</span>
-                  <span data-field="reg-badge" class="inline-flex items-center gap-1 text-[9px] font-bold text-safe ml-1" title="Regulatory Compliance Verified"><i class="fa-solid fa-circle-check"></i></span>
-              </td>
-              <td class="px-10 py-6" data-field="canine"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-danger/10 text-danger border-danger/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-skull"></i> Toxic</span></td>
-              <td class="px-10 py-6" data-field="feline"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-danger/10 text-danger border-danger/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-skull"></i> Toxic</span></td>
-              <td class="px-10 py-6 text-stone-600 font-bold text-xs tabular-nums" data-field="risk-index-cell">3.8 / 5.0</td>
-              <td class="px-10 py-6 text-stone-500 text-xs tabular-nums" data-field="scan-count">-</td>
-              <td class="px-10 py-6 text-right text-stone-400 font-mono text-xs" data-field="modified">20 May, 2024</td>
-              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
-                <div class="flex items-center justify-end gap-1">
-                  <button onclick="previewIngredient('row-allium')" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Preview in Risk Library"><i class="fa-solid fa-eye text-xs"></i></button>
-                  <button onclick="openMergeForm('row-allium')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Merge with another ingredient"><i class="fa-solid fa-code-merge text-xs"></i></button>
-                  <button onclick="editIngredient('row-allium')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>
-                  <button onclick="confirmDeleteIngredient('row-allium')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-danger transition-all" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr class="feed-row hover:bg-stone-50/50 group" id="row-grapes" data-canine="Toxic" data-feline="Caution" data-risk-index="4.0" data-metabolic="Exact toxic compound is unknown; associated with acute kidney injury in dogs even in small amounts. Feline cases are rarely documented, so treated as a caution pending further research." data-symptoms="Vomiting, Lethargy, Reduced urination" data-alternatives="Blueberries, Sliced apple (no seeds)" data-source="Macías-Montes et al. (2021)" data-reg-verified="false" data-reg-body="" data-aliases="Vitis Vinifera Extract, Dried Grape, Currants" data-search="grapes & raisins vitis vinifera toxic plants & fruits vitis vinifera extract dried grape currants">
-              <td class="px-10 py-6">
-                <div>
-                  <p class="font-bold text-dark text-base" data-field="name">Grapes & Raisins</p>
-                  <p class="text-[11px] text-stone-400 font-medium italic" data-field="subtitle">Vitis vinifera</p>
-                  <p class="text-[10px] text-stone-400 mt-1" data-field="aliases-line"><span class="font-bold">aka</span> Vitis Vinifera Extract, Dried Grape, Currants</p>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">Toxic Plants &amp; Fruits</span>
-                  <span data-field="reg-badge" class="inline-flex items-center gap-1 text-[9px] font-bold text-stone-300 ml-1" title="Not yet regulatory-verified"><i class="fa-regular fa-circle"></i></span>
-              </td>
-              <td class="px-10 py-6" data-field="canine"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-danger/10 text-danger border-danger/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-skull"></i> Toxic</span></td>
-              <td class="px-10 py-6" data-field="feline"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-500 border-amber-100 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-triangle-exclamation"></i> Caution</span></td>
-              <td class="px-10 py-6 text-stone-600 font-bold text-xs tabular-nums" data-field="risk-index-cell">4.0 / 5.0</td>
-              <td class="px-10 py-6 text-stone-500 text-xs tabular-nums" data-field="scan-count">-</td>
-              <td class="px-10 py-6 text-right text-stone-400 font-mono text-xs" data-field="modified">18 May, 2024</td>
-              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
-                <div class="flex items-center justify-end gap-1">
-                  <button onclick="previewIngredient('row-grapes')" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Preview in Risk Library"><i class="fa-solid fa-eye text-xs"></i></button>
-                  <button onclick="openMergeForm('row-grapes')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Merge with another ingredient"><i class="fa-solid fa-code-merge text-xs"></i></button>
-                  <button onclick="editIngredient('row-grapes')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>
-                  <button onclick="confirmDeleteIngredient('row-grapes')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-danger transition-all" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr class="feed-row hover:bg-stone-50/50 group" id="row-macadamia" data-canine="Toxic" data-feline="Caution" data-risk-index="3.5" data-metabolic="Affects nerve and muscle function through a mechanism specific to dogs that is not yet fully understood. No confirmed feline cases exist, so treated as a caution pending further research." data-symptoms="Weakness in hind legs, Tremors, Vomiting" data-alternatives="Plain roasted pumpkin seeds" data-source="Pedrinelli et al. (2021)" data-reg-verified="false" data-reg-body="" data-aliases="Macadamia Integrifolia, Queensland Nut" data-search="macadamia nuts tree nut toxic plants & fruits macadamia integrifolia queensland nut">
-              <td class="px-10 py-6">
-                <div>
-                  <p class="font-bold text-dark text-base" data-field="name">Macadamia Nuts</p>
-                  <p class="text-[11px] text-stone-400 font-medium italic" data-field="subtitle">Tree Nut</p>
-                  <p class="text-[10px] text-stone-400 mt-1" data-field="aliases-line"><span class="font-bold">aka</span> Macadamia Integrifolia, Queensland Nut</p>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">Toxic Plants &amp; Fruits</span>
-                  <span data-field="reg-badge" class="inline-flex items-center gap-1 text-[9px] font-bold text-stone-300 ml-1" title="Not yet regulatory-verified"><i class="fa-regular fa-circle"></i></span>
-              </td>
-              <td class="px-10 py-6" data-field="canine"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-danger/10 text-danger border-danger/10 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-skull"></i> Toxic</span></td>
-              <td class="px-10 py-6" data-field="feline"><span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-500 border-amber-100 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-triangle-exclamation"></i> Caution</span></td>
-              <td class="px-10 py-6 text-stone-600 font-bold text-xs tabular-nums" data-field="risk-index-cell">3.5 / 5.0</td>
-              <td class="px-10 py-6 text-stone-500 text-xs tabular-nums" data-field="scan-count">-</td>
-              <td class="px-10 py-6 text-right text-stone-400 font-mono text-xs" data-field="modified">12 May, 2024</td>
-              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
-                <div class="flex items-center justify-end gap-1">
-                  <button onclick="previewIngredient('row-macadamia')" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Preview in Risk Library"><i class="fa-solid fa-eye text-xs"></i></button>
-                  <button onclick="openMergeForm('row-macadamia')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Merge with another ingredient"><i class="fa-solid fa-code-merge text-xs"></i></button>
-                  <button onclick="editIngredient('row-macadamia')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>
-                  <button onclick="confirmDeleteIngredient('row-macadamia')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-danger transition-all" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
-                </div>
-              </td>
-            </tr>
+            
+            
+            
+            
+            
             <!-- hidden by default, shown by updateIngredientCountLabel() when
                  a search/filter matches nothing -->
             <tr id="ingredient-empty-row" class="hidden" data-empty-row="true">
@@ -390,7 +285,7 @@
 
 </main>
 
-<script src="ingredient-database.js?v=9"></script>
+<script src="ingredient-database.js?v=10-db"></script>
 
 </body>
 </html>

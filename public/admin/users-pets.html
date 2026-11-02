@@ -11,13 +11,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KibbleGuard Admin - Users & Pets</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="app.js?v=6"></script>
+<script src="db-sync.js?v=1"></script>
+<script src="app.js?v=16-db"></script>
 <script>restoreThemeState();restoreTableDensityState();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body class="bg-[#FAF6EE] text-stone-800 font-sans antialiased min-h-screen flex">
 
@@ -31,10 +32,26 @@
       <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
     </div>
   </div>
+  <!-- who is signed in (name, role, photo) sits at the top, under the logo, so the role you are acting under is always visible;
+       the text below is a placeholder that applySidebarIdentity() in app.js replaces with the real account on every page load.
+       Log out lives in the account menu at the top right of the header. -->
+  <div class="admin-card-wrapper px-6 pt-6 pb-5">
+    <div class="admin-card flex items-center gap-3 px-4">
+      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
+        <span class="relative shrink-0"><img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-11 h-11 rounded-full object-cover" alt="Admin"></span>
+        <div class="min-w-0 sidebar-text">
+          <p data-admin-name class="text-sm font-bold text-dark truncate">Dr. Sarah Chen</p>
+          <p data-admin-role class="text-xs text-stone-500 font-medium truncate">Chief Admin</p>
+        </div>
+      </a>
+    </div>
+  </div>
   <button id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar" aria-label="Collapse sidebar" class="press absolute top-1/2 -translate-y-1/2 w-7 h-9 rounded-full bg-white border-2 border-stone-200 shadow-md flex items-center justify-center text-stone-500 hover:text-brand hover:border-brand transition-all z-[60]">
     <i id="collapse-icon" class="fa-solid fa-chevron-left text-[10px]"></i>
   </button>
-  <nav class="flex-1 px-6 py-8 space-y-2 overflow-y-auto">
+  <nav class="flex-1 px-6 pt-5 pb-8 space-y-2 overflow-y-auto">
+    <div class="nav-group space-y-2">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">Main Menu</p>
     <a href="dashboard.html" aria-label="Dashboard" data-tooltip="Dashboard" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-chart-pie text-sm w-5 shrink-0"></i> <span class="sidebar-text">Dashboard</span>
     </a>
@@ -47,6 +64,9 @@
     <a href="safety-rules.html" aria-label="Safety Rules" data-tooltip="Safety Rules" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-shield-halved text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Rules</span>
     </a>
+    </div>
+    <div class="nav-group space-y-2 mt-3">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">Users &amp; Support</p>
     <a href="users-pets.html" aria-label="Users & Pets" data-tooltip="Users & Pets" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl transition-all">
       <i class="fa-solid fa-users text-sm w-5 shrink-0"></i> <span class="sidebar-text">Users & Pets</span>
     </a>
@@ -56,27 +76,17 @@
     <a href="inquiries.html" aria-label="Inquiries" data-tooltip="Inquiries" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-headset text-sm w-5 shrink-0"></i> <span class="sidebar-text">Inquiries</span>
     </a>
+    </div>
+    <div class="nav-group space-y-2 mt-3">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">System</p>
     <a href="activity-log.html" aria-label="Activity Log" data-tooltip="Activity Log" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-clock-rotate-left text-sm w-5 shrink-0"></i> <span class="sidebar-text">Activity Log</span>
     </a>
     <a href="settings.html" aria-label="Settings" data-tooltip="Settings" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-gear text-sm w-5 shrink-0"></i> <span class="sidebar-text">Settings</span>
     </a>
-  </nav>
-  <div class="admin-card-wrapper p-6 border-t border-stone-50">
-    <div class="admin-card flex items-center gap-3 p-3 rounded-2xl bg-stone-100/50 border border-stone-200">
-      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
-        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="Admin">
-        <div class="min-w-0 sidebar-text">
-          <p class="text-xs font-bold text-dark truncate">Dr. Sarah Chen</p>
-          <p class="text-[10px] text-stone-500 font-medium truncate">Chief Admin</p>
-        </div>
-      </a>
-      <button onclick="confirmLogout()" title="Log out" aria-label="Log out" class="press w-8 h-8 rounded-lg hover:bg-white flex items-center justify-center text-stone-400 hover:text-danger transition-all shrink-0">
-        <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
-      </button>
     </div>
-  </div>
+  </nav>
 </aside>
 
 <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="hidden fixed inset-0 bg-stone-900/50 z-[99]"></div>
@@ -216,124 +226,10 @@
                users-pets.js is what parses this. data-status/data-role drive
                filterUsers(), data-scans backs the profile modal's scan count -->
           <tbody class="divide-y divide-stone-50" id="user-table-body">
-            <tr class="feed-row hover:bg-stone-50/50 group" id="row-vincent" data-name="Vincent Gregg Blanco" data-email="vincent.blanco@gmail.com" data-role="Pet Owner" data-country="Philippines" data-region="NCR (National Capital Region)" data-city="Las Piñas City" data-barangay="Talon Uno" data-feeding-style="Commercial Dry Kibble" data-owned-animals="2" data-pets="Luna|cat|Domestic Short Hair (Puspin) &middot; Spayed Female|Artificial Red Dye #40|3 yrs old|4.2 kg|Up to Date|2026-06-15;Buster|dog|Beagle &middot; Neutered Male|Xylitol (Birch Sugar), Poultry By-Products|4 yrs old|14.8 kg|Due for Booster|2026-03-10" data-scans="42 Scans &middot; 2 Risk Warnings triggered" data-status="active" data-joined="Jan 2024" data-joined-date="2024-01-12" data-last-active="Just now" data-search="vincent gregg blanco vincent.blanco@gmail.com luna buster pet owner las pinas talon uno">
-              <td class="px-10 py-6">
-                <div class="flex items-center gap-4">
-                  <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" class="w-10 h-10 rounded-xl object-cover shadow-sm">
-                  <div>
-                    <p class="font-bold text-dark">Vincent Gregg Blanco</p>
-                    <p class="text-[11px] text-stone-500">vincent.blanco@gmail.com</p>
-                    <p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mt-0.5">Pet Owner</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <div class="flex flex-col gap-1.5">
-                  <span class="inline-flex items-center gap-1.5 text-xs font-bold text-dark" title="Domestic Short Hair (Puspin) &middot; Allergen: Artificial Red Dye #40"><i class="fa-solid fa-cat text-[#B57EDC] w-3.5"></i> Luna</span>
-                  <span class="inline-flex items-center gap-1.5 text-xs font-bold text-dark" title="Beagle &middot; Allergens: Xylitol, Poultry By-Products"><i class="fa-solid fa-dog text-[#03C4C9] w-3.5"></i> Buster <span class="w-1.5 h-1.5 rounded-full bg-caution" title="Vaccination due for booster"></span></span>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <div>
-                  <p class="text-xs font-bold text-dark">42 Scans</p>
-                  <p class="text-[10px] text-stone-400 font-medium">2 Risk Warnings triggered</p>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <span class="status-badge px-3 py-1 rounded-full bg-safe/10 text-safe text-[9px] font-bold uppercase tracking-widest border border-safe/10">Active</span>
-              </td>
-              <td class="px-10 py-6 text-right text-stone-500 font-mono text-xs">Just now</td>
-              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
-                <button onclick="openRowMenu(event,'row-vincent')" class="press w-10 h-10 rounded-xl hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 transition-all"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-              </td>
-            </tr>
-            <tr class="feed-row hover:bg-stone-50/50 group" id="row-sarah" data-name="Sarah Jenkins" data-email="sarah.jenkins@gmail.com" data-role="Pet Owner" data-country="Philippines" data-region="NCR (National Capital Region)" data-city="Las Piñas City" data-barangay="Pamplona Tres" data-feeding-style="Wet/Canned" data-owned-animals="2" data-pets="Buster|dog|Golden Retriever &middot; Neutered Male|None reported|5 yrs old|28 kg|Up to Date|2026-04-02;Luna|cat|Persian Cat &middot; Spayed Female|None reported|2 yrs old|3.8 kg|Up to Date|2026-05-20" data-scans="124 Scans &middot; 3 Risk Warnings triggered" data-status="active" data-joined="Mar 2024" data-joined-date="2024-03-04" data-last-active="2m ago" data-search="sarah jenkins sarah.jenkins@gmail.com buster luna pet owner las pinas pamplona tres">
-              <td class="px-10 py-6">
-                <div class="flex items-center gap-4">
-                  <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-6.jpg" class="w-10 h-10 rounded-xl object-cover shadow-sm">
-                  <div>
-                    <p class="font-bold text-dark">Sarah Jenkins</p>
-                    <p class="text-[11px] text-stone-500">sarah.jenkins@gmail.com</p>
-                    <p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mt-0.5">Pet Owner</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <div class="flex flex-col gap-1.5">
-                  <span class="inline-flex items-center gap-1.5 text-xs font-bold text-dark" title="Golden Retriever"><i class="fa-solid fa-dog text-[#03C4C9] w-3.5"></i> Buster</span>
-                  <span class="inline-flex items-center gap-1.5 text-xs font-bold text-dark" title="Persian Cat"><i class="fa-solid fa-cat text-[#B57EDC] w-3.5"></i> Luna</span>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <div>
-                  <p class="text-xs font-bold text-dark">124 Scans</p>
-                  <p class="text-[10px] text-stone-400 font-medium">3 Risk Warnings triggered</p>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <span class="status-badge px-3 py-1 rounded-full bg-safe/10 text-safe text-[9px] font-bold uppercase tracking-widest border border-safe/10">Active</span>
-              </td>
-              <td class="px-10 py-6 text-right text-stone-500 font-mono text-xs">2m ago</td>
-              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
-                <button onclick="openRowMenu(event,'row-sarah')" class="press w-10 h-10 rounded-xl hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 transition-all"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-              </td>
-            </tr>
-            <tr class="feed-row hover:bg-stone-50/50 group" id="row-marcus" data-name="Marcus Thorne" data-email="marcus.thorne@yahoo.com" data-role="Pet Owner" data-country="Philippines" data-region="NCR (National Capital Region)" data-city="Las Piñas City" data-barangay="Pulang Lupa Dos" data-feeding-style="Mixed" data-owned-animals="1" data-pets="Rocky|dog|Beagle &middot; Neutered Male|None reported|1 yr old|9.5 kg|Due for Booster|2026-02-14" data-scans="12 Scans &middot; 0 Warnings" data-status="active" data-joined="Jun 2024" data-joined-date="2024-06-21" data-last-active="15m ago" data-search="marcus thorne marcus.thorne@yahoo.com rocky pet owner las pinas pulang lupa dos">
-              <td class="px-10 py-6">
-                <div class="flex items-center gap-4">
-                  <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-8.jpg" class="w-10 h-10 rounded-xl object-cover shadow-sm">
-                  <div>
-                    <p class="font-bold text-dark">Marcus Thorne</p>
-                    <p class="text-[11px] text-stone-500">marcus.thorne@yahoo.com</p>
-                    <p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mt-0.5">Pet Owner</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-dark" title="Beagle &middot; Vaccination due for booster"><i class="fa-solid fa-dog text-[#03C4C9] w-3.5"></i> Rocky <span class="w-1.5 h-1.5 rounded-full bg-caution" title="Vaccination due for booster"></span></span>
-              </td>
-              <td class="px-10 py-6">
-                <div>
-                  <p class="text-xs font-bold text-dark">12 Scans</p>
-                  <p class="text-[10px] text-stone-400 font-medium">0 Warnings</p>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <span class="status-badge px-3 py-1 rounded-full bg-safe/10 text-safe text-[9px] font-bold uppercase tracking-widest border border-safe/10">Active</span>
-              </td>
-              <td class="px-10 py-6 text-right text-stone-500 font-mono text-xs">15m ago</td>
-              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
-                <button onclick="openRowMenu(event,'row-marcus')" class="press w-10 h-10 rounded-xl hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 transition-all"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-              </td>
-            </tr>
-            <tr class="feed-row hover:bg-stone-50/50 group" id="row-linda" data-name="Linda Wu" data-email="linda.wu@outlook.com" data-role="Pet Owner" data-country="Philippines" data-region="NCR (National Capital Region)" data-city="Las Piñas City" data-barangay="Zapote" data-feeding-style="Raw" data-owned-animals="1" data-pets="Misty|cat|Maine Coon &middot; Spayed Female|None reported|6 yrs old|5.1 kg|Up to Date|2026-01-30" data-scans="82 Scans &middot; 1 Dispute Pending" data-status="flagged" data-joined="Nov 2023" data-joined-date="2023-11-08" data-last-active="1h ago" data-search="linda wu linda.wu@outlook.com misty pet owner las pinas zapote">
-              <td class="px-10 py-6">
-                <div class="flex items-center gap-4">
-                  <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-7.jpg" class="w-10 h-10 rounded-xl object-cover shadow-sm">
-                  <div>
-                    <p class="font-bold text-dark">Linda Wu</p>
-                    <p class="text-[11px] text-stone-500">linda.wu@outlook.com</p>
-                    <p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mt-0.5">Pet Owner</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-dark" title="Maine Coon"><i class="fa-solid fa-cat text-[#B57EDC] w-3.5"></i> Misty</span>
-              </td>
-              <td class="px-10 py-6">
-                <div>
-                  <p class="text-xs font-bold text-dark">82 Scans</p>
-                  <a href="ocr-scans.html?inspect=KB-902143" class="text-[10px] text-danger font-bold hover:underline">1 Dispute Pending &rarr;</a>
-                </div>
-              </td>
-              <td class="px-10 py-6">
-                <span class="status-badge px-3 py-1 rounded-full bg-danger/10 text-danger text-[9px] font-bold uppercase tracking-widest border border-danger/10">Flagged</span>
-              </td>
-              <td class="px-10 py-6 text-right text-stone-500 font-mono text-xs">1h ago</td>
-              <td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">
-                <button onclick="openRowMenu(event,'row-linda')" class="press w-10 h-10 rounded-xl hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 transition-all"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-              </td>
-            </tr>
+            
+            
+            
+            
             <tr id="user-empty-row" class="hidden" data-empty-row="true">
               <td colspan="7" class="px-10 py-16 text-center">
                 <div class="w-14 h-14 mx-auto mb-3 relative">
@@ -361,7 +257,7 @@
 
 </main>
 
-<script src="users-pets.js?v=7"></script>
+<script src="users-pets.js?v=7-db"></script>
 
 </body>
 </html>

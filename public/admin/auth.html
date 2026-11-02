@@ -11,7 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KibbleGuard Admin - Log In</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=16-db"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -25,6 +25,13 @@
   .press:active { transform: scale(0.97); }
   @keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .fade-up { animation: fade-up 480ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+  /* login panel branding: logo, name and "Admin Panel" float gently up and down one after another.
+     inline-block so the transform works on the text spans too */
+  .kg-bounce { display: inline-block; animation: kg-bounce 4s ease-in-out infinite; }
+  .kg-bounce-2 { animation-delay: 0.15s; }
+  .kg-bounce-3 { animation-delay: 0.3s; }
+  @keyframes kg-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @media (prefers-reduced-motion: reduce) { .kg-bounce { animation: none; } }
   .shake { animation: shake 400ms ease; }
   @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 </style>
@@ -37,22 +44,22 @@
   <div class="hidden lg:flex lg:w-[42%] bg-dark text-white flex-col justify-between p-14 relative overflow-hidden">
     <div class="absolute inset-0 opacity-[0.04]" style="background-image: radial-gradient(circle, #fff 1.5px, transparent 1.5px); background-size: 28px 28px;"></div>
 
-    <div class="relative z-10 flex items-center gap-3">
-      <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="h-12 w-auto object-contain shrink-0" style="filter: drop-shadow(0 0 1px rgba(255,255,255,0.95));">
-      <div class="flex flex-col">
-        <span class="font-display font-bold text-xl leading-none">KibbleGuard</span>
-        <span class="text-[10px] font-bold text-brand-light/80 uppercase tracking-widest mt-1">Admin Panel</span>
+    <div class="relative z-10 flex flex-col items-center text-center gap-4">
+      <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="kg-bounce kg-bounce-1 h-28 w-auto object-contain shrink-0" style="filter: drop-shadow(0 0 1px rgba(255,255,255,0.95));">
+      <div class="flex flex-col items-center">
+        <span class="kg-bounce kg-bounce-2 font-display font-bold text-4xl leading-none">Kibble<span class="kg-wordmark-guard" style="color:#A5D06B">Guard</span></span>
+        <span class="kg-bounce kg-bounce-3 text-sm font-bold text-brand-light/80 uppercase tracking-[0.3em] mt-3">Admin Panel</span>
       </div>
     </div>
 
     <div class="relative z-10 max-w-sm">
       <p class="font-display font-bold text-[28px] leading-[1.25] mb-5">What you confirm here reaches a pet owner's app within minutes.</p>
-      <p class="text-sm text-white/60 leading-relaxed">Verifying a mapping, replying to a dispute, or banning an account all take effect immediately. If you're on a shared or public device, log out when you're finished, and never share your password -- even with another admin.</p>
+      <p class="text-sm text-white/60 leading-relaxed">Verifying a mapping, replying to a dispute, or banning an account all take effect immediately. If you're on a shared or public device, log out when you're finished, and never share your password, even with another admin.</p>
     </div>
 
     <div class="relative z-10 flex items-center gap-3 pt-8 border-t border-white/10">
       <i class="fa-solid fa-lock text-brand-light/70"></i>
-      <p class="text-xs text-white/50">Sessions stay signed in until you log out -- close this tab when you're finished on a shared device.</p>
+      <p class="text-xs text-white/50">Sessions stay signed in until you log out. Close this tab when you're finished on a shared device.</p>
     </div>
   </div>
 
@@ -60,11 +67,11 @@
   <div class="flex-1 flex items-center justify-center p-8">
     <div class="w-full max-w-sm fade-up">
 
-      <div class="lg:hidden flex items-center gap-3 mb-10">
-        <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="h-12 w-auto object-contain shrink-0">
-        <div class="flex flex-col">
-          <span class="font-display font-bold text-xl text-dark leading-none">KibbleGuard</span>
-          <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
+      <div class="lg:hidden flex flex-col items-center text-center gap-3 mb-8">
+        <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="kg-bounce kg-bounce-1 h-20 w-auto object-contain shrink-0">
+        <div class="flex flex-col items-center">
+          <span class="kg-bounce kg-bounce-2 font-display font-bold text-3xl text-dark leading-none">Kibble<span class="kg-wordmark-guard">Guard</span></span>
+          <span class="kg-bounce kg-bounce-3 text-xs font-bold text-brand uppercase tracking-[0.3em] mt-2">Admin Panel</span>
         </div>
       </div>
 
@@ -76,6 +83,8 @@
       <p id="activated-banner" class="hidden text-xs font-bold text-safe bg-safe/10 border border-safe/10 rounded-xl px-4 py-3 mb-6 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i>Account activated. Log in with your new password.</p>
 
       <p id="deactivated-banner" class="hidden text-xs font-bold text-caution bg-caution/10 border border-caution/10 rounded-xl px-4 py-3 mb-6 flex items-center gap-2"><i class="fa-solid fa-user-slash"></i>Your admin access was deactivated. A Chief Admin can restore it.</p>
+
+      <p id="idle-banner" class="hidden text-xs font-bold text-caution bg-caution/10 border border-caution/10 rounded-xl px-4 py-3 mb-6 flex items-center gap-2"><i class="fa-solid fa-clock"></i>You were signed out after a period of inactivity. Log in to continue.</p>
 
       <form id="login-form" onsubmit="handleLoginSubmit(event)" novalidate>
         <div class="mb-5">
@@ -110,6 +119,9 @@
   if (new URLSearchParams(window.location.search).get('activated') === '1') {
     document.getElementById('activated-banner').classList.remove('hidden');
   }
+  if (new URLSearchParams(window.location.search).get('idle') === '1') {
+    document.getElementById('idle-banner').classList.remove('hidden');
+  }
   if (new URLSearchParams(window.location.search).get('deactivated') === '1') {
     document.getElementById('deactivated-banner').classList.remove('hidden');
   }
@@ -138,6 +150,43 @@
     card.classList.add('shake');
   }
 
+  // ---------- login lockout ----------
+  // 5 wrong passwords in a row for the same email locks that email for 5 minutes. the counter is kept
+  // in localStorage for now, so this only slows someone down on this browser. once the backend handles
+  // login, the same rule (count failures, lock, reset on success) must be enforced on the server,
+  // because anything stored in the browser can be cleared by the person attacking it
+  var LOGIN_MAX_ATTEMPTS = 5;
+  var LOGIN_LOCK_MS = 5 * 60 * 1000;
+  var LOGIN_ATTEMPTS_KEY = 'kibbleguard-login-attempts';
+  function readLoginAttempts() {
+    try { return JSON.parse(localStorage.getItem(LOGIN_ATTEMPTS_KEY)) || {}; } catch (e) { return {}; }
+  }
+  // milliseconds left on the lock for this email, 0 if it is not locked
+  function getLoginLockRemaining(email) {
+    var rec = readLoginAttempts()[email];
+    return rec && rec.lockedUntil ? Math.max(0, rec.lockedUntil - Date.now()) : 0;
+  }
+  // adds one failure; returns how many attempts are left before the lock
+  function recordFailedLogin(email) {
+    var all = readLoginAttempts();
+    var rec = all[email] || { count: 0, lockedUntil: 0 };
+    if (rec.lockedUntil && rec.lockedUntil <= Date.now()) rec = { count: 0, lockedUntil: 0 };
+    rec.count++;
+    if (rec.count >= LOGIN_MAX_ATTEMPTS) rec.lockedUntil = Date.now() + LOGIN_LOCK_MS;
+    all[email] = rec;
+    try { localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(all)); } catch (e) {}
+    return LOGIN_MAX_ATTEMPTS - rec.count;
+  }
+  function clearFailedLogins(email) {
+    var all = readLoginAttempts();
+    delete all[email];
+    try { localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+  function lockMessage(ms) {
+    var mins = Math.ceil(ms / 60000);
+    return 'Too many incorrect attempts. This account is locked for ' + mins + ' more minute' + (mins === 1 ? '' : 's') + '. A Chief Admin can help if you are locked out.';
+  }
+
   function handleLoginSubmit(event) {
     event.preventDefault();
     var email = document.getElementById('login-email').value.trim().toLowerCase();
@@ -149,45 +198,48 @@
       return;
     }
 
+    // too many wrong passwords in a row: refuse before even checking the password
+    var lockMs = getLoginLockRemaining(email);
+    if (lockMs > 0) {
+      showLoginError(lockMessage(lockMs));
+      return;
+    }
+
     var btn = document.getElementById('login-submit-btn');
     var label = document.getElementById('login-submit-label');
     btn.disabled = true;
     btn.classList.add('opacity-70', 'cursor-not-allowed');
     label.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
 
-    // stubbed with a short delay to feel like a real request; checks against
-    // the same shared admin accounts store Settings > Invite Admin and
-    // accept-invite.html both read and write. a real backend replaces this
-    // whole block with something like:
-    //   const res = await fetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ email, password }) });
-    //   if (!res.ok) { showLoginError('Incorrect email or password.'); return; }
-    //   const { token } = await res.json();
-    //   localStorage.setItem('kibbleguard-session-token', token);
-    setTimeout(function () {
+    function resetLoginButton() {
       btn.disabled = false;
       btn.classList.remove('opacity-70', 'cursor-not-allowed');
       label.textContent = 'Log In';
-
-      var account = getAdminAccounts().find(function (a) { return a.email === email; });
-      if (account && account.status === 'deactivated') {
-        showLoginError('This admin account was deactivated. Ask a Chief Admin to restore your access.');
+    }
+    fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: password })
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) { return { res: res, data: data }; });
+    }).then(function (r) {
+      resetLoginButton();
+      if (r.res.status === 403) { showLoginError(r.data.error || 'This account cannot log in.'); return; }
+      if (!r.res.ok) {
+        // counted by email whether or not the account exists, so the message never reveals which emails are real
+        var left = recordFailedLogin(email);
+        if (left <= 0) showLoginError(lockMessage(getLoginLockRemaining(email)));
+        else showLoginError('Incorrect email or password.' + (left <= 2 ? ' ' + left + ' attempt' + (left === 1 ? '' : 's') + ' left before a temporary lock.' : ''));
         return;
       }
-      if (account && account.status === 'pending') {
-        showLoginError('Your invite is still pending. Use the link you were sent to set your password first.');
-        return;
-      }
-      if (!account || account.password !== password) {
-        showLoginError('Incorrect email or password.');
-        return;
-      }
-      localStorage.setItem('kibbleguard-admin-email', email);
-      var lastLogins = {};
-      try { lastLogins = JSON.parse(localStorage.getItem('kibbleguard-last-logins')) || {}; } catch (e) { lastLogins = {}; }
-      lastLogins[email] = new Date().toISOString();
-      localStorage.setItem('kibbleguard-last-logins', JSON.stringify(lastLogins));
+      clearFailedLogins(email);
+      localStorage.setItem('kibbleguard-admin-email', r.data.email || email);
+      localStorage.setItem('kibbleguard-session-token', r.data.token);
       window.location.href = 'dashboard.html';
-    }, 500);
+    }).catch(function () {
+      resetLoginButton();
+      showLoginError('Could not reach the server. Please try again.');
+    });
   }
 </script>
 

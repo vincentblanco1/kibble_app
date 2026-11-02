@@ -66,7 +66,7 @@ function getMergedCategoryOptions() {
 function categoryOptionsHtml(selected) {
   // the merged list above as a dropdown's <option> list
   return getMergedCategoryOptions().map(function (c) {
-    return '<option value="' + c + '"' + (c === selected ? ' selected' : '') + '>' + c + '</option>';
+    return '<option value="' + escapeHTML(c) + '"' + (c === selected ? ' selected' : '') + '>' + escapeHTML(c) + '</option>';
   }).join('');
 }
 
@@ -424,12 +424,12 @@ function openIngredientForm(mode, rowId) {
           '<p class="text-xs font-bold text-brand uppercase tracking-widest mb-4 flex items-center gap-2"><span class="w-6 h-6 rounded-lg bg-brand text-white flex items-center justify-center text-[10px]"><i class="fa-solid fa-tag"></i></span> Identification</p>' +
           '<div class="grid grid-cols-2 gap-4">' +
             '<div class="col-span-2"><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Ingredient Name <span class="text-danger">*</span></label>' +
-              '<input id="f-name" value="' + (existing ? existing.name : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="e.g. Ethoxyquin"></div>' +
+              '<input id="f-name" value="' + escapeHTML(existing ? existing.name : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="e.g. Ethoxyquin"></div>' +
             '<div class="col-span-2"><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Subtitle / Common Name</label>' +
-              '<input id="f-subtitle" value="' + (existing ? existing.subtitle : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="e.g. Synthetic antioxidant">' +
+              '<input id="f-subtitle" value="' + escapeHTML(existing ? existing.subtitle : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="e.g. Synthetic antioxidant">' +
               '<p class="text-[10px] text-stone-400 mt-1.5 leading-relaxed"><i class="fa-solid fa-circle-info mr-1"></i>Shown under the name in the table. Not used for OCR matching, use Also Known As below for that.</p></div>' +
             '<div class="col-span-2"><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Also Known As (comma separated)</label>' +
-              '<input id="f-aliases" value="' + (existing ? existing.aliases : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="e.g. E967, Birch Sugar Alcohol, Wood Sugar">' +
+              '<input id="f-aliases" value="' + escapeHTML(existing ? existing.aliases : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="e.g. E967, Birch Sugar Alcohol, Wood Sugar">' +
               '<p class="text-[10px] text-stone-400 mt-1.5 leading-relaxed"><i class="fa-solid fa-circle-info mr-1"></i>If OCR extracts any of these names, they resolve to this same ingredient instead of creating a duplicate.</p></div>' +
             '<div class="col-span-2"><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Category <span class="text-danger">*</span></label>' +
               '<select id="f-category" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all">' + categoryOptionsHtml(existing ? existing.category : 'Preservatives') + '</select></div>' +
@@ -470,7 +470,7 @@ function openIngredientForm(mode, rowId) {
           '<p class="text-xs font-bold text-dark uppercase tracking-widest mb-4 flex items-center gap-2"><span class="w-6 h-6 rounded-lg bg-dark text-white flex items-center justify-center text-[10px]"><i class="fa-solid fa-stamp"></i></span> Verification</p>' +
           '<div class="grid grid-cols-2 gap-4">' +
             '<div class="col-span-2"><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Scientific Source (optional)</label>' +
-              '<input id="f-source" value="' + (existing ? existing.source : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="Author (Year) or DOI link"></div>' +
+              '<input id="f-source" value="' + escapeHTML(existing ? existing.source : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="Author (Year) or DOI link"></div>' +
             '<div class="col-span-2 flex items-center justify-between p-4 rounded-2xl bg-white border border-brand/20">' +
               '<div><p class="text-xs font-bold text-dark">Regulatory Compliance Verified</p><p class="text-[10px] text-stone-500 mt-0.5">Confirms this matches an official feed-control standard, regulatory safety guideline, or statutory prohibition.</p></div>' +
               '<button type="button" id="f-reg-verified-toggle" onclick="toggleRegVerifiedField()" class="press shrink-0 w-12 h-7 rounded-full ' + (existing && existing.regVerified ? 'bg-brand' : 'bg-stone-200') + ' relative transition-all ml-4">' +
@@ -604,7 +604,7 @@ function saveIngredient(mode, rowId) {
     tr.dataset.search = searchStr;
     tr.innerHTML =
       '<td class="px-10 py-6"><div><p class="font-bold text-dark text-base" data-field="name">' + escapeHTML(name) + '</p><p class="text-[11px] text-stone-400 font-medium italic" data-field="subtitle">' + escapeHTML(subtitle) + '</p>' + akaHtml + '</div></td>' +
-      '<td class="px-10 py-6"><span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">' + category + '</span>' + regBadgeHtml.replace('<span class=', '<span data-field="reg-badge" class=') + '</td>' +
+      '<td class="px-10 py-6"><span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">' + escapeHTML(category) + '</span>' + regBadgeHtml.replace('<span class=', '<span data-field="reg-badge" class=') + '</td>' +
       '<td class="px-10 py-6" data-field="canine">' + riskBadgeHtml(canine) + '</td>' +
       '<td class="px-10 py-6" data-field="feline">' + riskBadgeHtml(feline) + '</td>' +
       '<td class="px-10 py-6 text-stone-600 font-bold text-xs tabular-nums" data-field="risk-index-cell">' + riskIndexCellHtml(tr.dataset) + '</td>' +
@@ -617,6 +617,7 @@ function saveIngredient(mode, rowId) {
         '<button onclick="confirmDeleteIngredient(\'' + newId + '\')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-danger transition-all" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>' +
       '</div></td>';
     tbody.insertBefore(tr, tbody.firstChild);
+    upgradeActionCells();
 
     // same reasoning as the edit branch above: try to persist right after the
     // insert, before any success UI, and undo the insert if it fails
@@ -693,7 +694,7 @@ function previewIngredient(rowId) {
     bodyHtml:
       '<div class="mb-6">' +
         '<div class="flex items-center gap-2 flex-wrap mb-3">' +
-          '<span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600 uppercase tracking-widest">' + category + '</span>' +
+          '<span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600 uppercase tracking-widest">' + escapeHTML(category) + '</span>' +
           (d.regVerified === 'true'
             ? '<span class="px-3 py-1 rounded-lg bg-safe/10 text-safe text-[10px] font-bold uppercase tracking-widest border border-safe/10"><i class="fa-solid fa-circle-check mr-1"></i>Regulatory Compliance Verified</span>'
             : '<span class="px-3 py-1 rounded-lg bg-stone-100 text-stone-400 text-[10px] font-bold uppercase tracking-widest"><i class="fa-regular fa-circle mr-1"></i>Not Yet Regulatory-Verified</span>') +
@@ -712,6 +713,7 @@ function previewIngredient(rowId) {
 var currentIngredientClassFilter = 'all';
 var currentIngredientSpeciesFilter = 'all';
 var currentIngredientVerificationFilter = 'all';
+var currentIngredientAgeFilter = 'all';   // 'all' | 'stale6' | 'stale12' -- by the Modified date
 
 // keeps the three dropdowns, their "this one is active" outline, the Clear filters
 // button and the Registry Health tile highlight all in step with the filter state,
@@ -720,7 +722,8 @@ function syncIngredientFilterUI() {
   var fields = [
     ['ingredient-filter-species', currentIngredientSpeciesFilter],
     ['ingredient-filter-class', currentIngredientClassFilter],
-    ['ingredient-filter-verification', currentIngredientVerificationFilter]
+    ['ingredient-filter-verification', currentIngredientVerificationFilter],
+    ['ingredient-filter-age', currentIngredientAgeFilter]
   ];
   var anyActive = false;
   fields.forEach(function (pair) {
@@ -774,12 +777,32 @@ function setIngredientVerificationFilter(mode, scrollToTable) {
   }
 }
 
-// the "Clear filters" button: puts the three dropdowns back to "All" (the search
+// Last updated dropdown: finds entries nobody has touched for a while, so old safety
+// data gets a second look. Uses the Modified column that every row already has
+function setIngredientAgeFilter(mode) {
+  currentIngredientAgeFilter = mode;
+  syncIngredientFilterUI();
+  filterIngredients();
+}
+
+// true when the row's Modified date is older than the chosen window. A date that can't be
+// read counts as stale, since "unknown" is exactly what a reviewer should look at
+function isIngredientStale(row, months) {
+  var cell = row.querySelector('[data-field="modified"]');
+  var d = new Date(normalizeModifiedDate(cell ? cell.textContent : ''));
+  if (isNaN(d.getTime())) return true;
+  var cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  return d < cutoff;
+}
+
+// the "Clear filters" button: puts the dropdowns back to "All" (the search
 // box is left alone, it has its own way to clear)
 function clearIngredientFilters() {
   currentIngredientSpeciesFilter = 'all';
   currentIngredientClassFilter = 'all';
   currentIngredientVerificationFilter = 'all';
+  currentIngredientAgeFilter = 'all';
   syncIngredientFilterUI();
   filterIngredients();
 }
@@ -804,7 +827,9 @@ function filterIngredients() {
     var isVerified = row.dataset.regVerified === 'true';
     var matchesVerification = currentIngredientVerificationFilter === 'all' ||
       (currentIngredientVerificationFilter === 'verified' ? isVerified : !isVerified);
-    row.dataset.filterMatch = (matchesSearch && matchesClass && matchesVerification) ? 'true' : 'false';
+    var matchesAge = currentIngredientAgeFilter === 'all' ||
+      isIngredientStale(row, currentIngredientAgeFilter === 'stale6' ? 6 : 12);
+    row.dataset.filterMatch = (matchesSearch && matchesClass && matchesVerification && matchesAge) ? 'true' : 'false';
   });
   updateIngredientCountLabel();
   applyTablePagination('ingredient-table-body', 'ingredient-pagination-controls', 10, true);
@@ -825,8 +850,8 @@ function updateIngredientCountLabel() {
   var subEl = document.getElementById('ingredient-empty-sub');
   if (titleEl && subEl) {
     var onlyPendingFilter = currentIngredientVerificationFilter === 'pending' && !q &&
-      currentIngredientClassFilter === 'all' && currentIngredientSpeciesFilter === 'all';
-    var anyFilter = currentIngredientVerificationFilter !== 'all' || currentIngredientClassFilter !== 'all' || currentIngredientSpeciesFilter !== 'all';
+      currentIngredientClassFilter === 'all' && currentIngredientSpeciesFilter === 'all' && currentIngredientAgeFilter === 'all';
+    var anyFilter = currentIngredientVerificationFilter !== 'all' || currentIngredientClassFilter !== 'all' || currentIngredientSpeciesFilter !== 'all' || currentIngredientAgeFilter !== 'all';
     if (onlyPendingFilter) {
       titleEl.textContent = 'Nothing is pending verification';
       subEl.textContent = 'Every ingredient in the database is already regulatory-verified.';
@@ -840,7 +865,7 @@ function updateIngredientCountLabel() {
   }
 
   var label = document.getElementById('ingredient-count-label');
-  var isFiltered = q || currentIngredientClassFilter !== 'all' || currentIngredientSpeciesFilter !== 'all' || currentIngredientVerificationFilter !== 'all';
+  var isFiltered = q || currentIngredientClassFilter !== 'all' || currentIngredientSpeciesFilter !== 'all' || currentIngredientVerificationFilter !== 'all' || currentIngredientAgeFilter !== 'all';
   if (isFiltered) {
     label.textContent = 'Showing ' + visible + ' matching result' + (visible === 1 ? '' : 's') + ' of ' + total + ' loaded';
   } else {
@@ -1009,7 +1034,7 @@ function openMergeForm(rowId) {
 
   var options = otherRows.map(function (r) {
     var n = r.querySelector('[data-field="name"]').textContent;
-    return '<option value="' + r.id + '">' + n + '</option>';
+    return '<option value="' + r.id + '">' + escapeHTML(n) + '</option>';
   }).join('');
 
   openModal({
@@ -1018,11 +1043,11 @@ function openMergeForm(rowId) {
     bodyHtml:
       '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 mb-5">' +
         '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Merging</p>' +
-        '<p class="text-sm font-bold text-dark">' + sourceName + '</p>' +
+        '<p class="text-sm font-bold text-dark">' + escapeHTML(sourceName) + '</p>' +
       '</div>' +
       '<label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Into which existing ingredient?</label>' +
       '<select id="f-merge-target" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand">' + options + '</select>' +
-      '<p class="text-[11px] text-stone-500 mt-4 leading-relaxed">&ldquo;' + sourceName + '&rdquo; will be removed from the table and added as an alias on the ingredient you choose. Its species classifications, risk index, and notes will <strong>not</strong> be copied over. Review the surviving entry afterward to make sure its details are complete.</p>',
+      '<p class="text-[11px] text-stone-500 mt-4 leading-relaxed">&ldquo;' + escapeHTML(sourceName) + '&rdquo; will be removed from the table and added as an alias on the ingredient you choose. Its species classifications, risk index, and notes will <strong>not</strong> be copied over. Review the surviving entry afterward to make sure its details are complete.</p>',
     footerHtml:
       '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
       '<button id="confirm-merge-btn" onclick="performMerge(\'' + rowId + '\')" data-perm="manageIngredients" class="press px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Merge</button>'
@@ -1040,7 +1065,7 @@ function confirmDeleteIngredient(rowId) {
   var aliasWarning = aliases.length
     ? '<div class="mt-4 p-4 rounded-2xl bg-caution/10 border border-caution/20">' +
         '<p class="text-xs font-bold text-dark mb-1"><i class="fa-solid fa-triangle-exclamation text-caution mr-1.5"></i>This entry also covers ' + aliases.length + ' alternate name' + (aliases.length === 1 ? '' : 's') + '</p>' +
-        '<p class="text-[11px] text-stone-500 leading-relaxed">' + aliases.join(', ') + '</p>' +
+        '<p class="text-[11px] text-stone-500 leading-relaxed">' + escapeHTML(aliases.join(', ')) + '</p>' +
         '<p class="text-[11px] text-stone-500 leading-relaxed mt-2">OCR will stop recognising these names once the entry is removed. If this is a duplicate of another ingredient, use Merge instead so the alternate names are preserved.</p>' +
       '</div>'
     : '';
@@ -1049,7 +1074,7 @@ function confirmDeleteIngredient(rowId) {
     title: 'Delete ' + name,
     subtitle: 'This removes the entry from the Risk Library',
     bodyHtml:
-      '<p class="text-sm text-stone-600 leading-relaxed">Pet owners will no longer see a classification for <strong>' + name + '</strong>. Any future scan that extracts this ingredient will fall through to manual triage instead of returning a verdict.</p>' +
+      '<p class="text-sm text-stone-600 leading-relaxed">Pet owners will no longer see a classification for <strong>' + escapeHTML(name) + '</strong>. Any future scan that extracts this ingredient will fall through to manual triage instead of returning a verdict.</p>' +
       aliasWarning,
     footerHtml:
       '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
@@ -1126,7 +1151,7 @@ function performMerge(sourceRowId) {
 
   var existingAkaLine = targetRow.querySelector('[data-field="aliases-line"]');
   if (existingAkaLine) existingAkaLine.remove();
-  var akaHtml = '<p class="text-[10px] text-stone-400 mt-1" data-field="aliases-line"><span class="font-bold">aka</span> ' + mergedAliasStr + '</p>';
+  var akaHtml = '<p class="text-[10px] text-stone-400 mt-1" data-field="aliases-line"><span class="font-bold">aka</span> ' + escapeHTML(mergedAliasStr) + '</p>';
   targetRow.querySelector('[data-field="subtitle"]').insertAdjacentHTML('afterend', akaHtml);
 
   // persist the merge (target updated, source gone) before either row visibly
@@ -1357,6 +1382,7 @@ function ensureSampleGlucosamineRow() {
       '</div></td>';
     var emptyRow = document.getElementById('ingredient-empty-row');
     tbody.insertBefore(tr, emptyRow || null);
+    upgradeActionCells();
     try { savePersistedRows('kibbleguard-ingredients-rows', tbody); } catch (e) { /* storage full: the row still shows this session */ }
   }
   localStorage.setItem(FLAG, '1');
@@ -1365,6 +1391,89 @@ ensureSampleGlucosamineRow();
 migrateRegulatoryLabel();
 migrateRiskIndexFields();
 migrateClinicalFields();
+
+// the Modified column used to mix two date styles ("28 May, 2024" on the original entries,
+// "Oct 04, 2026" on anything added or edited later). This turns every one into the same
+// style the app uses when it stamps a new edit, and saves the tidied rows once
+function normalizeModifiedDate(text) {
+  var t = String(text).trim();
+  var m = t.match(/^(\d{1,2})\s+([A-Za-z]{3,9}),?\s+(\d{4})$/);   // "28 May, 2024"
+  var d = m ? new Date(m[2] + ' ' + m[1] + ', ' + m[3]) : new Date(t);
+  if (isNaN(d.getTime())) return t;
+  return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+function migrateModifiedDates() {
+  var changed = false;
+  document.querySelectorAll('#ingredient-table-body [data-field="modified"]').forEach(function (cell) {
+    var fixed = normalizeModifiedDate(cell.textContent);
+    if (fixed !== cell.textContent.trim()) { cell.textContent = fixed; changed = true; }
+  });
+  if (changed) {
+    try { savePersistedRows('kibbleguard-ingredients-rows', document.getElementById('ingredient-table-body')); } catch (e) { /* the dates still show tidy this session */ }
+  }
+}
+migrateModifiedDates();
+
+/* ---------- Row actions: one "..." menu instead of four icon buttons ----------
+   The Actions column used to hold View, Merge, Edit and Delete as four separate icons, which
+   crowded every row. They now live in a single "..." menu, the same pattern Users & Pets uses.
+   upgradeActionCells() swaps the old icons for the menu button on every row, including rows
+   saved in the browser earlier, so nothing has to be re-entered. */
+function closeIngredientMenus() {
+  document.querySelectorAll('.kg-ing-menu').forEach(function (m) { m.remove(); });
+  document.removeEventListener('click', closeIngredientMenus);
+  document.removeEventListener('scroll', closeIngredientMenus, true);
+  window.removeEventListener('resize', closeIngredientMenus);
+}
+
+function openIngredientRowMenu(event, rowId) {
+  event.stopPropagation();
+  var wasOpenForThisRow = document.querySelector('.kg-ing-menu[data-row="' + rowId + '"]');
+  closeIngredientMenus();
+  if (wasOpenForThisRow) return;   // clicking the same "..." again just closes it
+  var rect = event.currentTarget.getBoundingClientRect();
+  var item = 'w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-3 ';
+  var menu = document.createElement('div');
+  menu.className = 'kg-ing-menu fixed z-[120] w-52 bg-white rounded-2xl shadow-2xl border border-stone-100 py-2 text-left';
+  menu.dataset.row = rowId;
+  menu.innerHTML =
+    '<button onclick="closeIngredientMenus();previewIngredient(\'' + rowId + '\')" class="' + item + 'text-stone-600 hover:bg-stone-50"><i class="fa-solid fa-eye w-4 text-stone-400"></i>View</button>' +
+    '<button onclick="closeIngredientMenus();editIngredient(\'' + rowId + '\')" data-perm="manageIngredients" class="' + item + 'text-stone-600 hover:bg-stone-50"><i class="fa-solid fa-pen w-4 text-stone-400"></i>Edit</button>' +
+    '<button onclick="closeIngredientMenus();openMergeForm(\'' + rowId + '\')" data-perm="manageIngredients" class="' + item + 'text-stone-600 hover:bg-stone-50"><i class="fa-solid fa-code-merge w-4 text-stone-400"></i>Merge</button>' +
+    '<div class="my-2 border-t border-stone-50"></div>' +
+    '<button onclick="closeIngredientMenus();confirmDeleteIngredient(\'' + rowId + '\')" data-perm="manageIngredients" class="' + item + 'text-danger hover:bg-danger/5"><i class="fa-solid fa-trash w-4"></i>Delete</button>';
+  document.body.appendChild(menu);
+  // opens downward, or upward when there is no room below the button
+  var h = menu.offsetHeight;
+  var top = rect.bottom + 8;
+  if (top + h > window.innerHeight - 8) top = Math.max(8, rect.top - h - 8);
+  menu.style.top = top + 'px';
+  menu.style.left = Math.max(8, rect.right - menu.offsetWidth) + 'px';
+  if (typeof applyPermissionGating === 'function') applyPermissionGating();
+  setTimeout(function () {
+    document.addEventListener('click', closeIngredientMenus);
+    document.addEventListener('scroll', closeIngredientMenus, true);
+    window.addEventListener('resize', closeIngredientMenus);
+  }, 0);
+}
+
+function upgradeActionCells() {
+  var changed = false;
+  document.querySelectorAll('#ingredient-table-body tr[data-search]').forEach(function (row) {
+    var cell = row.lastElementChild;
+    if (!cell || cell.querySelector('[data-actions-menu]')) return;
+    cell.innerHTML =
+      '<div class="flex items-center justify-end">' +
+        '<button type="button" data-actions-menu onclick="openIngredientRowMenu(event,\'' + row.id + '\')" aria-label="Row actions" title="Actions" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-dark transition-all"><i class="fa-solid fa-ellipsis-vertical"></i></button>' +
+      '</div>';
+    changed = true;
+  });
+  if (changed) {
+    try { savePersistedRows('kibbleguard-ingredients-rows', document.getElementById('ingredient-table-body')); } catch (e) { /* still shows the new menu this session */ }
+  }
+  return changed;
+}
+upgradeActionCells();
 
 // opens the Add form if routed here from Dashboard's "Flag as unrecognized" button.
 // opens Edit instead if routed here from a dispute's "Review Ingredient Entry" button on OCR Scan Records
@@ -1390,7 +1499,7 @@ migrateClinicalFields();
       editIngredient(matchedRow.id);
       showToast("Routed here from a scan dispute, review this entry's classification", 'info');
     } else {
-      showToast('Could not find "' + editName + '" in the database -- it may need to be added', 'danger');
+      showToast('Could not find "' + editName + '" in the database. It may need to be added', 'danger');
     }
   }
 })();
@@ -1414,7 +1523,7 @@ function renderIngredientScanCounts() {
     if (count === 0) {
       cell.textContent = 'Not yet scanned';
     } else {
-      cell.innerHTML = '<button onclick="showIngredientScanUsers(\'' + name.replace(/'/g, "\\'") + '\')" class="press text-brand hover:underline font-bold">' + count + ' of ' + tally.scanCount + ' scans</button>';
+      cell.innerHTML = '<button onclick="showIngredientScanUsers(\'' + escapeHTML(name.replace(/\\/g, '\\\\').replace(/'/g, "\\'")) + '\')" class="press text-brand hover:underline font-bold">' + count + ' of ' + tally.scanCount + ' scans</button>';
     }
   });
 }
@@ -1430,7 +1539,7 @@ function showIngredientScanUsers(ingredientName) {
     return '<div class="flex items-center justify-between p-4 rounded-2xl bg-stone-100 border border-stone-200">' +
         '<div class="flex items-center gap-3">' +
           '<div class="w-9 h-9 rounded-xl bg-white ' + speciesColor + ' flex items-center justify-center text-sm shrink-0 shadow-sm"><i class="fa-solid ' + speciesIcon + '"></i></div>' +
-          '<div><p class="text-sm font-bold text-dark">' + m.owner + '</p><p class="text-[11px] text-stone-500">' + m.scanId + ' \u00b7 ' + dateStr + '</p></div>' +
+          '<div><p class="text-sm font-bold text-dark">' + escapeHTML(m.owner) + '</p><p class="text-[11px] text-stone-500">' + m.scanId + ' \u00b7 ' + dateStr + '</p></div>' +
         '</div>' +
         '<a href="ocr-scans.html?inspect=' + encodeURIComponent(m.scanId) + '" class="press px-3 py-1.5 text-[11px] font-bold text-brand border border-brand/20 rounded-lg hover:bg-brand-light transition-all">View Scan</a>' +
       '</div>';
@@ -1891,7 +2000,7 @@ function refreshIngredients() {
   var tbody = document.getElementById('ingredient-table-body');
   var saved = null;
   try { saved = JSON.parse(localStorage.getItem('kibbleguard-ingredients-rows')); } catch (e) { saved = null; }
-  if (tbody && saved && saved.length) { tbody.innerHTML = saved.join(''); markRowsLoaded('kibbleguard-ingredients-rows'); }
+  if (tbody && saved && saved.length) { tbody.innerHTML = saved.join(''); markRowsLoaded('kibbleguard-ingredients-rows'); upgradeActionCells(); }
   var page = PAGINATION_STATE['ingredient-table-body'] || 1;
   renderIngredientScanCounts();
   filterIngredients();

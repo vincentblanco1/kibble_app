@@ -11,7 +11,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KibbleGuard Admin - Accept Invite</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=16-db"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -37,7 +37,7 @@
   <div class="flex items-center gap-3 justify-center mb-10">
     <img src="kibbleguard-logo.png" alt="KibbleGuard logo" class="h-12 w-auto object-contain shrink-0">
     <div class="flex flex-col">
-      <span class="font-display font-bold text-xl text-dark leading-none">KibbleGuard</span>
+      <span class="font-display font-bold text-xl text-dark leading-none">Kibble<span class="kg-wordmark-guard">Guard</span></span>
       <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
     </div>
   </div>
@@ -159,18 +159,17 @@
       return;
     }
 
-    var accounts = getAdminAccounts();
-    var account = accounts.find(function (a) { return a.inviteToken === token; });
-    if (!account) { renderInvalidState(); return; }
-
-    account.status = 'active';
-    account.password = password;
-    account.joinedDate = new Date().toISOString();
-    delete account.inviteToken;
-    saveAdminAccounts(accounts);
-    logAdminAction(account.name + ' accepted their invite and activated their account', 'security');
-
-    window.location.href = 'auth.html?activated=1';
+    fetch('/api/admin/accept-invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token, password: password })
+    }).then(function (res) {
+      if (res.status === 404) { renderInvalidState(); return; }
+      if (!res.ok) { showAcceptError('Could not activate your account. Please try again.'); return; }
+      window.location.href = 'auth.html?activated=1';
+    }).catch(function () {
+      showAcceptError('Could not reach the server. Please try again.');
+    });
   }
 
   // only a pending account with a token matching the URL gets the real
@@ -178,9 +177,10 @@
   // the same invalid-invite state
   (function init() {
     if (!token) { renderInvalidState(); return; }
-    var account = getAdminAccounts().find(function (a) { return a.inviteToken === token && a.status === 'pending'; });
-    if (!account) { renderInvalidState(); return; }
-    renderSetPasswordForm(account);
+    fetch('/api/admin/invite/' + encodeURIComponent(token))
+      .then(function (res) { if (!res.ok) throw new Error('invalid'); return res.json(); })
+      .then(function (account) { renderSetPasswordForm(account); })
+      .catch(function () { renderInvalidState(); });
   })();
 </script>
 

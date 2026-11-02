@@ -194,7 +194,7 @@ function viewUserProfile(rowId) {
     : d.status === 'banned'
     ? '<span class="px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border text-white bg-dark border-dark">Banned</span>'
     : '<span class="px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border text-safe bg-safe/10 border-safe/10">Active</span>';
-  var rolePill = '<span class="px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border text-brand bg-brand-light border-brand/20">' + d.role + '</span>';
+  var rolePill = '<span class="px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border text-brand bg-brand-light border-brand/20">' + escapeHTML(d.role) + '</span>';
 
   var scansMatch = d.scans.match(/(\d+)\s*Scans?/);
   var totalScans = scansMatch ? scansMatch[1] : '0';
@@ -213,23 +213,23 @@ function viewUserProfile(rowId) {
     var allergyHtml = pet.allergies === 'None reported'
       ? '<span class="px-2.5 py-1 rounded-full bg-stone-100 text-stone-500 text-[9px] font-bold uppercase tracking-widest">No known allergies</span>'
       : pet.allergies.split(',').map(function (a) {
-          return '<span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100 text-[9px] font-bold uppercase tracking-widest">' + a.trim() + '</span>';
+          return '<span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100 text-[9px] font-bold uppercase tracking-widest">' + escapeHTML(a.trim()) + '</span>';
         }).join(' ');
     var vaccBadge = pet.vaccination === 'Up to Date'
       ? '<span class="px-2 py-0.5 rounded-full bg-safe/10 text-safe text-[9px] font-bold uppercase tracking-widest border border-safe/10">Up to Date</span>'
-      : '<span class="px-2 py-0.5 rounded-full bg-caution/10 text-caution text-[9px] font-bold uppercase tracking-widest border border-caution/10"><i class="fa-solid fa-triangle-exclamation mr-1"></i>' + pet.vaccination + '</span>';
+      : '<span class="px-2 py-0.5 rounded-full bg-caution/10 text-caution text-[9px] font-bold uppercase tracking-widest border border-caution/10"><i class="fa-solid fa-triangle-exclamation mr-1"></i>' + escapeHTML(pet.vaccination) + '</span>';
     return '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200">' +
       '<div class="flex items-center gap-3 mb-3">' +
         '<div class="w-10 h-10 rounded-xl bg-brand-light ' + iconColor + ' flex items-center justify-center text-base shrink-0"><i class="fa-solid ' + icon + '"></i></div>' +
-        '<div class="flex-1 min-w-0"><p class="text-sm font-bold text-dark leading-none">' + pet.name + '</p><p class="text-[10px] text-stone-400 font-medium mt-1">' + pet.breed + '</p></div>' +
+        '<div class="flex-1 min-w-0"><p class="text-sm font-bold text-dark leading-none">' + escapeHTML(pet.name) + '</p><p class="text-[10px] text-stone-400 font-medium mt-1">' + escapeHTML(pet.breed) + '</p></div>' +
       '</div>' +
       '<div class="grid grid-cols-2 gap-2 mb-3 text-[10px]">' +
-        '<div class="p-2 rounded-lg bg-white border border-stone-100"><p class="text-stone-400 font-bold uppercase tracking-widest">Age / Weight</p><p class="text-dark font-bold mt-0.5">' + pet.age + ' &middot; ' + pet.weight + '</p></div>' +
+        '<div class="p-2 rounded-lg bg-white border border-stone-100"><p class="text-stone-400 font-bold uppercase tracking-widest">Age / Weight</p><p class="text-dark font-bold mt-0.5">' + escapeHTML(pet.age) + ' &middot; ' + escapeHTML(pet.weight) + '</p></div>' +
         '<div class="p-2 rounded-lg bg-white border border-stone-100"><p class="text-stone-400 font-bold uppercase tracking-widest">Vaccination</p><div class="mt-1">' + vaccBadge + '</div></div>' +
       '</div>' +
       '<p class="text-[10px] text-stone-400 font-bold uppercase tracking-widest mb-1.5">Flagged Allergens</p>' +
       '<div class="flex flex-wrap gap-1.5 mb-3">' + allergyHtml + '</div>' +
-      '<p class="text-[10px] text-stone-400">Last dewormed: <span class="font-bold text-stone-600">' + pet.dewormed + '</span></p>' +
+      '<p class="text-[10px] text-stone-400">Last dewormed: <span class="font-bold text-stone-600">' + escapeHTML(pet.dewormed) + '</span></p>' +
     '</div>';
   }).join('');
 
@@ -239,10 +239,10 @@ function viewUserProfile(rowId) {
     wide: true,
     bodyHtml:
       '<div class="flex items-center gap-4 mb-6 pb-6 border-b border-stone-50">' +
-        '<img src="' + avatarSrc + '" class="w-16 h-16 rounded-2xl object-cover shadow-sm shrink-0">' +
+        '<img src="' + escapeHTML(avatarSrc) + '" class="w-16 h-16 rounded-2xl object-cover shadow-sm shrink-0">' +
         '<div class="flex-1 min-w-0">' +
           '<div class="flex items-center gap-2 flex-wrap">' + statusPill + rolePill + '</div>' +
-          '<p class="text-[11px] text-stone-400 font-medium mt-2">Member since ' + d.joined + ' &middot; Last active ' + d.lastActive + '</p>' +
+          '<p class="text-[11px] text-stone-400 font-medium mt-2">Member since ' + escapeHTML(d.joined) + ' &middot; Last active ' + escapeHTML(d.lastActive) + '</p>' +
         '</div>' +
       '</div>' +
       (d.status === 'flagged' && d.flagReason ?
@@ -250,11 +250,11 @@ function viewUserProfile(rowId) {
       (d.status === 'banned' && d.banReason ?
         '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 mb-6"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Reason Banned</p><p class="text-sm text-dark leading-relaxed">' + escapeHTML(d.banReason) + '</p></div>' : '') +
       '<div class="grid grid-cols-3 gap-4 mb-6">' +
-        '<button onclick="window.location.href=\'ocr-scans.html?ownerSearch=' + encodeURIComponent(d.name) + '\'" class="press p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center hover:border-brand/30 transition-all cursor-pointer" title="View this owner\'s scans on OCR Scan Records">' +
+        '<button onclick="window.location.href=\'ocr-scans.html?ownerSearch=' + encodeURIComponent(d.name).replace(/'/g, '%27') + '\'" class="press p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center hover:border-brand/30 transition-all cursor-pointer" title="View this owner\'s scans on OCR Scan Records">' +
           '<p class="text-xl font-display font-bold text-dark tabular-nums">' + totalScans + '</p>' +
           '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mt-1">Total Scans</p>' +
         '</button>' +
-        '<button onclick="window.location.href=\'ocr-scans.html?ownerSearch=' + encodeURIComponent(d.name) + '&verdict=risk\'" class="press p-4 rounded-2xl ' + (parseInt(warningsCount) > 0 ? 'bg-danger/5 border border-danger/10' : 'bg-stone-100 border border-stone-200') + ' text-center hover:border-brand/30 transition-all cursor-pointer" title="View just this owner\'s Toxic/Caution scans on OCR Scan Records">' +
+        '<button onclick="window.location.href=\'ocr-scans.html?ownerSearch=' + encodeURIComponent(d.name).replace(/'/g, '%27') + '&verdict=risk\'" class="press p-4 rounded-2xl ' + (parseInt(warningsCount) > 0 ? 'bg-danger/5 border border-danger/10' : 'bg-stone-100 border border-stone-200') + ' text-center hover:border-brand/30 transition-all cursor-pointer" title="View just this owner\'s Toxic/Caution scans on OCR Scan Records">' +
           '<p class="text-xl font-display font-bold ' + (parseInt(warningsCount) > 0 ? 'text-danger' : 'text-dark') + ' tabular-nums">' + warningsCount + '</p>' +
           '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mt-1">' + warningsLabel + '</p>' +
         '</button>' +
@@ -266,12 +266,12 @@ function viewUserProfile(rowId) {
       '<div class="grid grid-cols-2 gap-4 mb-6">' +
         '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200">' +
           '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5"><i class="fa-solid fa-location-dot mr-1"></i>Location</p>' +
-          '<p class="text-xs font-bold text-dark">Brgy. ' + (d.barangay || '?') + ', ' + d.city + '</p>' +
-          '<p class="text-[10px] text-stone-400 mt-0.5">' + d.region + ', ' + d.country + '</p>' +
+          '<p class="text-xs font-bold text-dark">Brgy. ' + escapeHTML(d.barangay || '?') + ', ' + escapeHTML(d.city) + '</p>' +
+          '<p class="text-[10px] text-stone-400 mt-0.5">' + escapeHTML(d.region) + ', ' + escapeHTML(d.country) + '</p>' +
         '</div>' +
         '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200">' +
           '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5"><i class="fa-solid fa-bowl-food mr-1"></i>Household Feeding Profile</p>' +
-          '<p class="text-xs font-bold text-dark">' + d.feedingStyle + '</p>' +
+          '<p class="text-xs font-bold text-dark">' + escapeHTML(d.feedingStyle) + '</p>' +
           '<p class="text-[10px] text-stone-400 mt-0.5">' + d.ownedAnimals + ' owned animal' + (d.ownedAnimals === '1' ? '' : 's') + '</p>' +
         '</div>' +
       '</div>' +
@@ -317,7 +317,7 @@ function sendUserMessage(rowId) {
         '</div>' +
         '<label class="flex items-center gap-2.5 p-3 rounded-xl bg-stone-100 border border-stone-200 cursor-pointer">' +
           '<input type="checkbox" id="f-msg-also-email" checked class="accent-brand w-4 h-4">' +
-          '<span class="text-xs text-stone-600">Also send by email to <span class="font-bold text-dark">' + email + '</span></span>' +
+          '<span class="text-xs text-stone-600">Also send by email to <span class="font-bold text-dark">' + escapeHTML(email) + '</span></span>' +
         '</label>' +
       '</div>',
     footerHtml:
@@ -438,14 +438,14 @@ function toggleFlagUser(rowId) {
     title: 'Flag Account',
     subtitle: row.dataset.name,
     bodyHtml:
-      '<p class="text-sm text-stone-600 leading-relaxed mb-4">This marks <span class="font-bold text-dark">' + row.dataset.name + '</span> for review. Their account still works normally -- flagging is a watch status, not a restriction.</p>' +
+      '<p class="text-sm text-stone-600 leading-relaxed mb-4">This marks <span class="font-bold text-dark">' + escapeHTML(row.dataset.name) + '</span> for review. Their account still works normally, since flagging is a watch status, not a restriction.</p>' +
       '<label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Reason for flagging</label>' +
       '<textarea id="flag-reason-input" oninput="updateAccountEmailPreview(\'flag\')" rows="3" placeholder="What prompted this flag?" class="w-full mt-1.5 px-4 py-3 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand transition-all resize-none"></textarea>' +
       '<div class="mt-4">' +
-        '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5"><i class="fa-solid fa-envelope mr-1"></i>Email preview -- sent to ' + row.dataset.email + '</p>' +
+        '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5"><i class="fa-solid fa-envelope mr-1"></i>Email preview, sent to ' + escapeHTML(row.dataset.email) + '</p>' +
         '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200">' +
           '<p class="text-xs font-bold text-dark mb-2">Subject: Your KibbleGuard account has been flagged for review</p>' +
-          '<p class="text-xs text-stone-600 leading-relaxed">Hi ' + firstName + ',<br><br>Your account has been flagged for review by our safety team. Here\'s why:<br><br><span id="flag-email-reason-preview" class="italic text-stone-500">[Your reason will appear here as you type]</span><br><br>Your account still works normally while it\'s under review. If you have questions, reply to this email.<br><br>-- The KibbleGuard Team</p>' +
+          '<p class="text-xs text-stone-600 leading-relaxed">Hi ' + escapeHTML(firstName) + ',<br><br>Your account has been flagged for review by our safety team. Here\'s why:<br><br><span id="flag-email-reason-preview" class="italic text-stone-500">[Your reason will appear here as you type]</span><br><br>Your account still works normally while it\'s under review. If you have questions, reply to this email.<br><br>-- The KibbleGuard Team</p>' +
         '</div>' +
       '</div>',
     footerHtml:
@@ -490,7 +490,7 @@ function confirmFlagUser(rowId) {
     closeModal();
     var name = row.dataset.name, email = row.dataset.email;
     showToast('Sending notification email to ' + name + '...', 'info');
-    logAdminAction('Flagged account: ' + name + ' -- "' + reason + '"', 'security');
+    logAdminAction('Flagged account: ' + name + ': "' + reason + '"', 'security');
     sendSystemEmail({ type: 'account-flagged', to: email, name: name, reason: reason }).then(function () {
       showToast(name + '\'s account was flagged, notification email sent', 'danger');
     }).catch(function () {
@@ -508,7 +508,7 @@ function forcePasswordReset(rowId) {
   openModal({
     title: 'Force Password Reset',
     subtitle: row.dataset.name,
-    bodyHtml: '<p class="text-sm text-stone-600 leading-relaxed">This immediately invalidates ' + row.dataset.name + '\'s current password and sends a reset link to <span class="font-bold text-dark">' + row.dataset.email + '</span>. They won\'t be able to sign in until they set a new one.</p>',
+    bodyHtml: '<p class="text-sm text-stone-600 leading-relaxed">This immediately invalidates ' + escapeHTML(row.dataset.name) + '\'s current password and sends a reset link to <span class="font-bold text-dark">' + escapeHTML(row.dataset.email) + '</span>. They won\'t be able to sign in until they set a new one.</p>',
     footerHtml:
       '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
       '<button onclick="confirmForcePasswordReset(\'' + rowId + '\')" data-perm="manageUsers" class="press px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Send Reset Link</button>'
@@ -574,14 +574,14 @@ function toggleBanUser(rowId) {
     title: 'Ban Account',
     subtitle: row.dataset.name,
     bodyHtml:
-      '<p class="text-sm text-stone-600 leading-relaxed mb-4">This immediately blocks <span class="font-bold text-dark">' + row.dataset.name + '</span> from signing in or submitting new scans. Their existing scan history and pet profiles are kept and can be restored by unbanning later.</p>' +
+      '<p class="text-sm text-stone-600 leading-relaxed mb-4">This immediately blocks <span class="font-bold text-dark">' + escapeHTML(row.dataset.name) + '</span> from signing in or submitting new scans. Their existing scan history and pet profiles are kept and can be restored by unbanning later.</p>' +
       '<label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Reason for ban</label>' +
       '<textarea id="ban-reason-input" oninput="updateAccountEmailPreview(\'ban\')" rows="3" placeholder="Why is this account being banned?" class="w-full mt-1.5 px-4 py-3 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand transition-all resize-none"></textarea>' +
       '<div class="mt-4">' +
-        '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5"><i class="fa-solid fa-envelope mr-1"></i>Email preview -- sent to ' + row.dataset.email + '</p>' +
+        '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5"><i class="fa-solid fa-envelope mr-1"></i>Email preview, sent to ' + escapeHTML(row.dataset.email) + '</p>' +
         '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200">' +
           '<p class="text-xs font-bold text-dark mb-2">Subject: Your KibbleGuard account has been suspended</p>' +
-          '<p class="text-xs text-stone-600 leading-relaxed">Hi ' + firstName + ',<br><br>Your account has been suspended and you will no longer be able to sign in or submit scans. Here\'s why:<br><br><span id="ban-email-reason-preview" class="italic text-stone-500">[Your reason will appear here as you type]</span><br><br>Your scan history and pet profiles have been kept and can be restored if your account is reinstated. If you believe this is a mistake, reply to this email.<br><br>-- The KibbleGuard Team</p>' +
+          '<p class="text-xs text-stone-600 leading-relaxed">Hi ' + escapeHTML(firstName) + ',<br><br>Your account has been suspended and you will no longer be able to sign in or submit scans. Here\'s why:<br><br><span id="ban-email-reason-preview" class="italic text-stone-500">[Your reason will appear here as you type]</span><br><br>Your scan history and pet profiles have been kept and can be restored if your account is reinstated. If you believe this is a mistake, reply to this email.<br><br>-- The KibbleGuard Team</p>' +
         '</div>' +
       '</div>',
     footerHtml:
@@ -625,7 +625,7 @@ function confirmBanUser(rowId) {
     closeModal();
     var name = row.dataset.name, email = row.dataset.email;
     showToast('Sending notification email to ' + name + '...', 'info');
-    logAdminAction('Banned account: ' + name + ' -- "' + reason + '"', 'ban');
+    logAdminAction('Banned account: ' + name + ': "' + reason + '"', 'ban');
     sendSystemEmail({ type: 'account-banned', to: email, name: name, reason: reason }).then(function () {
       showToast(name + '\'s account was banned, notification email sent', 'danger');
     }).catch(function () {

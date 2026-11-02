@@ -275,10 +275,6 @@ function submitPasswordChange() {
     showToast('Could not verify your account, please log in again', 'danger');
     return;
   }
-  if (currentPass !== account.password) {
-    showToast('Current password is incorrect', 'danger');
-    return;
-  }
   var checks = getPasswordChecks(newPass);
   if (!checks.length || !checks.mixedCase || !checks.number || !checks.special) {
     showToast("New password doesn't meet all the requirements above", 'danger');
@@ -294,16 +290,23 @@ function submitPasswordChange() {
   }
 
   var btn = document.getElementById('submit-password-change-btn');
-  withSavingState(btn, 'Updating...', function () {
-    var accounts = getAdminAccounts();
-    var record = accounts.find(function (a) { return a.email === account.email; });
-    record.password = newPass;
-    record.hasCustomPassword = true;
-    saveAdminAccounts(accounts, { unguarded: true });
-
+  var originalHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.classList.add('opacity-70', 'cursor-not-allowed'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...'; }
+  fetch('/api/admin/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('kibbleguard-session-token') },
+    body: JSON.stringify({ currentPassword: currentPass, newPassword: newPass })
+  }).then(function (res) {
+    return res.json().catch(function () { return {}; }).then(function (data) { return { ok: res.ok, data: data }; });
+  }).then(function (r) {
+    if (btn) { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-not-allowed'); btn.innerHTML = originalHtml; }
+    if (!r.ok) { showToast((r.data && r.data.error) || 'Could not update the password', 'danger'); return; }
     closeModal();
     showToast('Password updated', 'success');
     logAdminAction('Updated own account password', 'security');
+  }).catch(function () {
+    if (btn) { btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-not-allowed'); btn.innerHTML = originalHtml; }
+    showToast('Could not reach the server, please try again', 'danger');
   });
 }
 
@@ -438,19 +441,19 @@ function submitInvite() {
 // shown either way, so there's a fallback if the email never arrives
 function showInviteSentModal(name, email, accessSummary, link, emailSucceeded) {
   var statusLine = emailSucceeded
-    ? '<p class="text-sm text-stone-600 leading-relaxed mb-4"><i class="fa-solid fa-circle-check text-safe mr-1"></i>Invite email sent to ' + email + '. If it doesn\'t arrive, share this link directly.</p>'
-    : '<p class="text-sm text-stone-600 leading-relaxed mb-4"><i class="fa-solid fa-circle-exclamation text-danger mr-1"></i>The invite email failed to send. Share this link with ' + name + ' directly instead.</p>';
+    ? '<p class="text-sm text-stone-600 leading-relaxed mb-4"><i class="fa-solid fa-circle-check text-safe mr-1"></i>Invite email sent to ' + escapeHTML(email) + '. If it doesn\'t arrive, share this link directly.</p>'
+    : '<p class="text-sm text-stone-600 leading-relaxed mb-4"><i class="fa-solid fa-circle-exclamation text-danger mr-1"></i>The invite email failed to send. Share this link with ' + escapeHTML(name) + ' directly instead.</p>';
   openModal({
     title: 'Invite Created',
     subtitle: name + ' \u00b7 ' + email,
     bodyHtml:
       statusLine +
       '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 mb-4">' +
-        '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">As ' + email + ' will have access to:</p>' +
+        '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">As ' + escapeHTML(email) + ' will have access to:</p>' +
         '<p class="text-xs text-stone-600 leading-relaxed">' + accessSummary + '</p>' +
       '</div>' +
       '<div class="flex items-center gap-2">' +
-        '<input id="invite-link-field" type="text" readonly value="' + link + '" class="flex-1 px-4 py-3 bg-stone-100 border border-stone-200 rounded-xl text-xs font-mono text-stone-600 focus:outline-none">' +
+        '<input id="invite-link-field" type="text" readonly value="' + escapeHTML(link) + '" class="flex-1 px-4 py-3 bg-stone-100 border border-stone-200 rounded-xl text-xs font-mono text-stone-600 focus:outline-none">' +
         '<button onclick="copyInviteLink()" class="press px-4 py-3 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl transition-all shrink-0">Copy</button>' +
       '</div>',
     footerHtml: '<button onclick="closeModal()" class="press px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Done</button>'
@@ -513,7 +516,7 @@ function confirmRemoveAdmin(email) {
   openModal({
     title: 'Remove Admin',
     subtitle: account.name + ' \u00b7 ' + account.role,
-    bodyHtml: '<p class="text-sm text-stone-600 leading-relaxed">This immediately revokes <span class="font-bold text-dark">' + account.name + '</span>\'s access to the admin panel. They will no longer be able to log in. This cannot be undone from here -- they would need a new invite to regain access.</p>',
+    bodyHtml: '<p class="text-sm text-stone-600 leading-relaxed">This immediately revokes <span class="font-bold text-dark">' + escapeHTML(account.name) + '</span>\'s access to the admin panel. They will no longer be able to log in. This cannot be undone from here. They would need a new invite to regain access.</p>',
     footerHtml:
       '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
       '<button id="confirm-remove-admin-btn" onclick="performRemoveAdmin(\'' + email + '\')" class="press px-6 py-2.5 text-xs font-bold text-white bg-danger hover:bg-red-600 rounded-xl shadow-lg shadow-danger/20 transition-all">Remove Admin</button>'
@@ -551,7 +554,7 @@ function resendInviteLink(email) {
     subtitle: account.name + ' \u00b7 ' + account.email,
     bodyHtml:
       '<div class="flex items-center gap-2">' +
-        '<input id="invite-link-field" type="text" readonly value="' + link + '" class="flex-1 px-4 py-3 bg-stone-100 border border-stone-200 rounded-xl text-xs font-mono text-stone-600 focus:outline-none">' +
+        '<input id="invite-link-field" type="text" readonly value="' + escapeHTML(link) + '" class="flex-1 px-4 py-3 bg-stone-100 border border-stone-200 rounded-xl text-xs font-mono text-stone-600 focus:outline-none">' +
         '<button onclick="copyInviteLink()" class="press px-4 py-3 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl transition-all shrink-0">Copy</button>' +
       '</div>',
     footerHtml: '<button onclick="closeModal()" class="press px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Done</button>'
@@ -643,7 +646,7 @@ function populateAdminProfileCard() {
     try { lastLogins = JSON.parse(localStorage.getItem('kibbleguard-last-logins')) || {}; } catch (e) { lastLogins = {}; }
     var lastLogin = lastLogins[account.email];
     if (!lastLogin) {
-      lastLoginEl.textContent = 'First login this session';
+      lastLoginEl.textContent = 'First login';
     } else {
       var loginDate = new Date(lastLogin);
       var isToday = loginDate.toDateString() === new Date().toDateString();
@@ -678,7 +681,7 @@ function handleAvatarFileSelected(event) {
     try {
       saveAdminAccounts(accounts, { unguarded: true });
     } catch (err) {
-      showToast('Could not save that photo: ' + (err && err.message ? err.message : 'storage may be full'), 'danger');
+      showToast('Could not save that photo: ' + (err && err.message ? err.message : 'please try again'), 'danger');
       return;
     }
     populateAdminProfileCard();
@@ -698,6 +701,23 @@ applyRoleState();
 renderAdminTeamList();
 populateAdminProfileCard();
 restoreRetentionSelectValue();
+
+// auto sign-out dropdown: saved the moment it changes (like the other switches).
+// app.js re-reads the value on every check, so no restart is needed. Changing it counts as
+// activity, so picking a short limit never signs you out the instant you choose it
+function handleIdleTimeoutChange(value) {
+  localStorage.setItem(IDLE_KEY, value);
+  touchActivity();
+  var label = value === '0' ? 'off' : (value === '60' ? '1 hour' : value + ' minutes');
+  showToast(value === '0' ? 'Auto sign-out turned off' : 'You will be signed out after ' + label + ' of inactivity', 'success');
+  logAdminAction('Auto sign-out set to ' + label, 'settings');
+}
+(function restoreIdleTimeoutSelect() {
+  var select = document.getElementById('pref-idle-timeout');
+  if (!select) return;
+  var saved = localStorage.getItem(IDLE_KEY) || '0';
+  if (Array.prototype.some.call(select.options, function (o) { return o.value === saved; })) select.value = saved;
+})();
 
 /* ---------- Refresh ----------
    Re-reads the admin accounts so the Admin Team list shows invites accepted, admins

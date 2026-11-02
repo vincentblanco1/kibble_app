@@ -11,7 +11,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KibbleGuard Admin - Dashboard</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="app.js?v=6"></script>
+<script src="db-sync.js?v=1"></script>
+<script src="app.js?v=16-db"></script>
 <!-- runs immediately, before body renders, so there's no flash of the wrong
      theme/density before JS on the body finishes loading -->
 <script>restoreThemeState();restoreTableDensityState();</script>
@@ -20,7 +21,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body class="bg-[#FAF6EE] text-stone-800 font-sans antialiased min-h-screen flex">
 
@@ -34,10 +35,26 @@
       <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
     </div>
   </div>
+  <!-- who is signed in (name, role, photo) sits at the top, under the logo, so the role you are acting under is always visible;
+       the text below is a placeholder that applySidebarIdentity() in app.js replaces with the real account on every page load.
+       Log out lives in the account menu at the top right of the header. -->
+  <div class="admin-card-wrapper px-6 pt-6 pb-5">
+    <div class="admin-card flex items-center gap-3 px-4">
+      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
+        <span class="relative shrink-0"><img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-11 h-11 rounded-full object-cover" alt="Admin"></span>
+        <div class="min-w-0 sidebar-text">
+          <p data-admin-name class="text-sm font-bold text-dark truncate">Dr. Sarah Chen</p>
+          <p data-admin-role class="text-xs text-stone-500 font-medium truncate">Chief Admin</p>
+        </div>
+      </a>
+    </div>
+  </div>
   <button id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar" aria-label="Collapse sidebar" class="press absolute top-1/2 -translate-y-1/2 w-7 h-9 rounded-full bg-white border-2 border-stone-200 shadow-md flex items-center justify-center text-stone-500 hover:text-brand hover:border-brand transition-all z-[60]">
     <i id="collapse-icon" class="fa-solid fa-chevron-left text-[10px]"></i>
   </button>
-  <nav class="flex-1 px-6 py-8 space-y-2 overflow-y-auto">
+  <nav class="flex-1 px-6 pt-5 pb-8 space-y-2 overflow-y-auto">
+    <div class="nav-group space-y-2">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">Main Menu</p>
     <a href="dashboard.html" aria-label="Dashboard" data-tooltip="Dashboard" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl transition-all">
       <i class="fa-solid fa-chart-pie text-sm w-5 shrink-0"></i> <span class="sidebar-text">Dashboard</span>
     </a>
@@ -50,6 +67,9 @@
     <a href="safety-rules.html" aria-label="Safety Rules" data-tooltip="Safety Rules" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-shield-halved text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Rules</span>
     </a>
+    </div>
+    <div class="nav-group space-y-2 mt-3">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">Users &amp; Support</p>
     <a href="users-pets.html" aria-label="Users & Pets" data-tooltip="Users & Pets" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-users text-sm w-5 shrink-0"></i> <span class="sidebar-text">Users & Pets</span>
     </a>
@@ -59,29 +79,17 @@
     <a href="inquiries.html" aria-label="Inquiries" data-tooltip="Inquiries" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-headset text-sm w-5 shrink-0"></i> <span class="sidebar-text">Inquiries</span>
     </a>
+    </div>
+    <div class="nav-group space-y-2 mt-3">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">System</p>
     <a href="activity-log.html" aria-label="Activity Log" data-tooltip="Activity Log" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-clock-rotate-left text-sm w-5 shrink-0"></i> <span class="sidebar-text">Activity Log</span>
     </a>
     <a href="settings.html" aria-label="Settings" data-tooltip="Settings" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-gear text-sm w-5 shrink-0"></i> <span class="sidebar-text">Settings</span>
     </a>
-  </nav>
-  <!-- name/role/avatar text below are placeholders replaced by
-       applySidebarIdentity() in app.js with whoever's actually logged in -->
-  <div class="admin-card-wrapper p-6 border-t border-stone-50">
-    <div class="admin-card flex items-center gap-3 p-3 rounded-2xl bg-stone-100/50 border border-stone-200">
-      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
-        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="Admin">
-        <div class="min-w-0 sidebar-text">
-          <p class="text-xs font-bold text-dark truncate">Dr. Sarah Chen</p>
-          <p class="text-[10px] text-stone-500 font-medium truncate">Chief Admin</p>
-        </div>
-      </a>
-      <button onclick="confirmLogout()" title="Log out" aria-label="Log out" class="press w-8 h-8 rounded-lg hover:bg-white flex items-center justify-center text-stone-400 hover:text-danger transition-all shrink-0">
-        <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
-      </button>
     </div>
-  </div>
+  </nav>
 </aside>
 
 <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="hidden fixed inset-0 bg-stone-900/50 z-[99]"></div>
@@ -92,23 +100,28 @@
     <div class="flex items-center gap-4">
       <button onclick="toggleMobileSidebar()" aria-label="Open navigation menu" class="lg:hidden press w-10 h-10 rounded-xl bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-dark shrink-0"><i class="fa-solid fa-bars"></i></button>
       <div>
-      <h1 class="font-display font-bold text-xl text-dark">Command Overview</h1>
+      <h1 class="font-display font-bold text-xl text-dark">Dashboard</h1>
       <p class="text-[11px] text-stone-400 font-bold uppercase tracking-wider">System-wide toxicity tracking</p>
     </div>
     </div>
   </header>
 
   <div class="p-10 max-w-[1700px] w-full mx-auto">
+    <!-- filled by renderDashboardGreeting() in dashboard.js from whoever is signed in -->
+    <div class="mb-8 bg-white border border-stone-100 rounded-[2rem] card-shadow px-8 py-6" id="dashboard-greeting">
+      <h2 class="font-display font-bold text-2xl text-dark" id="greeting-title">Welcome back</h2>
+      <p class="text-xs text-stone-500 font-medium mt-1.5" id="greeting-sub"></p>
+    </div>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
       <!-- left side, 8 cols -->
-      <div class="lg:col-span-8 space-y-8">
+      <div class="contents lg:block lg:col-span-8 lg:space-y-8">
 
         <!-- kpi cards, 5/3 split then 4/4. data-target on each number is what
              animateCountUp in app.js reads to run the count-up animation --
              refreshKpiFromPersistedRows updates data-target with the real
              count before that animation runs -->
-        <div class="grid grid-cols-8 gap-6">
+        <div class="order-1 lg:order-none grid grid-cols-8 gap-6">
           <div onclick="window.location.href='ocr-scans.html'" class="stagger-in lift-card col-span-8 md:col-span-5 bg-dark text-white p-8 rounded-[2rem] card-shadow-lg relative overflow-hidden cursor-pointer">
             <svg class="absolute -right-4 -bottom-6 w-32 h-32 opacity-[0.08] rotate-[-14deg] pointer-events-none" viewBox="0 0 24 24" fill="white">
               <ellipse cx="12" cy="16.2" rx="5" ry="4.1"/>
@@ -143,10 +156,9 @@
           <div onclick="window.location.href='ingredient-database.html'" class="stagger-in lift-card col-span-4 bg-white p-6 rounded-[2rem] border border-stone-100 card-shadow cursor-pointer">
             <div class="flex items-center justify-between mb-4">
               <div class="w-11 h-11 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-lg"><i class="fa-solid fa-dna"></i></div>
-              <span class="text-[9px] font-bold text-stone-400 bg-stone-50 px-2 py-1 rounded-lg">DB v4.2</span>
             </div>
             <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Ingredients in Safety Database</p>
-            <h3 class="text-2xl font-display font-bold text-dark tabular-nums" id="kpi-ingredients" data-target="4208">4,208</h3>
+            <h3 class="text-2xl font-display font-bold text-dark tabular-nums" id="kpi-ingredients" data-target="6">6</h3>
           </div>
           <div onclick="document.getElementById('high-risk-triage-section').scrollIntoView({behavior: 'smooth', block: 'start'})" class="stagger-in lift-card col-span-4 bg-white p-6 rounded-[2rem] border-2 border-danger/20 card-shadow relative cursor-pointer">
             <div class="flex items-center justify-between mb-4">
@@ -162,7 +174,7 @@
         </div>
 
         <!-- Assessment Activity -->
-        <div class="stagger-in bg-white p-8 rounded-[2rem] border border-stone-100 card-shadow" style="animation-delay: 240ms;">
+        <div class="order-2 lg:order-none stagger-in bg-white p-8 rounded-[2rem] border border-stone-100 card-shadow" style="animation-delay: 240ms;">
           <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div>
               <h2 class="font-display font-bold text-base text-dark">Assessment Activity</h2>
@@ -186,7 +198,7 @@
         </div>
 
         <!-- High-Risk Triage -->
-        <div id="high-risk-triage-section" class="stagger-in bg-white rounded-[2rem] border border-stone-100 card-shadow overflow-hidden scroll-mt-24" style="animation-delay: 320ms;">
+        <div id="high-risk-triage-section" class="order-5 lg:order-none stagger-in bg-white rounded-[2rem] border border-stone-100 card-shadow overflow-hidden scroll-mt-24" style="animation-delay: 320ms;">
           <div class="p-7 border-b border-stone-50 bg-danger/[0.03] flex items-center justify-between">
             <div>
               <h2 class="font-display font-bold text-base text-dark">High-Risk Triage</h2>
@@ -202,36 +214,9 @@
                attributes are what prioritizeTriageQueue, verifyTriage, and the
                overdue-case check in dashboard.js all read from -->
           <div class="divide-y divide-stone-50" id="triage-list">
-            <div class="feed-row p-6 flex items-center justify-between group" id="triage-83391" data-name="&quot;Xyli-Extract&quot;" data-suggested-match="Xylitol" data-severity="Toxic" data-scan="#KB-83391" data-confidence="34%">
-              <div class="flex items-center gap-5">
-                <div class="w-12 h-12 rounded-xl bg-danger/10 text-danger flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-200"><i class="fa-solid fa-skull"></i></div>
-                <div>
-                  <p class="text-sm font-bold text-dark italic flex items-center gap-2">"Xyli-Extract" <span class="px-2 py-0.5 rounded-full bg-danger/10 text-danger text-[9px] font-bold uppercase tracking-widest not-italic">Possible Toxic Match</span></p>
-                  <p class="text-[11px] text-stone-400">Scan ID: <span class="font-mono text-stone-500">#KB-83391</span> &middot; OCR Confidence: 34%</p>
-                </div>
-              </div>
-              <button class="press px-5 py-2 text-xs font-bold text-brand border-2 border-brand rounded-xl hover:bg-brand hover:text-white transition-colors duration-200" data-perm="verifyTriage" onclick="verifyTriage('triage-83391')">Verify</button>
-            </div>
-            <div class="feed-row p-6 flex items-center justify-between group" id="triage-83382" data-name="&quot;Al-un-Cepa&quot;" data-suggested-match="Allium Cepa (Onion)" data-severity="Toxic" data-scan="#KB-83382" data-confidence="42%">
-              <div class="flex items-center gap-5">
-                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-200"><i class="fa-solid fa-flask"></i></div>
-                <div>
-                  <p class="text-sm font-bold text-dark italic flex items-center gap-2">"Al-un-Cepa" <span class="px-2 py-0.5 rounded-full bg-danger/10 text-danger text-[9px] font-bold uppercase tracking-widest not-italic">Possible Toxic Match</span></p>
-                  <p class="text-[11px] text-stone-400">Scan ID: <span class="font-mono text-stone-500">#KB-83382</span> &middot; OCR Confidence: 42%</p>
-                </div>
-              </div>
-              <button class="press px-5 py-2 text-xs font-bold text-brand border-2 border-brand rounded-xl hover:bg-brand hover:text-white transition-colors duration-200" data-perm="verifyTriage" onclick="verifyTriage('triage-83382')">Verify</button>
-            </div>
-            <div class="feed-row p-6 flex items-center justify-between group" id="triage-83407" data-name="&quot;Chick-n Meel&quot;" data-suggested-match="Chicken Meal" data-severity="Safe" data-scan="#KB-83407" data-confidence="38%">
-              <div class="flex items-center gap-5">
-                <div class="w-12 h-12 rounded-xl bg-safe/10 text-safe flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-200"><i class="fa-solid fa-drumstick-bite"></i></div>
-                <div>
-                  <p class="text-sm font-bold text-dark italic">"Chick-n Meel"</p>
-                  <p class="text-[11px] text-stone-400">Scan ID: <span class="font-mono text-stone-500">#KB-83407</span> &middot; OCR Confidence: 38%</p>
-                </div>
-              </div>
-              <button class="press px-5 py-2 text-xs font-bold text-brand border-2 border-brand rounded-xl hover:bg-brand hover:text-white transition-colors duration-200" data-perm="verifyTriage" onclick="verifyTriage('triage-83407')">Verify</button>
-            </div>
+            
+            
+            
           </div>
           <!-- shown by updateTriageCount() in dashboard.js once every triage
                case has been resolved -->
@@ -252,63 +237,24 @@
         </div>
 
         <!-- Live Assessment Stream -->
-        <div class="stagger-in bg-white rounded-[2rem] border border-stone-100 card-shadow overflow-hidden" style="animation-delay: 400ms;">
+        <div class="order-6 lg:order-none stagger-in bg-white rounded-[2rem] border border-stone-100 card-shadow overflow-hidden" style="animation-delay: 400ms;">
           <div class="p-7 border-b border-stone-50 flex items-center justify-between">
             <h2 class="font-display font-bold text-base text-dark">Live Assessment Stream</h2>
             <a href="ocr-scans.html" class="press text-xs font-bold text-brand hover:underline">View All Scans</a>
           </div>
           <div class="divide-y divide-stone-50" id="live-stream-list">
-            <div class="feed-row p-6 flex items-center justify-between cursor-pointer" onclick="viewStreamDetail('Chicken &amp; Rice Kibble','Sarah Jenkins','Golden Retriever','2m ago','Safe','safe','KB-902144')">
-              <div class="flex items-center gap-4">
-                <div class="w-9 h-9 rounded-xl bg-safe/10 text-safe flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-dog"></i></div>
-                <div>
-                  <p class="text-sm font-bold text-dark leading-none">Chicken & Rice Kibble</p>
-                  <p class="text-[11px] text-stone-400 mt-1">Sarah Jenkins (Golden Retriever) &middot; 2m ago</p>
-                </div>
-              </div>
-              <div class="flex items-center gap-3"><span class="text-[10px] font-bold text-safe uppercase tracking-widest">Safe</span><i class="chevron-reveal fa-solid fa-chevron-right text-[10px] text-stone-300"></i></div>
-            </div>
-            <div class="feed-row p-6 flex items-center justify-between cursor-pointer" onclick="viewStreamDetail('Organic Beef Pat&eacute;','Linda Wu','Maine Coon','15m ago','Toxic','danger','KB-902143')">
-              <div class="flex items-center gap-4">
-                <div class="w-9 h-9 rounded-xl bg-danger/10 text-danger flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-cat"></i></div>
-                <div>
-                  <p class="text-sm font-bold text-dark leading-none">Organic Beef Pat&eacute;</p>
-                  <p class="text-[11px] text-stone-400 mt-1">Linda Wu (Maine Coon) &middot; 15m ago</p>
-                </div>
-              </div>
-              <div class="flex items-center gap-3"><span class="text-[10px] font-bold text-danger uppercase tracking-widest">Toxic</span><i class="chevron-reveal fa-solid fa-chevron-right text-[10px] text-stone-300"></i></div>
-            </div>
-            <div class="feed-row p-6 flex items-center justify-between cursor-pointer" onclick="viewStreamDetail('Salmon Delight Treats','Marcus Thorne','Beagle','1h ago','Caution','caution','KB-902142')">
-              <div class="flex items-center gap-4">
-                <div class="w-9 h-9 rounded-xl bg-caution/10 text-caution flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-dog"></i></div>
-                <div>
-                  <p class="text-sm font-bold text-dark leading-none">Salmon Delight Treats</p>
-                  <p class="text-[11px] text-stone-400 mt-1">Marcus Thorne (Beagle) &middot; 1h ago</p>
-                </div>
-              </div>
-              <div class="flex items-center gap-3"><span class="text-[10px] font-bold text-caution uppercase tracking-widest">Caution</span><i class="chevron-reveal fa-solid fa-chevron-right text-[10px] text-stone-300"></i></div>
-            </div>
+            
+            
+            
           </div>
         </div>
       </div>
 
       <!-- right side, 4 cols, sticky -->
-      <div class="lg:col-span-4 space-y-8 lg:sticky lg:top-[104px]">
-
-        <!-- System Guardian -->
-        <div class="stagger-in gradient-card bg-gradient-to-br from-brand-light to-white p-6 rounded-[2rem] border border-brand/10 card-shadow flex items-center gap-4 relative">
-          <span class="absolute -top-2.5 -right-2.5 rotate-[9deg] bg-brand text-white text-[8px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-md">On Duty</span>
-          <div class="w-16 h-16 rounded-2xl bg-white text-brand flex items-center justify-center text-2xl shrink-0 shadow-sm">
-            <i class="fa-solid fa-paw"></i>
-          </div>
-          <div class="min-w-0">
-            <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-brand live-pulse"></span>System Guardian</p>
-            <p class="text-sm font-display font-bold text-dark leading-snug">On duty, watching every scan</p>
-          </div>
-        </div>
+      <div class="contents lg:block lg:col-span-4 lg:space-y-8 lg:sticky lg:top-[104px]">
 
         <!-- Top Risk Ingredients -->
-        <div class="stagger-in bg-white p-7 rounded-[2rem] border border-stone-100 card-shadow">
+        <div class="order-3 lg:order-none stagger-in bg-white p-7 rounded-[2rem] border border-stone-100 card-shadow">
           <h2 class="font-display font-bold text-sm text-dark mb-1">Top Risk Ingredients</h2>
           <p class="text-[11px] text-stone-400 font-medium mb-3">Ingredients behind Caution and Toxic verdicts in the dates you pick</p>
           <div class="flex items-center gap-2 mb-2">
@@ -325,20 +271,18 @@
         </div>
 
         <!-- Species Exposure -->
-        <div class="stagger-in bg-white p-7 rounded-[2rem] border border-stone-100 card-shadow">
-          <div class="flex items-center justify-between mb-1">
-            <h2 class="font-display font-bold text-sm text-dark">Species Exposure</h2>
-            <div class="flex items-center gap-2 text-[10px] font-bold text-stone-400">
-              <span class="inline-flex items-center gap-1"><i class="fa-solid fa-dog text-[#03C4C9]"></i>Canine</span>
-              <span class="inline-flex items-center gap-1"><i class="fa-solid fa-cat text-[#B57EDC]"></i>Feline</span>
-            </div>
+        <div class="order-4 lg:order-none stagger-in bg-white p-7 rounded-[2rem] border border-stone-100 card-shadow">
+          <h2 class="font-display font-bold text-sm text-dark mb-1">Species Exposure</h2>
+          <p class="text-[11px] text-stone-400 font-medium mb-5">Classification rules are species-specific</p>
+          <!-- donut on the left, legend with each species' share on the right (filled by renderSpeciesLegend in dashboard.js) -->
+          <div class="flex items-center gap-6">
+            <div id="pie-chart" class="w-40 shrink-0"></div>
+            <div id="pie-legend" class="flex-1 min-w-0 space-y-3.5"></div>
           </div>
-          <p class="text-[11px] text-stone-400 font-medium mb-4">Classification rules are species-specific</p>
-          <div id="pie-chart" class="min-h-[220px]"></div>
         </div>
 
         <!-- Active Safety Alerts -->
-        <div class="stagger-in bg-white rounded-[2rem] border border-stone-100 card-shadow overflow-hidden">
+        <div class="order-7 lg:order-none stagger-in bg-white rounded-[2rem] border border-stone-100 card-shadow overflow-hidden">
           <div class="p-7 border-b border-stone-50 flex items-center justify-between">
             <div>
               <h2 class="font-display font-bold text-sm text-dark">Active Safety Alerts</h2>
@@ -377,7 +321,7 @@
 
 </main>
 
-<script src="dashboard.js?v=11"></script>
+<script src="dashboard.js?v=12-db"></script>
 
 </body>
 </html>

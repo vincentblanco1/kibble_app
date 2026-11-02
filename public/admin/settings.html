@@ -11,13 +11,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KibbleGuard Admin - Settings</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="app.js?v=6"></script>
+<script src="db-sync.js?v=1"></script>
+<script src="app.js?v=16-db"></script>
 <script>restoreThemeState();restoreTableDensityState();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body class="bg-[#FAF6EE] text-stone-800 font-sans antialiased min-h-screen flex">
 
@@ -31,10 +32,26 @@
       <span class="text-[10px] font-bold text-brand uppercase tracking-widest mt-1">Admin Panel</span>
     </div>
   </div>
+  <!-- who is signed in (name, role, photo) sits at the top, under the logo, so the role you are acting under is always visible;
+       the text below is a placeholder that applySidebarIdentity() in app.js replaces with the real account on every page load.
+       Log out lives in the account menu at the top right of the header. -->
+  <div class="admin-card-wrapper px-6 pt-6 pb-5">
+    <div class="admin-card flex items-center gap-3 px-4">
+      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
+        <span class="relative shrink-0"><img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-11 h-11 rounded-full object-cover" alt="Admin"></span>
+        <div class="min-w-0 sidebar-text">
+          <p data-admin-name class="text-sm font-bold text-dark truncate">Dr. Sarah Chen</p>
+          <p data-admin-role class="text-xs text-stone-500 font-medium truncate">Chief Admin</p>
+        </div>
+      </a>
+    </div>
+  </div>
   <button id="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar" aria-label="Collapse sidebar" class="press absolute top-1/2 -translate-y-1/2 w-7 h-9 rounded-full bg-white border-2 border-stone-200 shadow-md flex items-center justify-center text-stone-500 hover:text-brand hover:border-brand transition-all z-[60]">
     <i id="collapse-icon" class="fa-solid fa-chevron-left text-[10px]"></i>
   </button>
-  <nav class="flex-1 px-6 py-8 space-y-2 overflow-y-auto">
+  <nav class="flex-1 px-6 pt-5 pb-8 space-y-2 overflow-y-auto">
+    <div class="nav-group space-y-2">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">Main Menu</p>
     <a href="dashboard.html" aria-label="Dashboard" data-tooltip="Dashboard" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-chart-pie text-sm w-5 shrink-0"></i> <span class="sidebar-text">Dashboard</span>
     </a>
@@ -47,6 +64,9 @@
     <a href="safety-rules.html" aria-label="Safety Rules" data-tooltip="Safety Rules" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-shield-halved text-sm w-5 shrink-0"></i> <span class="sidebar-text">Safety Rules</span>
     </a>
+    </div>
+    <div class="nav-group space-y-2 mt-3">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">Users &amp; Support</p>
     <a href="users-pets.html" aria-label="Users & Pets" data-tooltip="Users & Pets" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-users text-sm w-5 shrink-0"></i> <span class="sidebar-text">Users & Pets</span>
     </a>
@@ -56,27 +76,17 @@
     <a href="inquiries.html" aria-label="Inquiries" data-tooltip="Inquiries" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-headset text-sm w-5 shrink-0"></i> <span class="sidebar-text">Inquiries</span>
     </a>
+    </div>
+    <div class="nav-group space-y-2 mt-3">
+    <p class="sidebar-text px-4 pb-3 mb-1 text-[10px] font-bold text-stone-400 uppercase tracking-widest border-b border-dashed border-stone-200">System</p>
     <a href="activity-log.html" aria-label="Activity Log" data-tooltip="Activity Log" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:bg-stone-50 transition-all">
       <i class="fa-solid fa-clock-rotate-left text-sm w-5 shrink-0"></i> <span class="sidebar-text">Activity Log</span>
     </a>
     <a href="settings.html" aria-label="Settings" data-tooltip="Settings" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl transition-all">
       <i class="fa-solid fa-gear text-sm w-5 shrink-0"></i> <span class="sidebar-text">Settings</span>
     </a>
-  </nav>
-  <div class="admin-card-wrapper p-6 border-t border-stone-50">
-    <div class="admin-card flex items-center gap-3 p-3 rounded-2xl bg-stone-100/50 border border-stone-200">
-      <a href="settings.html" title="Dr. Sarah Chen, Chief Admin" class="admin-card-link flex items-center gap-3 flex-1 min-w-0">
-        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="Admin">
-        <div class="min-w-0 sidebar-text">
-          <p class="text-xs font-bold text-dark truncate">Dr. Sarah Chen</p>
-          <p class="text-[10px] text-stone-500 font-medium truncate">Chief Admin</p>
-        </div>
-      </a>
-      <button onclick="confirmLogout()" title="Log out" aria-label="Log out" class="press w-8 h-8 rounded-lg hover:bg-white flex items-center justify-center text-stone-400 hover:text-danger transition-all shrink-0">
-        <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
-      </button>
     </div>
-  </div>
+  </nav>
 </aside>
 
 <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="hidden fixed inset-0 bg-stone-900/50 z-[99]"></div>
@@ -227,6 +237,18 @@
             </div>
             <div class="flex items-center justify-between p-4 rounded-2xl bg-stone-100 border border-stone-200">
               <div class="pr-6">
+                <p class="text-xs font-bold text-dark">Auto Sign-Out When Inactive</p>
+                <p class="text-[10px] text-stone-400 mt-1">Signs you out after no activity, with a one-minute warning first. Useful on shared devices.</p>
+              </div>
+              <select id="pref-idle-timeout" onchange="handleIdleTimeoutChange(this.value)" aria-label="Auto sign-out after inactivity" class="shrink-0 px-4 py-2 bg-white border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand">
+                <option value="0">Never</option>
+                <option value="15">15 minutes</option>
+                <option value="30">30 minutes</option>
+                <option value="60">1 hour</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-stone-100 border border-stone-200">
+              <div class="pr-6">
                 <p class="text-xs font-bold text-dark">Scan Data Retention Policy</p>
                 <p class="text-[10px] text-stone-400 mt-1">Retention policy for completed OCR scan records. Saving it shows how many existing scans fall outside it. Nothing is deleted from this panel; the backend archiving job applies the policy.</p>
               </div>
@@ -263,7 +285,7 @@
 
 </main>
 
-<script src="settings.js?v=5"></script>
+<script src="settings.js?v=6-db"></script>
 
 </body>
 </html>

@@ -412,3 +412,232 @@ input[type="password"]::-ms-clear { display: none; }
 
 /* the logo's black outline disappears on the dark sidebar, so give it a thin light edge in dark mode */
 html.dark-theme #sidebar .logo-row img { filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.95)); }
+
+#sidebar.collapsed .admin-card { padding-left: 0; padding-right: 0; }
+
+/* sidebar groups (Main Menu / Users & Support / System): the headings are .sidebar-text, so
+   they disappear when the sidebar is collapsed to icons. A thin divider keeps the groups
+   visibly separate in that state. */
+#sidebar.collapsed .nav-group + .nav-group { border-top: 1px dashed #e7e5e4; margin-top: 0.75rem; padding-top: 0.75rem; }
+html.dark-theme #sidebar.collapsed .nav-group + .nav-group { border-top-color: #2f3034; }
+
+
+/* ---------- Sidebar: gentler spacing on short screens ----------
+   Only link padding and the profile card shrink a little. The logo row stays 5rem so its bottom
+   line stays level with the page header, and the gaps around group headings stay as designed.
+   If the menu is still taller than the screen it scrolls, and app.js remembers the position. */
+@media (max-height: 820px) and (min-width: 1024px) {
+  #sidebar .admin-card-wrapper { padding: 1rem 1.5rem 0.75rem; }
+  #sidebar nav { padding-top: 0.75rem; }
+  #sidebar nav .sidebar-link { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+}
+@media (max-height: 680px) and (min-width: 1024px) {
+  #sidebar nav .sidebar-link { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+}
+
+/* ---------- Page header: clear separation from the content ----------
+   The header was white with an almost invisible border (border-stone-50) on top of the cream
+   paw-pattern page, so it blended into the content. A soft shadow plus a visible bottom line
+   lifts it off the page, like a raised bar. It applies to every page, since they all share this header. */
+main.paw-field > header {
+  z-index: 40;
+  border-bottom-color: #e7e5e4;
+  box-shadow: 0 6px 16px -8px rgba(42, 36, 28, 0.22), 0 1px 2px rgba(42, 36, 28, 0.06);
+}
+html.dark-theme main.paw-field > header {
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7), 0 1px 0 #3a3b40;
+}
+
+/* ---------- Clearer separation for the sidebar, cards and tables ----------
+   Same idea as the header: the sidebar, cards and table headings were separated from the page only
+   by near-invisible borders (border-stone-50/100) and a very faint shadow. Light theme only for the
+   borders; dark theme already has its own, more visible edges. */
+
+/* sidebar: visible right edge + soft shadow onto the page */
+html:not(.dark-theme) #sidebar { border-right-color: #e7e5e4; box-shadow: 8px 0 16px -10px rgba(42, 36, 28, 0.18); }
+html.dark-theme #sidebar { box-shadow: 8px 0 16px -10px rgba(0, 0, 0, 0.7); }
+
+/* cards and table boxes (everything using .card-shadow): a slightly firmer lift. The old value was
+   8% opacity, which disappeared against the cream paw pattern. Dark theme keeps its own !important rule. */
+.card-shadow { box-shadow: 0 4px 24px -4px rgba(42, 36, 28, 0.13), 0 1px 3px rgba(42, 36, 28, 0.10); }
+
+/* table column headings: a faint tinted band and a clear line, so the headings read as separate from the rows */
+html:not(.dark-theme) .overflow-x-auto > table > thead > tr { background-color: #faf8f5; border-bottom-color: #e7e5e4; }
+
+/* ---------- Tables: fit the screen instead of scrolling sideways ----------
+   The tables used 2.5rem of side padding on every cell and never let text wrap, so most of
+   them were wider than a laptop screen. Cells now use 1rem of side padding and text may wrap
+   (names, categories, aliases), while things that must stay on one line (IDs, dates, numbers,
+   badges) still do. This applies to every table inside a scroll box, including rows saved in
+   the browser earlier, because it targets the existing classes instead of the markup. The scroll
+   box and its edge fades stay as a fallback for very narrow screens. */
+.overflow-x-auto > table { white-space: normal !important; }
+.overflow-x-auto > table td.px-10,
+.overflow-x-auto > table th.px-10 { padding-left: 1rem !important; padding-right: 1rem !important; }
+.overflow-x-auto > table td.font-mono,
+.overflow-x-auto > table td.tabular-nums,
+.overflow-x-auto > table .rounded-full { white-space: nowrap; }
+
+/* ---------- Table polish (after the tighter padding above) ----------
+   - the first and last columns get the same 1.5rem edge as the filter bar above the table, so
+     nothing sits against the card's rounded border
+   - the Category pill keeps its shape when the name is long: the whole pill wraps as one block
+     instead of its grey background splitting across two lines
+   - the sticky Actions heading takes the same tint as the rest of the heading band (it was white,
+     which left a pale block at the end of the heading row) */
+.overflow-x-auto > table td:first-child,
+.overflow-x-auto > table th:first-child { padding-left: 1.5rem !important; }
+.overflow-x-auto > table td:last-child,
+.overflow-x-auto > table th:last-child { padding-right: 1.5rem !important; }
+.overflow-x-auto > table [data-field="category"] { display: inline-block; max-width: 9.5rem; white-space: normal; line-height: 1.35; vertical-align: middle; }
+html:not(.dark-theme) .overflow-x-auto > table > thead th.sticky { background-color: #faf8f5 !important; }
+
+
+/* Ingredient Database: keep the verified tick beside the Category pill instead of dropping
+   under it when the category name is long enough to wrap onto two lines */
+#ingredient-table-body td:nth-child(2) { white-space: nowrap !important; }
+#ingredient-table-body td:nth-child(2) [data-field="reg-badge"] { vertical-align: middle; }
+
+
+/* ---------- Sidebar: group headings sit with their own links ----------
+   The heading ("USERS & SUPPORT", "SYSTEM") had about the same space above it as below it, so it
+   read as belonging to the group before it. More space above, less below, ties it to the links under it.
+   (The collapsed icons-only sidebar has its own divider rule above, which still wins there.) */
+#sidebar nav .nav-group + .nav-group { margin-top: 1.5rem; }
+#sidebar nav .nav-group > p { padding-bottom: 0.5rem; margin-bottom: 0; }
+
+/* ---------- Sidebar: count pill next to Dashboard / OCR Scan Records / Inquiries ----------
+   Shown while the sidebar is expanded (the number says how many are waiting). When it is collapsed
+   to icons, the pill hides and the small red dot on the icon is used instead. */
+.nav-notify-count {
+  margin-left: auto; flex-shrink: 0; min-width: 20px; height: 20px; padding: 0 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 9999px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; line-height: 1;
+}
+#sidebar.collapsed .nav-notify-count { display: none; }
+#sidebar:not(.collapsed) .nav-notify-dot { display: none; }
+
+
+/* ---------- Responsive: tablets and phones ----------
+   Fixes seen on narrow screens: the bell / chat / account / search dropdowns opened off the
+   left edge of the screen (they were anchored to their own button, which wraps to the left
+   when the header is narrow), page padding was far too big, the triage rows squashed their
+   text, and popup windows had no room. */
+main.paw-field { min-width: 0; }
+
+/* tablets and below: dropdowns anchor to the header (the sticky header is a positioned box)
+   instead of to their own button, and always stay inside the screen */
+@media (max-width: 1023px) {
+  #notif-bell-wrap, #chat-wrap, #profile-menu-wrap, #global-search-wrap { position: static !important; }
+  #notif-panel, #chat-panel, #profile-menu-panel, #global-search-panel {
+    position: absolute !important;
+    top: 100% !important;
+    left: auto !important;
+    right: 1rem !important;
+    width: min(26rem, calc(100vw - 2rem)) !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin-top: 0.5rem !important;
+    max-height: calc(100vh - 7rem);
+    overflow-y: auto;
+  }
+  #global-search-panel { left: 1rem !important; right: 1rem !important; width: auto !important; }
+  main.paw-field > header { padding-left: 1.5rem !important; padding-right: 1.5rem !important; }
+  main.paw-field > .page-scroll > div[class*="p-10"] { padding: 1.5rem !important; }
+}
+
+/* phones */
+@media (max-width: 639px) {
+  #notif-panel, #chat-panel, #profile-menu-panel { left: 1rem !important; right: 1rem !important; width: auto !important; }
+
+  /* the header holds up to 3 rows here (title, buttons, search). Pinned, it would use a quarter of
+     the screen, so on phones it scrolls away with the page and the whole page scrolls as one */
+  main.paw-field > header { padding-left: 1rem !important; padding-right: 1rem !important; position: relative !important; }
+  main.paw-field.has-scroll-shell { overflow-y: auto !important; }
+  /* the page itself scrolls here, so its scrollbar would run down beside the header and look like a
+     notch in it (only visible when a desktop window is shrunk; real phones use overlay scrollbars) */
+  main.paw-field.has-scroll-shell { scrollbar-width: none; }
+  main.paw-field.has-scroll-shell::-webkit-scrollbar { display: none; }
+  main.paw-field > .page-scroll { flex: none !important; overflow: visible !important; }
+  #refresh-updated { display: none; }
+
+  /* header crowding: the auto-refresh switch keeps its dot and the word "Auto" (the dot and the
+     tinted background already say on/off), and drops the extra "On/Off" word to save width */
+  #refresh-auto-btn { padding: 0.65rem 0.8rem !important; }
+  #refresh-auto-btn .auto-state { display: none; }
+  #refresh-btn { padding: 0.55rem 0.9rem !important; }
+
+  /* card padding: desktop-sized padding (p-7 / p-8) wasted too much of a phone screen */
+  #dashboard-greeting { padding: 1rem 1.25rem !important; margin-bottom: 1.25rem !important; }
+  main.paw-field > .page-scroll .lift-card { padding: 1.25rem !important; }
+  main.paw-field > .page-scroll .lift-card > div.mb-8 { margin-bottom: 1rem !important; }
+  main.paw-field > .page-scroll .card-shadow.p-8,
+  main.paw-field > .page-scroll .card-shadow.p-7 { padding: 1.25rem !important; }
+  #kpi-scans { font-size: 2.5rem; line-height: 1.1; }
+
+  main.paw-field > .page-scroll > div[class*="p-10"] { padding: 1rem !important; }
+  main.paw-field > .page-scroll > div.space-y-10 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem !important; }
+  #greeting-title { font-size: 1.5rem; }
+
+  /* triage queue: text on top, full-width Verify button below, badges wrap instead of squashing */
+  #triage-list .feed-row { flex-wrap: wrap; gap: 0.75rem; padding: 1rem !important; }
+  #triage-list .feed-row > div { min-width: 0; flex: 1 1 14rem; }
+  #triage-list .feed-row p.flex { flex-wrap: wrap; }
+  #triage-list .feed-row > button { width: 100%; }
+
+  /* popup windows: smaller margins, side-by-side layouts stack, footer buttons wrap */
+  #kg-modal-overlay { padding: 0.5rem !important; }
+  #kg-modal-overlay [role="dialog"] > div.p-8 { padding: 1.25rem !important; }
+  #kg-modal-overlay [role="dialog"] > div.pt-0 { padding-top: 0 !important; }
+  #kg-modal-overlay [role="dialog"] > div.justify-end { flex-wrap: wrap; }
+  #kg-modal-overlay .grid.grid-cols-2 { grid-template-columns: minmax(0, 1fr) !important; }
+  #kg-modal-overlay .col-span-2 { grid-column: 1 / -1 !important; }
+}
+
+/* ---------- Phone-only slim top bar ----------
+   built by initMobileTopbar() in app.js. Hidden until the full header has scrolled out of view,
+   then slides down so the menu button and page title stay reachable on long pages. */
+#mobile-topbar { display: none; }
+@media (max-width: 639px) {
+  #mobile-topbar {
+    display: flex; align-items: center; gap: 0.75rem;
+    position: fixed; top: 0; left: 0; right: 0; height: 3.25rem; padding: 0 1rem; z-index: 45;
+    background: #fff; border-bottom: 1px solid #e7e5e4;
+    box-shadow: 0 6px 16px -8px rgba(42, 36, 28, 0.22);
+    transform: translateY(-100%); visibility: hidden;
+    transition: transform 200ms var(--ease-out), visibility 0s linear 200ms;
+  }
+  #mobile-topbar.show { transform: translateY(0); visibility: visible; transition-delay: 0s; }
+  html.dark-theme #mobile-topbar { background: #232428; border-bottom-color: #3a3b40; box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.7); }
+}
+@media (prefers-reduced-motion: reduce) { #mobile-topbar { transition: none !important; } }
+
+/* sidebar profile photo uses the same rounded-square shape as the account button at the top right of the header */
+#sidebar .admin-card-link img { border-radius: 0.75rem !important; }
+
+/* ---------- Touch / Android fixes ----------
+   1. h-screen is 100vh, which on Android Chrome includes the area behind the address bar, so the
+      bottom of a page could be cut off. 100dvh follows the visible height (the 100vh line stays as
+      the fallback for browsers that don't know dvh). */
+main.paw-field.h-screen, #sidebar.h-screen { height: 100vh; height: 100dvh; }
+body.min-h-screen { min-height: 100vh; min-height: 100dvh; }
+
+/* 2. touch screens have no hover, so the row arrows that normally appear on hover are always shown */
+@media (hover: none) {
+  .chevron-reveal { opacity: 1; transform: none; }
+}
+
+/* 3. icon buttons in the sticky Actions column get a finger-sized tap area on touch screens */
+@media (pointer: coarse) {
+  .overflow-x-auto > table td.sticky button { min-width: 2.5rem; min-height: 2.5rem; }
+}
+
+/* ---------- Header: keep everything on one row on desktop ----------
+   In edit mode (Settings: Cancel + Save Global Changes appear) the header ran out of room, the
+   buttons wrapped onto a second row and the search box was left alone on the right. Now the search
+   box gives up width first (it can shrink down to 9rem), the button group always sits at the right
+   edge, and the "Updated ..." time stays visible on desktop (it is only hidden on phones). */
+@media (min-width: 1024px) {
+  #global-search-wrap { flex: 1 1 0; min-width: 9rem; }
+  main.paw-field > header > div.gap-3 { margin-left: auto; justify-content: flex-end; }
+}
