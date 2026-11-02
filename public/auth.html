@@ -264,29 +264,6 @@
         </div>
     </main>
 
-    <!-- Email Confirmation / OTP Modal (Signup Step 2) -->
-    <div id="otpModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white max-w-sm w-full rounded-3xl p-8 border border-brand-line shadow-2xl text-center space-y-5">
-            <div class="w-12 h-12 bg-emerald-50 text-[#45671d] rounded-2xl flex items-center justify-center mx-auto text-xl shadow-inner">
-                <i class="fa-solid fa-envelope-circle-check"></i>
-            </div>
-            <div>
-                <h3 class="font-display font-800 text-lg text-brand-ink">Verify Your Email</h3>
-                <p class="text-xs text-brand-muted mt-1 leading-relaxed">
-                    We sent a 6-digit confirmation code to <br>
-                    <span id="targetEmailLabel" class="font-bold text-brand-ink"></span>
-                </p>
-            </div>
-            
-            <input type="text" id="otpCodeInput" maxlength="6" placeholder="123456" class="w-full tracking-[0.4em] text-center font-mono font-bold text-2xl py-3 rounded-xl bg-[#fbf9f6] border border-brand-line focus:outline-none focus:border-[#45671d]">
-            
-            <div class="flex gap-2">
-                <button type="button" id="cancelOtpBtn" class="w-1/2 py-2.5 rounded-xl border border-brand-line text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors">Cancel</button>
-                <button type="button" id="confirmOtpBtn" class="w-1/2 py-2.5 rounded-xl bg-[#45671d] hover:bg-[#324c14] text-white text-xs font-bold transition-all">Verify & Enter</button>
-            </div>
-        </div>
-    </div>
-
     <script src="auth.js"></script>
     <script>
         const tabLogin = document.getElementById('tabLogin');
@@ -320,7 +297,7 @@
                     forgotPassLink.classList.add('hidden');
                     authTitle.innerHTML = 'Join <span class="highlight-yellow">KibbleGuard</span>';
                     authSub.textContent = 'Set up your profile and evaluate ingredients.';
-                    ctaText.textContent = 'Verify Email & Register →';
+                    ctaText.textContent = 'Create Account →';
                     
                     editorialImg.src = 'additional 3.jpg';
                     chipEmoji.textContent = '🐱';

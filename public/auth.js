@@ -28,12 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const togglePassBtn = document.getElementById('togglePassBtn');
     const toggleConfirmPassBtn = document.getElementById('toggleConfirmPassBtn');
 
-    // OTP Elements
-    const otpModal = document.getElementById('otpModal');
-    const targetEmailLabel = document.getElementById('targetEmailLabel');
-    const otpCodeInput = document.getElementById('otpCodeInput');
-    const confirmOtpBtn = document.getElementById('confirmOtpBtn');
-    const cancelOtpBtn = document.getElementById('cancelOtpBtn');
 
     // Password Rule Elements
     const ruleLen = document.getElementById('rule-len');
@@ -75,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             passwordRulesCard.classList.remove('hidden');
             authTitle.textContent = 'Join KibbleGuard';
             authSub.textContent = 'Set up your profile and evaluate ingredients.';
-            ctaText.textContent = 'Verify Email & Register';
+            ctaText.textContent = 'Create Account';
         } else {
             tabLogin.className = 'py-2 text-xs font-bold rounded-lg bg-white text-brand-teal shadow-sm transition-all';
             tabSignup.className = 'py-2 text-xs font-bold rounded-lg text-brand-muted hover:text-brand-ink transition-all';
@@ -240,124 +234,28 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Step 2: email a code to this address, then ask for it
-        const signupLabel = ctaText.textContent;
+        // Create the account immediately; email verification is disabled.
         ctaBtn.disabled = true;
-        ctaText.textContent = 'Sending code...';
-        const sent = await requestSignupCode(email);
-        ctaBtn.disabled = false;
-        ctaText.textContent = signupLabel;
-        if (!sent.ok) return;
+        ctaText.textContent = 'Creating Account...';
 
-        targetEmailLabel.textContent = email;
-        otpModal.classList.remove('hidden');
-        otpCodeInput.value = '';
-        otpCodeInput.focus();
-        startResendCooldown(sent.retryAfter || 60);
-
-    });
-
-    // Emailing the 6-digit code (the server checks it again when the account is created)
-    async function requestSignupCode(addr) {
-        try {
-            const response = await fetch('/api/auth/send-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: addr })
-            });
-            const data = await response.json().catch(() => ({}));
-            if (response.status === 429 && data.retryAfter) {
-                // a code was sent a moment ago and is still valid: carry on to the code box
-                return { ok: true, retryAfter: data.retryAfter };
-            }
-            if (!response.ok) {
-                alert(data.error || 'Could not send the verification email.');
-                return { ok: false };
-            }
-            return { ok: true, retryAfter: 60 };
-        } catch (err) {
-            alert('Cannot connect to server. Is node server.js running?');
-            return { ok: false };
-        }
-    }
-
-    // "Resend code" link under the buttons of the code box
-    const resendBtn = document.createElement('button');
-    resendBtn.type = 'button';
-    resendBtn.id = 'resendOtpBtn';
-    resendBtn.className = 'text-xs font-bold text-[#45671d] hover:underline disabled:text-slate-400 disabled:no-underline';
-    resendBtn.textContent = 'Resend code';
-    confirmOtpBtn.parentElement.insertAdjacentElement('afterend', resendBtn);
-    let resendTimer = null;
-    function startResendCooldown(seconds) {
-        clearInterval(resendTimer);
-        let left = seconds;
-        resendBtn.disabled = true;
-        resendBtn.textContent = 'Resend code in ' + left + 's';
-        resendTimer = setInterval(() => {
-            left -= 1;
-            if (left <= 0) {
-                clearInterval(resendTimer);
-                resendBtn.disabled = false;
-                resendBtn.textContent = 'Resend code';
-            } else {
-                resendBtn.textContent = 'Resend code in ' + left + 's';
-            }
-        }, 1000);
-    }
-    resendBtn.addEventListener('click', async () => {
-        resendBtn.disabled = true;
-        resendBtn.textContent = 'Sending...';
-        const again = await requestSignupCode(emailInput.value.trim());
-        if (again.ok) { otpCodeInput.value = ''; otpCodeInput.focus(); startResendCooldown(again.retryAfter || 60); }
-        else { resendBtn.disabled = false; resendBtn.textContent = 'Resend code'; }
-    });
-
-    // 5. OTP Modal Interactions & DB Registration
-    cancelOtpBtn.addEventListener('click', () => {
-        otpModal.classList.add('hidden');
-    });
-
-    confirmOtpBtn.addEventListener('click', async () => {
-        const code = otpCodeInput.value.trim();
-        if (code.length !== 6) {
-            alert('Please enter a 6-digit verification code.');
-            return;
-        }
-
-        confirmOtpBtn.disabled = true;
-        confirmOtpBtn.textContent = 'Saving to Database...';
-
-        const email = emailInput.value.trim();
-        const password = passInput.value;
-        const petName = petNameInput.value.trim();
         const species = speciesInput.value;
-
         try {
             const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: petName,
-                    email,
-                    password,
-                    code
-                })
+                body: JSON.stringify({ name: petName, email, password })
             });
-
             const data = await response.json();
 
             if (!response.ok) {
                 alert(data.error || 'Registration failed.');
-                confirmOtpBtn.disabled = false;
-                confirmOtpBtn.textContent = 'Verify & Enter';
                 return;
             }
 
-            const currentPets = JSON.parse(localStorage.getItem('kibbleguard_pets')) || [];
+            const currentPets = JSON.parse(localStorage.getItem('kibbleguard_pets') || '[]');
             const newRegisteredPet = {
                 id: 'pet-' + Date.now(),
-                user_id: data.id || 1,
+                user_id: data.id,
                 name: petName,
                 species: species,
                 breed: species === 'Canine' ? 'Mixed Canine' : 'Domestic Shorthair',
@@ -373,8 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             currentPets.unshift(newRegisteredPet);
-
-            // also save the starter pet profile to the database (non-fatal if it fails)
             try {
                 await fetch('/api/pets', {
                     method: 'POST',
@@ -382,18 +278,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(newRegisteredPet)
                 });
             } catch (petErr) {
-                console.warn('Could not save starter pet to the database:', petErr);
+                console.warn('Could not save starter pet profile:', petErr);
             }
+
             localStorage.setItem('kibbleguard_pets', JSON.stringify(currentPets));
             localStorage.setItem('kibbleguard_auth_user', email);
             localStorage.setItem('kibbleguard_user', JSON.stringify(data));
-
             window.location.href = 'index.html';
-
         } catch (err) {
             alert('Database connection error during registration.');
-            confirmOtpBtn.disabled = false;
-            confirmOtpBtn.textContent = 'Verify & Enter';
+        } finally {
+            ctaBtn.disabled = false;
+            ctaText.textContent = 'Create Account';
         }
     });
+
 });
