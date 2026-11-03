@@ -79,7 +79,7 @@ function runQuery(sql, params = []) {
   const task = dbQueue.then(async () => {
     let query = postgresSql(sql);
     // Callbacks use this.lastID for inserted records.
-    if (/^\s*INSERT\s+INTO/i.test(query) && !/\bRETURNING\b/i.test(query)) query += ' RETURNING id';
+    if (/^\s*INSERT\s+INTO/i.test(query) && !/\bRETURNING\b/i.test(query) && !/^\s*INSERT\s+INTO\s+email_codes\b/i.test(query)) query += ' RETURNING id';
     return pool.query(query, params);
   });
   dbQueue = task.then(() => undefined, () => undefined);
@@ -299,28 +299,127 @@ db.serialize(() => {
 });
 
 // --- AUTH ROUTES ---
-// Email verification is intentionally disabled; registration creates accounts directly.
+// --- SIGNUP EMAIL VERIFICATION ---
+// A 6-digit code is emailed to the address being registered, and /api/register only creates the account
+// when that code is sent back. SMTP credentials are supplied through Render environment variables.
+let nodemailer = null;
+try { nodemailer = require('nodemailer'); } catch (e) { console.warn('[EMAIL] nodemailer is not installed. Run: npm install nodemailer'); }
+let mailTransporter = null;
+function getMailer() {
+  if (mailTransporter) return mailTransporter;
+  if (!nodemailer || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) return null;
+  const port = Number(process.env.EMAIL_PORT || 587);
+  mailTransporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
+    port,
+    secure: port === 465,
+    auth: { user: process.env.EMAIL_USER, pass: String(process.env.EMAIL_PASS).replace(/\s+/g, '') }
+  });
+  return mailTransporter;
+}
+
+const CODE_TTL_MS = 10 * 60 * 1000;        // a code works for 10 minutes
+const RESEND_WAIT_MS = 60 * 1000;          // one new code per email per minute
+const MAX_WRONG_TRIES = 5;                 // then the code is cancelled
+const IP_WINDOW_MS = 10 * 60 * 1000;
+const MAX_SENDS_PER_IP = 5;                // stops someone using the form to flood inboxes
+const sendsByIp = new Map();
+const hashCode = (email, code) => crypto.createHash('sha256').update(email + ':' + code + ':' + (process.env.CODE_SECRET || 'kibbleguard')).digest('hex');
+const sameHash = (a, b) => { try { return crypto.timingSafeEqual(Buffer.from(a, 'hex'), Buffer.from(b, 'hex')); } catch (e) { return false; } };
+
+function verificationMail(to, code) {
+  return {
+    from: process.env.EMAIL_FROM || '"Kibble" <vincentblanco17@gmail.com>',
+    to,
+    subject: 'Your KibbleGuard verification code',
+    text: 'Your KibbleGuard verification code is ' + code + '.\n\nIt expires in 10 minutes. If you did not try to create an account, you can ignore this email.',
+    html: '<div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;padding:24px;border:1px solid #ebdcd0;border-radius:16px">' +
+      '<h2 style="color:#182811;margin:0 0 8px">Verify your email</h2>' +
+      '<p style="color:#555;margin:0">Use this code to finish creating your KibbleGuard account:</p>' +
+      '<p style="font-size:34px;letter-spacing:8px;font-weight:bold;color:#45671d;margin:16px 0">' + code + '</p>' +
+      '<p style="color:#888;font-size:12px;margin:0">This code expires in 10 minutes. If you did not try to sign up, you can ignore this email.</p></div>'
+  };
+}
+
+app.post('/api/auth/send-code', (req, res) => {
+  const email = String((req.body || {}).email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Please enter a valid email address.' });
+  const mailer = getMailer();
+  if (!mailer) return res.status(503).json({ error: 'Email sending is not set up on the server yet.' });
+
+  const now = Date.now();
+  const ip = req.ip || 'unknown';
+  const recent = (sendsByIp.get(ip) || []).filter(t => now - t < IP_WINDOW_MS);
+  if (recent.length >= MAX_SENDS_PER_IP) return res.status(429).json({ error: 'Too many code requests. Please try again in a few minutes.' });
+
+  db.get('SELECT id FROM users WHERE lower(email) = ?', [email], (err, user) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (user) return res.status(409).json({ error: 'An account with this email already exists.' });
+
+    db.get('SELECT last_sent FROM email_codes WHERE email = ?', [email], (err2, row) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      if (row && now - row.last_sent < RESEND_WAIT_MS) {
+        const wait = Math.ceil((RESEND_WAIT_MS - (now - row.last_sent)) / 1000);
+        return res.status(429).json({ error: 'Please wait ' + wait + ' seconds before asking for another code.', retryAfter: wait });
+      }
+      const code = String(crypto.randomInt(100000, 1000000));
+      db.run(
+        `INSERT INTO email_codes (email, code_hash, expires_at, attempts, last_sent) VALUES (?, ?, ?, 0, ?)
+         ON CONFLICT(email) DO UPDATE SET code_hash=excluded.code_hash, expires_at=excluded.expires_at, attempts=0, last_sent=excluded.last_sent`,
+        [email, hashCode(email, code), now + CODE_TTL_MS, now],
+        (err3) => {
+          if (err3) return res.status(500).json({ error: err3.message });
+          mailer.sendMail(verificationMail(email, code)).then(() => {
+            sendsByIp.set(ip, recent.concat(now));
+            res.json({ success: true });
+          }).catch((mailErr) => {
+            console.error('[EMAIL] could not send the code:', mailErr.message);
+            db.run('DELETE FROM email_codes WHERE email = ?', [email]);
+            res.status(502).json({ error: 'We could not send the email. Check the address and try again.' });
+          });
+        }
+      );
+    });
+  });
+});
 
 app.post('/api/register', (req, res) => {
-  const { name, email, password } = req.body || {};
+  const { name, email, password, code } = req.body || {};
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
+  const cleanEmail = email.trim().toLowerCase();
+  if (!code) return res.status(400).json({ error: 'Please enter the verification code we emailed you.' });
 
-  const cleanEmail = String(email).trim().toLowerCase();
-  const cleanName = String(name || 'Pet Parent').trim() || 'Pet Parent';
-  const query = `INSERT INTO users (name, email, password, password_hash, role) VALUES (?, ?, ?, ?, 'user')`;
-
-  db.run(query, [cleanName, cleanEmail, password, password], function (err) {
-    if (err) {
-      if (err.message && (err.message.includes('UNIQUE') || err.message.toLowerCase().includes('duplicate'))) {
-        return res.status(400).json({ error: 'An account with this email already exists.' });
-      }
-      return res.status(500).json({ error: err.message });
+  db.get('SELECT * FROM email_codes WHERE email = ?', [cleanEmail], (codeErr, row) => {
+    if (codeErr) return res.status(500).json({ error: codeErr.message });
+    if (!row || Date.now() > row.expires_at) {
+      if (row) db.run('DELETE FROM email_codes WHERE email = ?', [cleanEmail]);
+      return res.status(400).json({ error: 'That code has expired or was never requested. Please request a new one.' });
     }
-    console.log(`[AUTH] New user registered: ID ${this.lastID} (${cleanEmail})`);
-    res.json({ id: this.lastID, name: cleanName, email: cleanEmail, role: 'user' });
+    if (row.attempts >= MAX_WRONG_TRIES) {
+      db.run('DELETE FROM email_codes WHERE email = ?', [cleanEmail]);
+      return res.status(429).json({ error: 'Too many wrong attempts. Please request a new code.' });
+    }
+    if (!sameHash(hashCode(cleanEmail, String(code).trim()), row.code_hash)) {
+      db.run('UPDATE email_codes SET attempts = attempts + 1 WHERE email = ?', [cleanEmail]);
+      const left = MAX_WRONG_TRIES - (row.attempts + 1);
+      return res.status(400).json({ error: left > 0 ? 'Incorrect code. ' + left + ' attempt' + (left === 1 ? '' : 's') + ' left.' : 'Incorrect code. Please request a new one.' });
+    }
+    db.run('DELETE FROM email_codes WHERE email = ?', [cleanEmail]);   // a code works once
+
+    const query = `INSERT INTO users (name, email, password, password_hash, role) VALUES (?, ?, ?, ?, 'user')`;
+    db.run(query, [name || 'Pet Parent', cleanEmail, password, password], function (err) {
+      if (err) {
+        if (err.message.includes('UNIQUE')) {
+          return res.status(400).json({ error: 'An account with this email already exists.' });
+        }
+        return res.status(500).json({ error: err.message });
+      }
+      console.log(`[AUTH] New user registered: ID ${this.lastID} (${cleanEmail})`);
+      res.json({ id: this.lastID, name: name || 'Pet Parent', email: cleanEmail, role: 'user' });
+    });
   });
 });
 

@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const speciesInput = document.getElementById('speciesInput');
     const emailInput = document.getElementById('emailInput');
     const emailValidationMsg = document.getElementById('emailValidationMsg');
+    const verificationCodeGroup = document.getElementById('verificationCodeGroup');
+    const verificationCodeInput = document.getElementById('verificationCodeInput');
+    let verificationCodeSent = false;
     const passInput = document.getElementById('passInput');
     const confirmPassInput = document.getElementById('confirmPassInput');
     const confirmPassMsg = document.getElementById('confirmPassMsg');
@@ -61,6 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Switch between Login and Sign Up
     function applyMode(mode) {
         currentMode = mode;
+        verificationCodeSent = false;
+        verificationCodeGroup.classList.add('hidden');
+        verificationCodeInput.required = false;
+        verificationCodeInput.value = '';
         if (mode === 'signup') {
             tabSignup.className = 'py-2 text-xs font-bold rounded-lg bg-white text-brand-teal shadow-sm transition-all';
             tabLogin.className = 'py-2 text-xs font-bold rounded-lg text-brand-muted hover:text-brand-ink transition-all';
@@ -104,6 +111,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     emailInput.addEventListener('input', () => {
+        if (verificationCodeSent) {
+            verificationCodeSent = false;
+            verificationCodeGroup.classList.add('hidden');
+            verificationCodeInput.required = false;
+            verificationCodeInput.value = '';
+            ctaText.textContent = 'Create Account';
+        }
         if (currentMode !== 'signup') return;
         const result = validateEmail(emailInput.value.trim());
         emailValidationMsg.classList.remove('hidden');
@@ -234,16 +248,43 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Create the account immediately; email verification is disabled.
+        // First request a code. The next submission verifies it and creates the account.
         ctaBtn.disabled = true;
-        ctaText.textContent = 'Creating Account...';
-
         const species = speciesInput.value;
         try {
+            if (!verificationCodeSent) {
+                ctaText.textContent = 'Sending Code...';
+                const codeResponse = await fetch('/api/auth/send-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const codeData = await codeResponse.json();
+                if (!codeResponse.ok) {
+                    alert(codeData.error || 'Could not send the verification code.');
+                    return;
+                }
+                verificationCodeSent = true;
+                verificationCodeGroup.classList.remove('hidden');
+                verificationCodeInput.required = true;
+                verificationCodeInput.focus();
+                ctaText.textContent = 'Verify & Create Account';
+                alert('A 6-digit verification code has been sent to ' + email + '.');
+                return;
+            }
+
+            const code = verificationCodeInput.value.trim();
+            if (!/^[0-9]{6}$/.test(code)) {
+                alert('Please enter the 6-digit code sent to your email.');
+                verificationCodeInput.focus();
+                return;
+            }
+
+            ctaText.textContent = 'Verifying...';
             const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: petName, email, password })
+                body: JSON.stringify({ name: petName, email, password, code })
             });
             const data = await response.json();
 
@@ -289,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Database connection error during registration.');
         } finally {
             ctaBtn.disabled = false;
-            ctaText.textContent = 'Create Account';
+            ctaText.textContent = verificationCodeSent ? 'Verify & Create Account' : 'Create Account';
         }
     });
 
