@@ -832,31 +832,160 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --------------------------------------------------------------------------
-  // 5. Pet Profiles (mobile): your pets from the database (this page is read-only)
+  // 5. Pet Profiles (mobile): your pets from the database + add-pet form
   // --------------------------------------------------------------------------
   if (IS_MOBILE && /mobile-pets\.html$/.test(window.location.pathname)) {
-    const main = document.querySelector('main');
-    if (main) {
-      loadPets().then(function (pets) {
-        Array.prototype.slice.call(main.querySelectorAll(':scope > .tactile-card')).forEach(function (c) { c.remove(); });
-        main.insertAdjacentHTML('beforeend', pets.length ? pets.map(function (p) {
-          const feline = p.species === 'feline';
-          const badge = feline ? '<span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700 font-black text-[8.5px]">FELINE</span>' : '<span class="px-2 py-0.5 rounded bg-orange-100 text-[#b45309] font-black text-[8.5px]">CANINE</span>';
-          const pic = p.photoUrl ? '<img src="' + esc(p.photoUrl) + '" alt="' + esc(p.name) + '" class="w-10 h-10 rounded-xl object-cover border border-[#ebdcd0]">' : '<span class="text-3xl">' + (feline ? '🐱' : '🐶') + '</span>';
-          const chips = p.sensitivities.map(function (t) {
-            const severe = /fatal|prohibited|xylitol|hazard/i.test(t);
-            return '<span class="px-2 py-0.5 rounded ' + (severe ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-orange-50 border border-orange-200 text-[#b45309]') + ' font-bold text-[9.5px]">' + esc(t) + '</span>';
-          }).join('') || '<span class="text-[10px] text-[#788673] italic">No active contraindications registered.</span>';
-          return '' +
-            '<div class="tactile-card p-4 space-y-3 bg-white">' +
-              '<div class="flex items-center justify-between"><div class="flex items-center gap-3">' + pic +
-                '<div><div class="flex items-center gap-1.5"><h3 class="text-sm font-black text-[#182811]">' + esc(p.name) + '</h3>' + badge + '</div>' +
-                '<p class="text-[11px] text-[#788673] font-bold">' + esc((p.breed || 'Companion Animal') + (p.weightKg ? ' • ' + p.weightKg + ' kg' : '')) + '</p></div></div></div>' +
-              '<div class="p-2.5 bg-[#fbf9f6] rounded-xl border border-[#ebdcd0] text-[11px] space-y-1"><strong class="text-[9px] uppercase font-bold text-[#788673] block">Active Watches:</strong><div class="flex flex-wrap gap-1">' + chips + '</div></div>' +
-              '<a href="' + RESULTS_PAGE + '?pet=' + encodeURIComponent(p.id) + '" class="block w-full py-2 text-center bg-[#45671d]/10 text-[#45671d] font-black rounded-xl text-xs"><i class="fa-solid fa-camera mr-1"></i> Scan for ' + esc(p.name) + '</a>' +
-            '</div>';
-        }).join('') : '<div class="tactile-card p-6 text-center text-xs text-[#788673] font-bold">No pets added yet. Add one from the desktop version of Pet Profiles.</div>');
-      }).catch(function (err) { console.warn('Pets not loaded from the server, showing the page defaults:', err); });
+    var CANINE_CONDS = ['None','Allergies','Arthritis','Diabetes','Epilepsy','Heart Disease','Hypothyroidism','IBD','Kidney Disease','Liver Disease','Obesity','Skin Conditions'];
+    var FELINE_CONDS = ['None','Allergies','Arthritis','CKD (Chronic Kidney Disease)','Diabetes','Feline Asthma','Feline Lower Urinary Tract Disease','Heart Disease','Hyperthyroidism','IBD','Obesity','Skin Conditions'];
+
+    function mUpdateConditions(species) {
+      var sel = document.getElementById('mPetMedicalConditionsInput');
+      if (!sel) return;
+      var opts = /feline|cat/i.test(species) ? FELINE_CONDS : CANINE_CONDS;
+      var cur = sel.value;
+      sel.innerHTML = opts.map(function(o){ return '<option value="' + o + '"' + (o === cur ? ' selected' : '') + '>' + o + '</option>'; }).join('');
     }
+
+    function mRenderPets(pets) {
+      var main = document.getElementById('mobilePetsMain');
+      var countEl = document.getElementById('mobilePetCount');
+      if (!main) return;
+      if (countEl) countEl.textContent = pets.length + ' REGISTERED';
+      main.innerHTML = '';
+      if (!pets.length) {
+        main.innerHTML = '<div class="tactile-card p-6 text-center text-xs text-[#788673] font-bold bg-white rounded-2xl">No pets yet. Tap <i class="fa-solid fa-plus"></i> to add one.</div>';
+        return;
+      }
+      main.innerHTML = pets.map(function(p) {
+        var feline = /feline|cat/i.test(String(p.species || ''));
+        var badge = feline ? '<span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700 font-black text-[8.5px]">FELINE</span>' : '<span class="px-2 py-0.5 rounded bg-orange-100 text-[#b45309] font-black text-[8.5px]">CANINE</span>';
+        var pic = p.image_url ? '<img src="' + esc(p.image_url) + '" alt="' + esc(p.name) + '" class="w-10 h-10 rounded-xl object-cover border border-[#ebdcd0]">' : '<span class="text-3xl">' + (feline ? '🐱' : '🐶') + '</span>';
+        var sensitivities = String(p.allergies || '').split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+        var chips = sensitivities.map(function(t) {
+          var severe = /fatal|prohibited|xylitol|hazard/i.test(t);
+          return '<span class="px-2 py-0.5 rounded ' + (severe ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-orange-50 border border-orange-200 text-[#b45309]') + ' font-bold text-[9.5px]">' + esc(t) + '</span>';
+        }).join('') || '<span class="text-[10px] text-[#788673] italic">No active contraindications.</span>';
+        var medTags = '';
+        if (p.takes_medicine === 'Yes') medTags += '<span class="px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-bold text-[9.5px]">On Medication</span> ';
+        if (p.takes_supplements === 'Yes') medTags += '<span class="px-2 py-0.5 rounded bg-green-50 border border-green-200 text-green-700 font-bold text-[9.5px]">Takes Supplements</span> ';
+        if (p.medical_conditions && p.medical_conditions !== 'None') medTags += '<span class="px-2 py-0.5 rounded bg-yellow-50 border border-yellow-200 text-yellow-700 font-bold text-[9.5px]">' + esc(p.medical_conditions) + '</span>';
+        return '<div class="tactile-card p-4 space-y-3 bg-white">' +
+          '<div class="flex items-center justify-between"><div class="flex items-center gap-3">' + pic +
+            '<div><div class="flex items-center gap-1.5"><h3 class="text-sm font-black text-[#182811]">' + esc(p.name) + '</h3>' + badge + '</div>' +
+            '<p class="text-[11px] text-[#788673] font-bold">' + esc((p.breed || 'Companion') + (p.weight ? ' • ' + p.weight + ' kg' : '')) + '</p></div></div>' +
+            '<button class="mobile-delete-pet text-[10px] text-red-400 font-bold" data-pet-id="' + esc(p.id) + '"><i class="fa-solid fa-trash-can"></i></button>' +
+          '</div>' +
+          (medTags ? '<div class="flex flex-wrap gap-1">' + medTags + '</div>' : '') +
+          '<div class="p-2.5 bg-[#fbf9f6] rounded-xl border border-[#ebdcd0] text-[11px] space-y-1"><strong class="text-[9px] uppercase font-bold text-[#788673] block">Active Watches:</strong><div class="flex flex-wrap gap-1">' + chips + '</div></div>' +
+          '<a href="' + RESULTS_PAGE + '?pet=' + encodeURIComponent(p.id) + '" class="block w-full py-2 text-center bg-[#45671d]/10 text-[#45671d] font-black rounded-xl text-xs"><i class="fa-solid fa-camera mr-1"></i> Scan for ' + esc(p.name) + '</a>' +
+        '</div>';
+      }).join('');
+
+      // delete listeners
+      Array.prototype.slice.call(main.querySelectorAll('.mobile-delete-pet')).forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          var petId = btn.getAttribute('data-pet-id');
+          if (!confirm('Delete this pet?')) return;
+          fetch('/api/pets/' + encodeURIComponent(petId), { method: 'DELETE' })
+            .then(function(r) { if (r.ok) mLoadAndRender(); })
+            .catch(function(err) { console.error('Delete failed', err); });
+        });
+      });
+    }
+
+    function mLoadAndRender() {
+      loadPets().then(function(pets) {
+        mRenderPets(pets.map(function(p){ return p._raw || p; }));
+      }).catch(function(err) {
+        console.warn('Could not load pets:', err);
+        // fallback: fetch directly
+        fetch('/api/pets?user_id=' + encodeURIComponent(kgUserId))
+          .then(function(r){ return r.json(); })
+          .then(function(rows){ mRenderPets(rows || []); })
+          .catch(function(){ mRenderPets([]); });
+      });
+    }
+
+    // Wire add-pet button
+    var addBtn = document.getElementById('mobileAddPetBtn');
+    var modal = document.getElementById('mobileAddPetModal');
+    var closeBtn = document.getElementById('mobileClosePetModal');
+    var addForm = document.getElementById('mobileAddPetForm');
+    var speciesSel = document.getElementById('mPetSpeciesInput');
+
+    if (addBtn && modal) {
+      addBtn.addEventListener('click', function() {
+        if (addForm) addForm.reset();
+        mUpdateConditions('Canine');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+      });
+    }
+    if (closeBtn && modal) {
+      closeBtn.addEventListener('click', function() {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+      });
+    }
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
+      });
+    }
+    if (speciesSel) {
+      speciesSel.addEventListener('change', function() { mUpdateConditions(speciesSel.value); });
+    }
+
+    if (addForm) {
+      addForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var saveBtn = document.getElementById('mPetSaveText');
+        var name = (document.getElementById('mPetNameInput') || {}).value || '';
+        if (!name.trim()) { alert('Please enter a pet name.'); return; }
+        var species = (document.getElementById('mPetSpeciesInput') || {}).value || 'Canine';
+        var payload = {
+          id: 'pet-' + Date.now(),
+          user_id: kgUserId,
+          name: name.trim(),
+          species: species,
+          breed: ((document.getElementById('mPetBreedInput') || {}).value || '').trim() || (species === 'Canine' ? 'Mixed Canine' : 'Domestic Shorthair'),
+          gender: (document.getElementById('mPetGenderInput') || {}).value || null,
+          birthdate: (document.getElementById('mPetBirthdateInput') || {}).value || null,
+          weight: parseFloat((document.getElementById('mPetWeightInput') || {}).value) || null,
+          allergies: ((document.getElementById('mPetSensitivitiesInput') || {}).value || '').trim(),
+          vaccine_status: (document.getElementById('mPetVaccineInput') || {}).value || 'Up to Date',
+          deworming_date: (document.getElementById('mPetDewormingInput') || {}).value || null,
+          life_stage: (document.getElementById('mPetAgeInput') || {}).value || 'Adult',
+          takes_medicine: (document.getElementById('mPetMedicineInput') || {}).value || 'No',
+          takes_supplements: (document.getElementById('mPetSupplementsInput') || {}).value || 'No',
+          medical_conditions: (document.getElementById('mPetMedicalConditionsInput') || {}).value || 'None',
+          image_url: null
+        };
+        if (saveBtn) saveBtn.textContent = 'Saving…';
+        fetch('/api/pets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(function(r) {
+          if (!r.ok) { alert('Error saving pet.'); return; }
+          modal.classList.add('hidden');
+          modal.style.display = 'none';
+          addForm.reset();
+          mLoadAndRender();
+        }).catch(function(err) {
+          console.error('Save error:', err);
+          alert('Could not connect to server.');
+        }).finally(function() {
+          if (saveBtn) saveBtn.textContent = 'Save Pet';
+        });
+      });
+    }
+
+    // Initial load — fetch raw rows from API so we have all columns
+    fetch('/api/pets?user_id=' + encodeURIComponent(kgUserId))
+      .then(function(r){ return r.json(); })
+      .then(function(rows){ mRenderPets(rows || []); })
+      .catch(function(){ mRenderPets([]); });
   }
 });

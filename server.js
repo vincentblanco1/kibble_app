@@ -169,6 +169,20 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
   db.run(`ALTER TABLE pets ADD COLUMN life_stage TEXT`, () => {});
+  db.run(`ALTER TABLE pets ADD COLUMN takes_medicine TEXT`, () => {});
+  db.run(`ALTER TABLE pets ADD COLUMN takes_supplements TEXT`, () => {});
+  db.run(`ALTER TABLE pets ADD COLUMN medical_conditions TEXT`, () => {});
+
+  // Add profile columns to users table
+  db.run(`ALTER TABLE users ADD COLUMN middle_name TEXT`, () => {});
+  db.run(`ALTER TABLE users ADD COLUMN birthdate TEXT`, () => {});
+  db.run(`ALTER TABLE users ADD COLUMN gender TEXT`, () => {});
+  db.run(`ALTER TABLE users ADD COLUMN city TEXT`, () => {});
+  db.run(`ALTER TABLE users ADD COLUMN region TEXT`, () => {});
+  db.run(`ALTER TABLE users ADD COLUMN country TEXT`, () => {});
+  db.run(`ALTER TABLE users ADD COLUMN caregiver_role TEXT`, () => {});
+  db.run(`ALTER TABLE users ADD COLUMN feeding_style TEXT`, () => {});
+  db.run(`ALTER TABLE users ADD COLUMN pet_count INTEGER`, () => {});
 
   // Alerts shown in the owner's bell + Notification & Alert Center
   db.run(`CREATE TABLE IF NOT EXISTS notifications (
@@ -464,6 +478,39 @@ if (isBanned) {
     });
   });
 });
+
+// --- USER PROFILE UPDATE ---
+app.patch('/api/users/:id', (req, res) => {
+  const userId = parseInt(req.params.id);
+  const { name, middle_name, birthdate, gender, city, region, country, caregiver_role, feeding_style, pet_count } = req.body || {};
+  if (!userId) return res.status(400).json({ error: 'Invalid user ID.' });
+
+  const fields = [];
+  const vals = [];
+  if (name !== undefined)          { fields.push('name=?');           vals.push(name); }
+  if (middle_name !== undefined)   { fields.push('middle_name=?');    vals.push(middle_name); }
+  if (birthdate !== undefined)     { fields.push('birthdate=?');      vals.push(birthdate); }
+  if (gender !== undefined)        { fields.push('gender=?');         vals.push(gender); }
+  if (city !== undefined)          { fields.push('city=?');           vals.push(city); }
+  if (region !== undefined)        { fields.push('region=?');         vals.push(region); }
+  if (country !== undefined)       { fields.push('country=?');        vals.push(country); }
+  if (caregiver_role !== undefined){ fields.push('caregiver_role=?'); vals.push(caregiver_role); }
+  if (feeding_style !== undefined) { fields.push('feeding_style=?');  vals.push(feeding_style); }
+  if (pet_count !== undefined)     { fields.push('pet_count=?');      vals.push(pet_count); }
+
+  if (fields.length === 0) return res.status(400).json({ error: 'No fields to update.' });
+  vals.push(userId);
+
+  db.run(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, vals, function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: 'User not found.' });
+    db.get(`SELECT id, name, middle_name, email, role, birthdate, gender, city, region, country, caregiver_role, feeding_style, pet_count FROM users WHERE id = ?`, [userId], (err2, row) => {
+      if (err2) return res.json({ success: true });
+      res.json({ success: true, user: row });
+    });
+  });
+});
+
 // --- OCR HELPER FUNCTIONS ---
 function parseOcrIngredients(rawText) {
   if (!rawText || typeof rawText !== 'string') return { cleanedText: '', items: [] };
@@ -862,17 +909,18 @@ app.get('/api/pets', (req, res) => {
 });
 
 app.post('/api/pets', (req, res) => {
-  const { id, user_id, name, species, breed, gender, birthdate, weight, allergies, vaccine_status, deworming_date, image_url, life_stage } = req.body;
+  const { id, user_id, name, species, breed, gender, birthdate, weight, allergies, vaccine_status, deworming_date, image_url, life_stage, takes_medicine, takes_supplements, medical_conditions } = req.body;
   const query = `
-    INSERT INTO pets (id, user_id, name, species, breed, gender, birthdate, weight, allergies, vaccine_status, deworming_date, image_url, life_stage)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO pets (id, user_id, name, species, breed, gender, birthdate, weight, allergies, vaccine_status, deworming_date, image_url, life_stage, takes_medicine, takes_supplements, medical_conditions)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       name=excluded.name, species=excluded.species, breed=excluded.breed, gender=excluded.gender,
       birthdate=excluded.birthdate, weight=excluded.weight, allergies=excluded.allergies,
       vaccine_status=excluded.vaccine_status, deworming_date=excluded.deworming_date, image_url=excluded.image_url,
-      life_stage=excluded.life_stage
+      life_stage=excluded.life_stage, takes_medicine=excluded.takes_medicine,
+      takes_supplements=excluded.takes_supplements, medical_conditions=excluded.medical_conditions
   `;
-  db.run(query, [id, user_id || 1, name, species, breed, gender, birthdate, weight, allergies, vaccine_status, deworming_date, image_url, life_stage || null], function(err) {
+  db.run(query, [id, user_id || 1, name, species, breed, gender, birthdate, weight, allergies, vaccine_status, deworming_date, image_url, life_stage || null, takes_medicine || null, takes_supplements || null, medical_conditions || null], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true, id });
   });

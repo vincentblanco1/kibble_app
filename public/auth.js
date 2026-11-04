@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const authForm = document.getElementById('authForm');
 
     // Inputs
+    const ownerNameInput = document.getElementById('ownerNameInput');
     const petNameInput = document.getElementById('petNameInput');
     const speciesInput = document.getElementById('speciesInput');
     const emailInput = document.getElementById('emailInput');
@@ -241,6 +242,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const ownerName = ownerNameInput ? ownerNameInput.value.trim() : '';
+        if (!ownerName) {
+            alert("Please enter your name.");
+            if (ownerNameInput) ownerNameInput.focus();
+            return;
+        }
+
         const petName = petNameInput.value.trim();
         if (!petName) {
             alert("Please provide your pet's name.");
@@ -284,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: petName, email, password, code })
+                body: JSON.stringify({ name: ownerName, email, password, code })
             });
             const data = await response.json();
 

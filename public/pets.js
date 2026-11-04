@@ -67,7 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
       gender: p.gender || '',
       birthdate: p.birthdate || '',
       vaccineStatus: p.vaccine_status || '',
-      dewormingDate: p.deworming_date || ''
+      dewormingDate: p.deworming_date || '',
+      takesMedicine: p.takes_medicine || 'No',
+      takesSupplements: p.takes_supplements || 'No',
+      medicalConditions: p.medical_conditions || 'None'
     };
   }
 
@@ -118,6 +121,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const petBirthdateInput = document.getElementById('petBirthdateInput');
   const petVaccineInput = document.getElementById('petVaccineInput');
   const petDewormingInput = document.getElementById('petDewormingInput');
+  const petMedicineInput = document.getElementById('petMedicineInput');
+  const petSupplementsInput = document.getElementById('petSupplementsInput');
+  const petMedicalConditionsInput = document.getElementById('petMedicalConditionsInput');
+
+  const CANINE_CONDITIONS = ['None','Allergies','Arthritis','Diabetes','Epilepsy','Heart Disease','Hypothyroidism','IBD','Kidney Disease','Liver Disease','Obesity','Skin Conditions'];
+  const FELINE_CONDITIONS = ['None','Allergies','Arthritis','CKD (Chronic Kidney Disease)','Diabetes','Feline Asthma','Feline Lower Urinary Tract Disease','Heart Disease','Hyperthyroidism','IBD','Obesity','Skin Conditions'];
+
+  function updateMedicalConditionsDropdown(species) {
+    if (!petMedicalConditionsInput) return;
+    const isCanine = (species || '').toLowerCase() === 'canine';
+    const opts = isCanine ? CANINE_CONDITIONS : FELINE_CONDITIONS;
+    const current = petMedicalConditionsInput.value;
+    petMedicalConditionsInput.innerHTML = opts.map(o => `<option value="${o}"${o === current ? ' selected' : ''}>${o}</option>`).join('');
+  }
 
   // Photo Upload & Preview Elements
   const petImageFileInput = document.getElementById('petImageFileInput');
@@ -169,6 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!currentUploadedPhotoBase64) {
       previewEmojiFallback.textContent = petSpeciesInput.value === 'canine' ? '🐶' : '🐱';
     }
+    updateMedicalConditionsDropdown(petSpeciesInput.value);
   });
 
   // --- Modal Open/Close Controls ---
@@ -191,7 +209,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (petBirthdateInput) petBirthdateInput.value = pet.birthdate || '';
         if (petVaccineInput) petVaccineInput.value = pet.vaccineStatus || 'Up to Date';
         if (petDewormingInput) petDewormingInput.value = pet.dewormingDate || '';
-        
+        updateMedicalConditionsDropdown(pet.species);
+        if (petMedicineInput) petMedicineInput.value = pet.takesMedicine || 'No';
+        if (petSupplementsInput) petSupplementsInput.value = pet.takesSupplements || 'No';
+        if (petMedicalConditionsInput) petMedicalConditionsInput.value = pet.medicalConditions || 'None';
+
         // Clean comma-separated string for sensitivities
         const safeArray = Array.isArray(pet.sensitivities) 
           ? pet.sensitivities 
@@ -212,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
       currentUploadedPhotoBase64 = null;
       showPhotoInPreview(null);
       previewEmojiFallback.textContent = petSpeciesInput.value === 'canine' ? '🐶' : '🐱';
+      updateMedicalConditionsDropdown(petSpeciesInput ? petSpeciesInput.value : 'canine');
     }
 
     modal.classList.remove('hidden');
@@ -486,7 +509,10 @@ document.addEventListener('DOMContentLoaded', () => {
       vaccine_status: petVaccineInput ? petVaccineInput.value : null,
       deworming_date: petDewormingInput && petDewormingInput.value ? petDewormingInput.value : null,
       image_url: currentUploadedPhotoBase64 || null,
-      life_stage: ageBracket
+      life_stage: ageBracket,
+      takes_medicine: petMedicineInput ? petMedicineInput.value : 'No',
+      takes_supplements: petSupplementsInput ? petSupplementsInput.value : 'No',
+      medical_conditions: petMedicalConditionsInput ? petMedicalConditionsInput.value : 'None'
     };
 
     try {

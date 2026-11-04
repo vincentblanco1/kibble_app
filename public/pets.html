@@ -581,6 +581,31 @@
             <input type="text" id="petSensitivitiesInput" placeholder="e.g. Artificial Red Dye #40, High-Sodium Additives, BHA" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
           </div>
 
+          <!-- Health Flags -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="font-bold text-[#182811] block mb-1">Takes Medicine?</label>
+              <select id="petMedicineInput" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-bold text-[#182811] block mb-1">Takes Supplements?</label>
+              <select id="petSupplementsInput" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="font-bold text-[#182811] block mb-1">Pre-existing Medical Conditions</label>
+            <select id="petMedicalConditionsInput" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-[#45671d]">
+              <option value="None">None</option>
+            </select>
+            <p class="text-[11px] text-brand-muted mt-1">Options update based on species.</p>
+          </div>
+
           <div class="flex items-center justify-end gap-2 pt-3 border-t border-[#ebdcd0]">
             <button type="button" id="cancelPetModalBtn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[#182811] rounded-xl font-bold cursor-pointer">
               Cancel

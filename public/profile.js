@@ -15,23 +15,40 @@ document.addEventListener('DOMContentLoaded', () => {
   const accountLogoutBtn = document.getElementById('accountLogoutBtn');
   const sidebarSignOutBtn = document.getElementById('sidebarSignOutBtn');
 
-  // Default Profile Model
+  // Read the authenticated user from localStorage (set at login/signup)
+  let kgUser = {};
+  try { kgUser = JSON.parse(localStorage.getItem('kibbleguard_user') || '{}'); } catch (e) {}
+  const kgUserId = kgUser.id || null;
+
+  // Split the stored name into first/last (the signup stores full name as "name")
+  function splitName(fullName) {
+    if (!fullName) return { first: '', last: '' };
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) return { first: parts[0], last: '' };
+    return { first: parts[0], last: parts.slice(1).join(' ') };
+  }
+
+  const nameParts = splitName(kgUser.name || '');
+
+  // Default Profile Model — seeded from the logged-in account, not hardcoded
   const defaultProfile = {
-    firstName: 'Vincent',
-    middleName: 'Gregg',
-    lastName: 'Blanco',
-    email: 'vincent.gregg@uphsd.edu.ph',
-    birthdate: '2002-05-18',
-    gender: 'Male',
-    country: 'Philippines',
-    region: 'NCR (National Capital Region)',
-    city: 'Las Piñas City',
-    caregiverRole: 'Pet Owner',
+    firstName: nameParts.first,
+    middleName: '',
+    lastName: nameParts.last,
+    email: kgUser.email || '',
+    birthdate: '',
+    gender: '',
+    country: '',
+    region: '',
+    city: '',
+    caregiverRole: 'Primary Caregiver',
     feedingStyle: 'Commercial Dry Kibble',
     avatar: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg'
   };
 
-  let userProfile = JSON.parse(localStorage.getItem('kibbleguard_user_profile')) || defaultProfile;
+  let userProfile = { ...defaultProfile, ...JSON.parse(localStorage.getItem('kibbleguard_user_profile') || '{}') };
+  // Always use the real auth email regardless of what's in the localStorage profile cache
+  if (kgUser.email) userProfile.email = kgUser.email;
 
   // Compute live pet count from pet profiles database
   function getRegisteredPetCount() {
@@ -47,33 +64,41 @@ document.addEventListener('DOMContentLoaded', () => {
     return ageYears > 0 ? `${ageYears} yrs old` : '< 1 yr';
   }
 
+  function setField(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val || '';
+  }
+
   function populateProfileFields() {
-    document.getElementById('firstNameInput').value = userProfile.firstName || '';
-    document.getElementById('middleNameInput').value = userProfile.middleName || '';
-    document.getElementById('lastNameInput').value = userProfile.lastName || '';
-    document.getElementById('emailInput').value = userProfile.email || 'vincent.gregg@uphsd.edu.ph';
-    document.getElementById('birthdateInput').value = userProfile.birthdate || '';
-    document.getElementById('genderInput').value = userProfile.gender || 'Male';
-    document.getElementById('countryInput').value = userProfile.country || 'Philippines';
-    document.getElementById('regionInput').value = userProfile.region || 'NCR (National Capital Region)';
-    document.getElementById('cityInput').value = userProfile.city || 'Las Piñas City';
-    document.getElementById('caregiverRoleInput').value = userProfile.caregiverRole || 'Pet Owner';
-    document.getElementById('feedingStyleInput').value = userProfile.feedingStyle || 'Commercial Dry Kibble';
+    setField('firstNameInput', userProfile.firstName);
+    setField('middleNameInput', userProfile.middleName);
+    setField('lastNameInput', userProfile.lastName);
+    setField('emailInput', userProfile.email);
+    setField('birthdateInput', userProfile.birthdate);
+    setField('genderInput', userProfile.gender);
+    setField('countryInput', userProfile.country);
+    setField('regionInput', userProfile.region);
+    setField('cityInput', userProfile.city);
+    setField('caregiverRoleInput', userProfile.caregiverRole);
+    setField('feedingStyleInput', userProfile.feedingStyle);
 
     // Synchronize locked pet count
     const actualPetCount = getRegisteredPetCount();
     if (petCountInput) {
-      petCountInput.value = `${actualPetCount} Registered ${actualPetCount === 1 ? 'Pet' : 'Pets'}`;
+      petCountInput.value = actualPetCount > 0 ? `${actualPetCount} Registered ${actualPetCount === 1 ? 'Pet' : 'Pets'}` : '';
     }
 
     if (computedAgeDisplay) {
       computedAgeDisplay.value = calculateAge(userProfile.birthdate);
     }
 
-    const fullName = `${userProfile.firstName} ${userProfile.middleName ? userProfile.middleName + ' ' : ''}${userProfile.lastName}`;
+    const firstName = userProfile.firstName || '';
+    const middleName = userProfile.middleName || '';
+    const lastName = userProfile.lastName || '';
+    const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ') || kgUser.name || '—';
     if (displayFullName) displayFullName.textContent = fullName;
-    if (displayEmail) displayEmail.textContent = userProfile.email || 'vincent.gregg@uphsd.edu.ph';
-    if (displayRole) displayRole.textContent = `Verified Owner • ${userProfile.city || 'NCR'}`;
+    if (displayEmail) displayEmail.textContent = userProfile.email || kgUser.email || '—';
+    if (displayRole) displayRole.textContent = `Verified Owner${userProfile.city ? ' • ' + userProfile.city : ''}`;
     if (profileAvatarPreview && userProfile.avatar) profileAvatarPreview.src = userProfile.avatar;
   }
 
@@ -125,25 +150,63 @@ document.addEventListener('DOMContentLoaded', () => {
     setEditMode(false);
   });
 
-  userProfileForm?.addEventListener('submit', (e) => {
+  function getVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+  userProfileForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    const firstName = getVal('firstNameInput');
+    const middleName = getVal('middleNameInput');
+    const lastName = getVal('lastNameInput');
+    const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+
     userProfile = {
       ...userProfile,
-      firstName: document.getElementById('firstNameInput').value.trim(),
-      middleName: document.getElementById('middleNameInput').value.trim(),
-      lastName: document.getElementById('lastNameInput').value.trim(),
-      email: document.getElementById('emailInput').value.trim(),
-      birthdate: document.getElementById('birthdateInput').value,
-      gender: document.getElementById('genderInput').value,
-      country: document.getElementById('countryInput').value.trim(),
-      region: document.getElementById('regionInput').value.trim(),
-      city: document.getElementById('cityInput').value.trim(),
-      caregiverRole: document.getElementById('caregiverRoleInput').value,
+      firstName,
+      middleName,
+      lastName,
+      email: getVal('emailInput') || userProfile.email,
+      birthdate: getVal('birthdateInput'),
+      gender: getVal('genderInput'),
+      country: getVal('countryInput'),
+      region: getVal('regionInput'),
+      city: getVal('cityInput'),
+      caregiverRole: getVal('caregiverRoleInput'),
       petCount: getRegisteredPetCount(),
-      feedingStyle: document.getElementById('feedingStyleInput').value
+      feedingStyle: getVal('feedingStyleInput')
     };
 
     localStorage.setItem('kibbleguard_user_profile', JSON.stringify(userProfile));
+
+    // Save to database if logged in
+    if (kgUserId) {
+      try {
+        const patchData = {
+          name: fullName || kgUser.name,
+          middle_name: userProfile.middleName,
+          birthdate: userProfile.birthdate,
+          gender: userProfile.gender,
+          city: userProfile.city,
+          region: userProfile.region,
+          country: userProfile.country,
+          caregiver_role: userProfile.caregiverRole,
+          feeding_style: userProfile.feedingStyle,
+          pet_count: userProfile.petCount
+        };
+        const resp = await fetch('/api/users/' + kgUserId, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patchData)
+        });
+        if (!resp.ok) {
+          const errData = await resp.json().catch(() => ({}));
+          console.warn('Profile DB save failed:', errData.error || resp.status);
+        }
+      } catch (err) {
+        console.warn('Could not save profile to database:', err);
+      }
+    }
+
     populateProfileFields();
     setEditMode(false);
   });

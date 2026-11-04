@@ -35,8 +35,8 @@
         <input type="file" id="avatarInput" accept="image/*" class="hidden" disabled>
       </div>
       <div>
-        <h2 id="displayFullName" class="text-base font-black text-[#182811]">Vincent Gregg Blanco</h2>
-        <p id="displayEmail" class="text-xs text-[#788673]">vincent.gregg@uphsd.edu.ph</p>
+        <h2 id="displayFullName" class="text-base font-black text-[#182811]">—</h2>
+        <p id="displayEmail" class="text-xs text-[#788673]">—</p>
         <span class="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">Verified Pet Caregiver</span>
       </div>
       <button type="button" id="editToggleBtn" class="mt-2 px-4 py-1.5 rounded-full bg-[#45671d] text-white text-xs font-bold shadow-xs">
@@ -51,6 +51,10 @@
       <div>
         <label class="font-bold text-[#788673] block mb-1">First Name</label>
         <input type="text" id="firstNameInput" disabled class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+      </div>
+      <div>
+        <label class="font-bold text-[#788673] block mb-1">Middle Name</label>
+        <input type="text" id="middleNameInput" disabled class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
       </div>
       <div>
         <label class="font-bold text-[#788673] block mb-1">Last Name</label>
@@ -71,8 +75,41 @@
         </div>
       </div>
       <div>
+        <label class="font-bold text-[#788673] block mb-1">Gender</label>
+        <select id="genderInput" disabled class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+          <option value="">— Select —</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Prefer not to say">Prefer not to say</option>
+        </select>
+      </div>
+      <div>
+        <label class="font-bold text-[#788673] block mb-1">Country</label>
+        <input type="text" id="countryInput" disabled placeholder="e.g. Philippines" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+      </div>
+      <div>
+        <label class="font-bold text-[#788673] block mb-1">Region / Province</label>
+        <input type="text" id="regionInput" disabled placeholder="e.g. NCR" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+      </div>
+      <div>
         <label class="font-bold text-[#788673] block mb-1">City / Municipality</label>
         <input type="text" id="cityInput" disabled class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+      </div>
+
+      <h3 class="font-extrabold text-xs text-[#182811] uppercase tracking-wider pb-1 border-b border-[#f5efe6] pt-2">Pet Caregiver Details</h3>
+      <div>
+        <label class="font-bold text-[#788673] block mb-1">Caregiver Role</label>
+        <select id="caregiverRoleInput" disabled class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+          <option value="Primary Caregiver">Primary Caregiver</option>
+          <option value="Co-Caregiver">Co-Caregiver</option>
+          <option value="Foster">Foster</option>
+          <option value="Veterinary Professional">Veterinary Professional</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="font-bold text-[#788673] block mb-1">Pet Count</label>
+        <input type="number" id="petCountInput" disabled min="0" placeholder="e.g. 2" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
       </div>
       <div>
         <label class="font-bold text-[#788673] block mb-1">Primary Feeding Method</label>
