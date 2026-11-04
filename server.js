@@ -184,6 +184,29 @@ db.serialize(() => {
   db.run(`ALTER TABLE users ADD COLUMN feeding_style TEXT`, () => {});
   db.run(`ALTER TABLE users ADD COLUMN pet_count INTEGER`, () => {});
 
+  // Admin panel: generic key-value store for admin UI state that the admin
+  // pages already treat as a synced "kibbleguard-..." localStorage key --
+  // safety rules, the admin roster + invites, activity log, team chat,
+  // retention settings, triage-seen markers, ingredient edit history, etc.
+  // One flexible table instead of one per list, because the admin frontend
+  // (public/admin/db-sync.js) was already built around exactly this shape:
+  // GET/PUT a key, get back a JSON blob, keep it versioned client-side.
+  db.run(`CREATE TABLE IF NOT EXISTS admin_state (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Admin login sessions (Bearer tokens the admin pages send as
+  // Authorization: Bearer <token>, or ?t=<token> for <img> tags).
+  db.run(`CREATE TABLE IF NOT EXISTS admin_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token TEXT UNIQUE,
+    user_id INTEGER,
+    email TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
   // Alerts shown in the owner's bell + Notification & Alert Center
   db.run(`CREATE TABLE IF NOT EXISTS notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1347,6 +1370,302 @@ app.get('/api/admin/dashboard-stats', (req, res) => {
     });
   });
 });
+// =====================================================================
+// --- ADMIN PANEL: AUTH, GENERIC STATE SYNC, AND REAL-TABLE ACTIONS ---
+// =====================================================================
+
+// Reads the Bearer token from the Authorization header, or ?t= for <img>
+// tags (which can't send custom headers).
+function getAdminToken(req) {
+  const header = req.headers['authorization'] || '';
+  const m = /^Bearer\s+(.+)$/i.exec(header);
+  if (m) return m[1];
+  if (req.query && req.query.t) return String(req.query.t);
+  return null;
+}
+
+function requireAdminAuth(req, res, next) {
+  const token = getAdminToken(req);
+  if (!token) return res.status(401).json({ error: 'Not authenticated.' });
+  db.get(
+    `SELECT s.user_id, s.email AS session_email, u.name, u.email, u.role, u.is_banned
+     FROM admin_sessions s LEFT JOIN users u ON u.id = s.user_id
+     WHERE s.token = ?`,
+    [token],
+    (err, row) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!row || !row.user_id) return res.status(401).json({ error: 'Session expired. Please log in again.' });
+      if (row.is_banned) return res.status(403).json({ error: 'This account cannot log in.' });
+      req.adminUser = { id: row.user_id, email: row.email || row.session_email, name: row.name, role: row.role };
+      next();
+    }
+  );
+}
+
+// Reads the admin roster blob (the single source of truth the admin pages
+// already use for invites/deactivation), returns [] if nothing saved yet.
+function readAdminAccounts(cb) {
+  db.get(`SELECT value FROM admin_state WHERE key = 'kibbleguard-admin-accounts'`, [], (err, row) => {
+    if (err || !row) return cb([]);
+    let accounts;
+    try { accounts = JSON.parse(row.value); } catch (e) { accounts = null; }
+    cb(Array.isArray(accounts) ? accounts : []);
+  });
+}
+function writeAdminState(key, value, cb) {
+  db.run(
+    `INSERT INTO admin_state (key, value) VALUES (?, ?)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP
+     RETURNING key`,
+    [key, value],
+    (err) => cb && cb(err)
+  );
+}
+// bumps the companion "<key>-v" counter the admin pages use to detect that
+// another admin changed something while this page was open
+function bumpAdminStateVersion(key, cb) {
+  db.get('SELECT value FROM admin_state WHERE key = ?', [key + '-v'], (err, row) => {
+    const next = String((parseInt(row && row.value, 10) || 0) + 1);
+    writeAdminState(key + '-v', next, cb);
+  });
+}
+
+// ---------- Login ----------
+app.post('/api/admin/login', (req, res) => {
+  const { email, password } = req.body || {};
+  if (!email || !password) return res.status(401).json({ error: 'Incorrect email or password.' });
+  const cleanEmail = String(email).trim().toLowerCase();
+  db.get(`SELECT * FROM users WHERE LOWER(email) = ? AND role != 'user'`, [cleanEmail], (err, user) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const ok = user && (password === user.password || password === user.password_hash);
+    if (!ok) return res.status(401).json({ error: 'Incorrect email or password.' });
+    if (user.is_banned) return res.status(403).json({ error: 'This account cannot log in.' });
+
+    readAdminAccounts((accounts) => {
+      const acc = accounts.find(a => String(a.email).toLowerCase() === cleanEmail);
+      if (acc && acc.status === 'deactivated') {
+        return res.status(403).json({ error: 'Your admin access was deactivated. A Chief Admin can restore it.' });
+      }
+      const token = crypto.randomBytes(32).toString('hex');
+      db.run('INSERT INTO admin_sessions (token, user_id, email) VALUES (?, ?, ?)', [token, user.id, cleanEmail], (e2) => {
+        if (e2) return res.status(500).json({ error: e2.message });
+        res.json({ token, email: user.email, name: user.name, role: user.role });
+      });
+    });
+  });
+});
+
+// ---------- Invite accept flow ----------
+// (The invite itself is created client-side today -- settings.js writes the
+// pending account straight into the kibbleguard-admin-accounts state blob,
+// which is why only the accept side needs real server routes.)
+app.get('/api/admin/invite/:token', (req, res) => {
+  readAdminAccounts((accounts) => {
+    const acc = accounts.find(a => a.inviteToken === req.params.token && a.status === 'pending');
+    if (!acc) return res.status(404).json({ error: 'Invalid or expired invite link.' });
+    res.json({ name: acc.name, email: acc.email });
+  });
+});
+
+app.post('/api/admin/accept-invite', (req, res) => {
+  const { token, password } = req.body || {};
+  if (!token || !password) return res.status(400).json({ error: 'Missing token or password.' });
+  readAdminAccounts((accounts) => {
+    const idx = accounts.findIndex(a => a.inviteToken === token && a.status === 'pending');
+    if (idx === -1) return res.status(404).json({ error: 'Invalid or expired invite link.' });
+    const acc = accounts[idx];
+    const cleanEmail = String(acc.email).trim().toLowerCase();
+    db.run(
+      `INSERT INTO users (name, email, password, password_hash, role) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, password = EXCLUDED.password,
+         password_hash = EXCLUDED.password_hash, role = EXCLUDED.role
+       RETURNING id`,
+      [acc.name, cleanEmail, password, password, acc.role || 'Support Admin'],
+      (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const updated = accounts.slice();
+        updated[idx] = Object.assign({}, acc, { status: 'active' });
+        delete updated[idx].inviteToken;
+        writeAdminState('kibbleguard-admin-accounts', JSON.stringify(updated), (e2) => {
+          if (e2) return res.status(500).json({ error: e2.message });
+          bumpAdminStateVersion('kibbleguard-admin-accounts', () => res.json({ success: true }));
+        });
+      }
+    );
+  });
+});
+
+// ---------- Change own password ----------
+app.post('/api/admin/change-password', requireAdminAuth, (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Missing password fields.' });
+  db.get('SELECT * FROM users WHERE id = ?', [req.adminUser.id], (err, user) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const ok = user && (currentPassword === user.password || currentPassword === user.password_hash);
+    if (!ok) return res.status(401).json({ error: 'Current password is incorrect.' });
+    db.run('UPDATE users SET password = ?, password_hash = ? WHERE id = ?', [newPassword, newPassword, user.id], (e2) => {
+      if (e2) return res.status(500).json({ error: e2.message });
+      res.json({ success: true });
+    });
+  });
+});
+
+// ---------- Generic admin UI state sync (safety rules, chat, activity log,
+// admin roster/invites, retention settings, ingredient edit history, scan
+// overrides, inquiry reply drafts, triage-seen markers, and their "-v"
+// version counters) ----------
+app.get('/api/admin/state', requireAdminAuth, (req, res) => {
+  db.all('SELECT key, value FROM admin_state', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const state = {};
+    (rows || []).forEach(r => { state[r.key] = r.value; });
+    res.json({ state });
+  });
+});
+
+app.put('/api/admin/state', requireAdminAuth, (req, res) => {
+  const { key, value } = req.body || {};
+  if (!key) return res.status(400).json({ error: 'Missing key.' });
+  if (value === null || value === undefined) {
+    return db.run('DELETE FROM admin_state WHERE key = ?', [key], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    });
+  }
+  writeAdminState(key, String(value), (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
+// ---------- Real, normalized data the admin pages build their tables from
+// (pet owners, pets, ingredients, scans with per-ingredient breakdown, and
+// support tickets) ----------
+app.get('/api/admin/data', requireAdminAuth, (req, res) => {
+  db.all(`SELECT id, name, email, is_banned, ban_reason, created_at FROM users WHERE role = 'user' ORDER BY created_at DESC`, [], (e1, users) => {
+    if (e1) return res.status(500).json({ error: e1.message });
+    db.all(`SELECT * FROM pets`, [], (e2, pets) => {
+      if (e2) return res.status(500).json({ error: e2.message });
+      db.all(`SELECT * FROM ingredients ORDER BY name ASC`, [], (e3, ingredients) => {
+        if (e3) return res.status(500).json({ error: e3.message });
+        const scanQuery = `
+          SELECT s.id, s.user_id, s.product_name, s.rating, s.risk_score, s.image_url, s.raw_text, s.results_json,
+                 s.created_at, COALESCE(s.species, p.species) AS species,
+                 u.name AS owner, u.email AS ownerEmail, p.name AS pet, p.breed AS petBreed
+          FROM scans s
+          LEFT JOIN users u ON u.id = s.user_id
+          LEFT JOIN pets p ON p.id = s.pet_id
+          ORDER BY s.created_at DESC
+        `;
+        db.all(scanQuery, [], (e4, scanRows) => {
+          if (e4) return res.status(500).json({ error: e4.message });
+          const scans = (scanRows || []).map(r => {
+            let results = [];
+            try { results = JSON.parse(r.results_json || '[]') || []; } catch (e) {}
+            const substances = results.map(x => ({
+              name: x.name,
+              category: x.category,
+              level: x.status || 'Safe',
+              unrated: x.category === 'Ingredient' && /no specific restrictions/i.test(x.notes || ''),
+              note: x.notes || ''
+            }));
+            const createdIso = new Date(String(r.created_at).replace(' ', 'T') + 'Z').toISOString();
+            return {
+              id: r.id,
+              user_id: r.user_id,
+              product: r.product_name,
+              rating: r.rating,
+              score: r.risk_score,
+              species: /fel|cat/i.test(r.species || '') ? 'feline' : 'canine',
+              owner: r.owner || 'Unknown owner',
+              ownerEmail: r.ownerEmail || '',
+              pet: r.pet || '',
+              petBreed: r.petBreed || '',
+              timestamp: createdIso,
+              hasImage: !!(r.image_url && /^data:image\//.test(r.image_url)),
+              rawOcrText: r.raw_text || '',
+              substances
+            };
+          });
+          const ticketQuery = `
+            SELECT t.id, t.category, t.message, t.created_at, u.name AS owner, u.email AS ownerEmail
+            FROM tickets t
+            LEFT JOIN users u ON t.user_id ~ '^[0-9]+$' AND t.user_id::integer = u.id
+            ORDER BY t.created_at DESC
+          `;
+          db.all(ticketQuery, [], (e5, tickets) => {
+            if (e5) return res.status(500).json({ error: e5.message });
+            res.json({
+              users: users || [],
+              pets: pets || [],
+              ingredients: (ingredients || []).map(i => ({
+                name: i.name, category: i.category, canine: i.canine_rating, feline: i.feline_rating,
+                description: i.description, risks: i.risks
+              })),
+              scans,
+              tickets: (tickets || []).map(t => ({
+                id: t.id,
+                category: t.category,
+                message: t.message,
+                owner: t.owner || 'Unknown owner',
+                ownerEmail: t.ownerEmail || '',
+                timestamp: new Date(String(t.created_at).replace(' ', 'T') + 'Z').toISOString()
+              }))
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// ---------- Ban / unban a pet owner (real users table) ----------
+app.post('/api/admin/users/status', requireAdminAuth, (req, res) => {
+  const { id, is_banned, ban_reason } = req.body || {};
+  if (!id) return res.status(400).json({ error: 'Missing user id.' });
+  db.run('UPDATE users SET is_banned = ?, ban_reason = ? WHERE id = ?', [is_banned ? 1 : 0, ban_reason || null, id], (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
+// ---------- Ingredient Database edits (real ingredients table) ----------
+app.post('/api/admin/ingredients/sync', requireAdminAuth, (req, res) => {
+  const { upsert, remove } = req.body || {};
+  const tasks = [];
+  (upsert || []).forEach((i) => {
+    tasks.push(new Promise((resolve) => {
+      db.run(
+        `INSERT INTO ingredients (name, category, canine_rating, feline_rating, description, risks)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT (name) DO UPDATE SET category = EXCLUDED.category, canine_rating = EXCLUDED.canine_rating,
+           feline_rating = EXCLUDED.feline_rating, description = EXCLUDED.description, risks = EXCLUDED.risks
+         RETURNING id`,
+        [i.name, i.category || null, i.canine || 'Unrated', i.feline || 'Unrated', i.description || '', i.risks || ''],
+        (err) => resolve(!err)
+      );
+    }));
+  });
+  (remove || []).forEach((name) => {
+    tasks.push(new Promise((resolve) => {
+      db.run('DELETE FROM ingredients WHERE name = ?', [name], (err) => resolve(!err));
+    }));
+  });
+  Promise.all(tasks).then(() => res.json({ success: true })).catch(() => res.status(500).json({ error: 'Sync failed.' }));
+});
+
+// ---------- Scan photo for the admin Inspect window (data: URI stored on
+// the scan row, re-served as a real image so <img src> can load it) ----------
+app.get('/api/admin/scan-image/:id', requireAdminAuth, (req, res) => {
+  db.get('SELECT image_url FROM scans WHERE id = ?', [req.params.id], (err, row) => {
+    if (err) return res.status(500).end();
+    const m = row && row.image_url ? /^data:([^;]+);base64,(.+)$/.exec(row.image_url) : null;
+    if (!m) return res.status(404).end();
+    res.set('Content-Type', m[1]);
+    res.send(Buffer.from(m[2], 'base64'));
+  });
+});
+
 // --- START SERVER ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

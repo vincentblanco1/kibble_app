@@ -1,56 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const DEFAULT_NOTIFICATIONS = [
-    {
-      id: 'notif-1',
-      type: 'warning',
-      category: 'hazard',
-      icon: 'fa-triangle-exclamation',
-      iconColor: 'text-[#ff9800] bg-[#fff8ed] border border-orange-200',
-      title: 'Caution: Preservative Flagged',
-      message: 'Beggin\' Strips batch #KG-9021 contains BHA. Flagged for Buster (Canine).',
-      time: '15m ago',
-      read: false,
-      link: 'results.html?batch=KG-9021'
-    },
-    {
-      id: 'notif-2',
-      type: 'hazard',
-      category: 'hazard',
-      icon: 'fa-shield-cat',
-      iconColor: 'text-purple-600 bg-purple-50 border border-purple-200',
-      title: 'Cross-Feeding Warning',
-      message: 'Propylene Glycol detected in canine kibble. Strictly lethal if shared with Milo (Cat).',
-      time: '2h ago',
-      read: false,
-      link: 'results.html?batch=KG-9021'
-    },
-    {
-      id: 'notif-3',
-      type: 'success',
-      category: 'system',
-      icon: 'fa-circle-check',
-      iconColor: 'text-emerald-600 bg-emerald-50 border border-emerald-200',
-      title: 'Database Baseline Synced',
-      message: 'Veterinary nutritional rules calibrated against AAFCO & FEDIAF 2026 standards.',
-      time: '1d ago',
-      read: true,
-      link: 'wiki.html'
-    },
-    {
-      id: 'notif-4',
-      type: 'hazard',
-      category: 'hazard',
-      icon: 'fa-skull-crossbones',
-      iconColor: 'text-red-600 bg-red-50 border border-red-200',
-      title: 'Critical Lethal Sweetener Detected',
-      message: 'Dental Care Sweetener Chews batch #KG-8812 contains Xylitol. Strictly fatal to dogs.',
-      time: '3d ago',
-      read: true,
-      link: 'results.html?batch=KG-8812'
-    }
-  ];
-
-  let notifications = JSON.parse(localStorage.getItem('kibbleguard_notifications')) || DEFAULT_NOTIFICATIONS;
+  // Notifications come from the database (see kgLoad below). No fake demo
+  // alerts here any more -- an empty list just shows the real empty state
+  // until the server responds.
+  let notifications = JSON.parse(localStorage.getItem('kibbleguard_notifications')) || [];
 
   // --- Header Dropdown Drawer Controls ---
   const notifBtn = document.getElementById('notificationBellBtn');
