@@ -39,18 +39,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // 2. Global Sign Out Controller
-  // ==========================================
-  const sidebarSignOutBtn = document.getElementById('sidebarSignOutBtn');
-  if (sidebarSignOutBtn) {
-    sidebarSignOutBtn.addEventListener('click', () => {
-      if (confirm('Are you sure you want to sign out of KibbleGuard?')) {
-        localStorage.removeItem('kibbleguard_auth_token');
-        window.location.href = 'landing.html';
-      }
-    });
-  }
+// 2. Global Sign Out Controller
+// ==========================================
+const sidebarSignOutBtn = document.getElementById('sidebarSignOutBtn');
 
+if (sidebarSignOutBtn) {
+  sidebarSignOutBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to sign out of KibbleGuard?')) {
+
+      // Clear all saved login information
+      localStorage.removeItem('kibbleguard_auth_token');
+      localStorage.removeItem('kibbleguard_auth_user');
+      localStorage.removeItem('kibbleguard_user');
+
+      // Clear saved profile information
+      localStorage.removeItem('kibbleguard_user_profile');
+
+      // Return to the landing page
+      window.location.replace('landing.html');
+    }
+  });
+}
   // ==========================================
   // 3. Sidebar Hamburger Collapse Controller
   // ==========================================
