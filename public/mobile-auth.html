@@ -52,7 +52,6 @@
 </head>
 <body class="bg-brand-canvas text-brand-ink antialiased min-h-screen w-full flex flex-col justify-between p-4 selection:bg-[#45671d] selection:text-white font-sans">
 
-  <!-- Mobile Minimal Top Bar -->
   <header class="w-full flex items-center justify-between py-2">
     <a href="mobile-landing.html" class="flex items-center gap-2">
       <img src="kibbleguard-logo.png" onerror="this.onerror=null; this.src='https://api.iconify.design/solar:shield-warning-bold-duotone.svg?color=%2345671d';" alt="KibbleGuard Logo" class="w-8 h-8 object-contain">
@@ -66,21 +65,16 @@
     </a>
   </header>
 
-  <!-- Mobile Auth Card -->
   <main class="w-full max-w-sm mx-auto my-auto py-2">
     <div class="bg-white rounded-[32px] border border-brand-line p-6 shadow-xl space-y-4">
-      
-      <!-- Dynamic Header Banner (Login vs Signup) -->
+
       <div id="authHeaderVisual" class="space-y-3">
-        <!-- Login Mode Visual Banner using login picture.jpg -->
         <div id="loginVisualBanner" class="relative w-full h-32 auth-arch-container shadow-sm bg-slate-100">
           <img src="login picture.jpg" alt="Two dogs sitting in grass" class="w-full h-full object-cover object-center">
           <div class="absolute bottom-2.5 left-2.5 bg-[#ff7e1b] text-white px-3 py-1.5 rounded-xl shadow-md text-[10px] font-black transform rotate-[-2deg]">
             Your scans are waiting
           </div>
         </div>
-
-        <!-- Signup Mode Visual Banner -->
         <div id="signupVisualBanner" class="hidden items-center gap-3 py-1">
           <div class="flex -space-x-3">
             <img class="w-10 h-10 rounded-full border-2 border-white object-cover shadow-sm" src="cat and dog.jpg" alt="Dog">
@@ -90,7 +84,6 @@
         </div>
       </div>
 
-      <!-- Headline & Subtitle -->
       <div class="text-left space-y-1">
         <h2 id="authTitle" class="font-display font-800 text-2xl text-brand-ink">
           Welcome <span class="highlight-yellow" id="titleHighlight">back</span>
@@ -98,19 +91,16 @@
         <p id="authSub" class="text-brand-muted text-xs leading-relaxed">Access your scans and the ingredient database.</p>
       </div>
 
-      <!-- Mode Switcher Tabs -->
       <div class="grid grid-cols-2 p-1 rounded-2xl bg-slate-100 border border-slate-200">
         <button type="button" id="tabLogin" class="py-2.5 text-xs font-bold rounded-xl bg-white text-[#45671d] shadow-xs transition-all">Log In</button>
         <button type="button" id="tabSignup" class="py-2.5 text-xs font-bold rounded-xl text-brand-muted hover:text-brand-ink transition-all">Create Account</button>
       </div>
 
-      <!-- Main Form -->
       <form id="authForm" class="space-y-3.5" novalidate>
-        
-        <!-- Signup-Specific Initial Pet Setup -->
+
         <div id="signupFields" class="space-y-3.5 hidden">
           <div>
-            <label class="block text-[11px] font-bold text-brand-muted uppercase tracking-wider mb-1">Primary Pet's Name *</label>
+            <label for="petNameInput" class="block text-[11px] font-bold text-brand-muted uppercase tracking-wider mb-1">Primary Pet's Name *</label>
             <input type="text" id="petNameInput" placeholder="e.g. Buster" class="w-full px-3.5 py-2.5 rounded-xl bg-[#fbf9f6] border border-brand-line text-xs font-semibold focus:outline-none focus:border-[#45671d]">
           </div>
           <div>
@@ -140,19 +130,24 @@
           </div>
         </div>
 
-        <!-- Email Field -->
         <div>
           <div class="flex justify-between items-center mb-1">
-            <label class="block text-[11px] font-bold text-brand-muted uppercase tracking-wider">Email Address *</label>
+            <label for="emailInput" class="block text-[11px] font-bold text-brand-muted uppercase tracking-wider">Email Address *</label>
             <span id="emailValidationMsg" class="text-[10px] font-bold hidden"></span>
           </div>
           <input type="email" id="emailInput" required placeholder="name@example.com" class="w-full px-3.5 py-2.5 rounded-xl bg-[#fbf9f6] border border-brand-line text-xs font-semibold focus:outline-none focus:border-[#45671d]">
         </div>
 
-        <!-- Password Field with Toggle Visibility -->
+        <!-- This is the verification field structure expected by the shared auth.js. -->
+        <div id="verificationCodeGroup" class="hidden">
+          <label for="verificationCodeInput" class="block text-[11px] font-bold text-brand-muted uppercase tracking-wider mb-1">Email Verification Code *</label>
+          <input type="text" id="verificationCodeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="Enter the 6-digit code" class="w-full px-3.5 py-2.5 rounded-xl bg-[#fbf9f6] border border-brand-line text-xs font-semibold tracking-[0.3em] focus:outline-none focus:border-[#45671d]">
+          <p class="text-[10px] text-brand-muted mt-1">Check your inbox. The code expires in 10 minutes.</p>
+        </div>
+
         <div>
           <div class="flex items-center justify-between mb-1">
-            <label class="block text-[11px] font-bold text-brand-muted uppercase tracking-wider">Password *</label>
+            <label for="passInput" class="block text-[11px] font-bold text-brand-muted uppercase tracking-wider">Password *</label>
             <a href="#" id="forgotPassLink" class="text-[11px] font-bold text-[#45671d] hover:underline">Forgot password?</a>
           </div>
           <div class="relative">
@@ -163,27 +158,17 @@
           </div>
         </div>
 
-        <!-- Password Rules (Visible in Signup) -->
         <div id="passwordRulesCard" class="hidden p-3.5 bg-slate-50 border border-brand-line rounded-2xl space-y-1.5 text-[11px]">
           <p class="font-extrabold text-slate-700 text-[10px] uppercase tracking-wider mb-1">Password Checklist</p>
-          <div id="rule-len" class="flex items-center gap-2 text-slate-400 font-medium">
-            <i class="fa-solid fa-circle text-[6px] text-slate-300"></i> At least 8 characters
-          </div>
-          <div id="rule-case" class="flex items-center gap-2 text-slate-400 font-medium">
-            <i class="fa-solid fa-circle text-[6px] text-slate-300"></i> Mixed case (upper & lower)
-          </div>
-          <div id="rule-num" class="flex items-center gap-2 text-slate-400 font-medium">
-            <i class="fa-solid fa-circle text-[6px] text-slate-300"></i> At least 1 number (0-9)
-          </div>
-          <div id="rule-sym" class="flex items-center gap-2 text-slate-400 font-medium">
-            <i class="fa-solid fa-circle text-[6px] text-slate-300"></i> At least 1 symbol (!@#$%)
-          </div>
+          <div id="rule-len" class="flex items-center gap-2 text-slate-400 font-medium"><i class="fa-solid fa-circle text-[6px] text-slate-300"></i> At least 8 characters</div>
+          <div id="rule-case" class="flex items-center gap-2 text-slate-400 font-medium"><i class="fa-solid fa-circle text-[6px] text-slate-300"></i> Mixed case (upper &amp; lower)</div>
+          <div id="rule-num" class="flex items-center gap-2 text-slate-400 font-medium"><i class="fa-solid fa-circle text-[6px] text-slate-300"></i> At least 1 number (0-9)</div>
+          <div id="rule-sym" class="flex items-center gap-2 text-slate-400 font-medium"><i class="fa-solid fa-circle text-[6px] text-slate-300"></i> At least 1 symbol (!@#$%)</div>
         </div>
 
-        <!-- Confirm Password Field (Visible in Signup) -->
         <div id="confirmPassGroup" class="hidden">
           <div class="flex justify-between items-center mb-1">
-            <label class="block text-[11px] font-bold text-brand-muted uppercase tracking-wider">Confirm Password *</label>
+            <label for="confirmPassInput" class="block text-[11px] font-bold text-brand-muted uppercase tracking-wider">Confirm Password *</label>
             <span id="confirmPassMsg" class="text-[10px] font-bold text-rose-500 hidden">Mismatch</span>
           </div>
           <div class="relative">
@@ -194,134 +179,61 @@
           </div>
         </div>
 
-        <!-- Submit Button -->
         <button type="submit" id="ctaBtn" class="w-full py-3.5 rounded-2xl bg-[#45671d] hover:bg-[#324c14] text-white font-extrabold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-3">
           <span id="ctaText">LOG IN →</span>
         </button>
       </form>
 
       <div class="pt-2 text-center border-t border-[#f5efe6]">
-        <a href="mobile-landing.html" class="text-[11px] font-extrabold text-brand-muted hover:text-brand-ink">
-          ← Back to Overview
-        </a>
+        <a href="mobile-landing.html" class="text-[11px] font-extrabold text-brand-muted hover:text-brand-ink">← Back to Overview</a>
       </div>
-
     </div>
   </main>
-
-  <!-- Email Confirmation / OTP Modal (Step 2) -->
-  <div id="otpModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
-    <div class="bg-white max-w-xs w-full rounded-3xl p-6 border border-brand-line shadow-2xl text-center space-y-4">
-      <div class="w-12 h-12 bg-emerald-50 text-[#45671d] rounded-2xl flex items-center justify-center mx-auto text-xl shadow-inner">
-        <i class="fa-solid fa-envelope-circle-check"></i>
-      </div>
-      <div>
-        <h3 class="font-display font-800 text-base text-brand-ink">Verify Email</h3>
-        <p class="text-[11px] text-brand-muted mt-1 leading-relaxed">
-          Confirmation code sent to <br>
-          <span id="targetEmailLabel" class="font-bold text-brand-ink"></span>
-        </p>
-      </div>
-      
-      <input type="text" id="otpCodeInput" maxlength="6" placeholder="123456" class="w-full tracking-[0.3em] text-center font-mono font-bold text-xl py-2.5 rounded-xl bg-[#fbf9f6] border border-brand-line focus:outline-none focus:border-[#45671d]">
-      
-      <div class="flex gap-2">
-        <button type="button" id="cancelOtpBtn" class="w-1/2 py-2.5 rounded-xl border border-brand-line text-slate-600 text-xs font-bold hover:bg-slate-50">Cancel</button>
-        <button type="button" id="confirmOtpBtn" class="w-1/2 py-2.5 rounded-xl bg-[#45671d] hover:bg-[#324c14] text-white text-xs font-bold shadow-xs">Verify</button>
-      </div>
-    </div>
-  </div>
 
   <footer class="w-full text-center py-2 text-[10px] text-brand-muted font-medium">
     KibbleGuard Safety Lab • Stratified Metabolic Engine
   </footer>
 
   <script src="auth.js"></script>
-  <!-- UI Interactive Script for Auth Mode Toggles -->
   <script>
-    const tabLogin = document.getElementById('tabLogin');
-    const tabSignup = document.getElementById('tabSignup');
-    const signupFields = document.getElementById('signupFields');
-    const authTitle = document.getElementById('authTitle');
-    const authSub = document.getElementById('authSub');
-    const ctaText = document.getElementById('ctaText');
-    const passwordRulesCard = document.getElementById('passwordRulesCard');
-    const confirmPassGroup = document.getElementById('confirmPassGroup');
-    const forgotPassLink = document.getElementById('forgotPassLink');
-    const loginVisualBanner = document.getElementById('loginVisualBanner');
-    const signupVisualBanner = document.getElementById('signupVisualBanner');
+    // Keep the mobile-only banner and species-card appearance in sync.
+    // Authentication mode, form submission, and verification are handled by auth.js.
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginTab = document.getElementById('tabLogin');
+      const signupTab = document.getElementById('tabSignup');
+      const loginBanner = document.getElementById('loginVisualBanner');
+      const signupBanner = document.getElementById('signupVisualBanner');
 
-    function setAuthMode(mode) {
-      if (mode === 'signup') {
-        tabSignup.className = 'py-2.5 text-xs font-bold rounded-xl bg-white text-[#45671d] shadow-xs transition-all';
-        tabLogin.className = 'py-2.5 text-xs font-bold rounded-xl text-brand-muted hover:text-brand-ink transition-all';
-        signupFields.classList.remove('hidden');
-        passwordRulesCard.classList.remove('hidden');
-        confirmPassGroup.classList.remove('hidden');
-        forgotPassLink.classList.add('hidden');
-        loginVisualBanner.classList.add('hidden');
-        signupVisualBanner.classList.remove('hidden');
-        authTitle.innerHTML = 'Join <span class="highlight-yellow">KibbleGuard</span>';
-        authSub.textContent = 'Set up your profile and evaluate ingredients.';
-        ctaText.textContent = 'VERIFY EMAIL & REGISTER →';
-      } else {
-        tabLogin.className = 'py-2.5 text-xs font-bold rounded-xl bg-white text-[#45671d] shadow-xs transition-all';
-        tabSignup.className = 'py-2.5 text-xs font-bold rounded-xl text-brand-muted hover:text-brand-ink transition-all';
-        signupFields.classList.add('hidden');
-        passwordRulesCard.classList.add('hidden');
-        confirmPassGroup.classList.add('hidden');
-        forgotPassLink.classList.remove('hidden');
-        loginVisualBanner.classList.remove('hidden');
-        signupVisualBanner.classList.add('hidden');
-        authTitle.innerHTML = 'Welcome <span class="highlight-yellow">back</span>';
-        authSub.textContent = 'Access your scans and the ingredient database.';
-        ctaText.textContent = 'LOG IN →';
+      function updateMobileBanner(mode) {
+        if (mode === 'signup') {
+          loginBanner.classList.add('hidden');
+          signupBanner.classList.remove('hidden');
+        } else {
+          loginBanner.classList.remove('hidden');
+          signupBanner.classList.add('hidden');
+        }
       }
-    }
 
-    tabLogin.addEventListener('click', () => setAuthMode('login'));
-    tabSignup.addEventListener('click', () => setAuthMode('signup'));
+      updateMobileBanner(new URLSearchParams(window.location.search).get('mode') === 'signup' ? 'signup' : 'login');
+      loginTab.addEventListener('click', () => updateMobileBanner('login'));
+      signupTab.addEventListener('click', () => updateMobileBanner('signup'));
 
-    // Check URL parameters on load
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('mode') === 'signup') {
-      setAuthMode('signup');
-    }
-
-    // Species card radio selector styling
-    document.querySelectorAll('.species-card').forEach(card => {
-      card.addEventListener('click', () => {
-        document.querySelectorAll('.species-card').forEach(c => {
-          c.classList.remove('border-[#45671d]', 'bg-emerald-50/50');
-          c.classList.add('border-brand-line', 'bg-[#fbf9f6]');
+      document.querySelectorAll('.species-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.species-card').forEach(other => {
+            other.classList.remove('border-[#45671d]', 'bg-emerald-50/50');
+            other.classList.add('border-brand-line', 'bg-[#fbf9f6]');
+          });
+          card.classList.add('border-[#45671d]', 'bg-emerald-50/50');
+          card.classList.remove('border-brand-line', 'bg-[#fbf9f6]');
+          const radio = card.querySelector('input[type="radio"]');
+          if (radio) {
+            radio.checked = true;
+            document.getElementById('speciesInput').value = radio.value;
+          }
         });
-        card.classList.add('border-[#45671d]', 'bg-emerald-50/50');
-        card.classList.remove('border-brand-line', 'bg-[#fbf9f6]');
-        const radio = card.querySelector('input[type="radio"]');
-        if (radio) {
-          radio.checked = true;
-          document.getElementById('speciesInput').value = radio.value;
-        }
       });
     });
-
-    const formEl = document.getElementById('authForm');
-    formEl.addEventListener('submit', (e) => {
-      setTimeout(() => {
-        if (localStorage.getItem('kibbleguard_user') || document.getElementById('otpModal').classList.contains('hidden') === false) {
-          // Trigger OTP or direct redirect if active session
-        }
-      }, 300);
-    });
-
-    const confirmBtn = document.getElementById('confirmOtpBtn');
-    if (confirmBtn) {
-      confirmBtn.addEventListener('click', () => {
-        setTimeout(() => {
-          window.location.href = 'mobile-index.html';
-        }, 500);
-      });
-    }
   </script>
 </body>
 </html>
