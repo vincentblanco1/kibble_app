@@ -496,6 +496,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const FINDINGS_DATABASE = {};
   let _dbIngredientsLoaded = false;
 
+  // Normalize a name for matching: lowercase, trim, collapse whitespace,
+  // strip trailing punctuation/parentheticals so DB values with slightly
+  // different formatting (trailing spaces, "Potato " vs "potato", etc.)
+  // still match OCR-extracted ingredient names.
+  function _normalizeIngredientName(str) {
+    return String(str || '')
+      .toLowerCase()
+      .replace(/\([^)]*\)/g, ' ')   // drop parenthetical notes e.g. "Potato (Source of Fiber)"
+      .replace(/[^a-z0-9%\s-]/g, ' ') // strip punctuation
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   // Fetch all ingredients from the wiki-ingredients API and build a lookup cache.
   // Each entry is keyed by the lowercase primary_name so drawerEntry() can match scan results.
   async function _loadIngredientDB() {
@@ -567,16 +580,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Key by ingredient_id
         FINDINGS_DATABASE[id] = entry;
-        // Also key by lowercase primary_name for easy scan-result matching
-        FINDINGS_DATABASE[primary.primary_name.toLowerCase()] = entry;
-        // Also key by aliases
+        // Also key by normalized primary_name for easy scan-result matching
+        var normName = _normalizeIngredientName(primary.primary_name);
+        if (normName) FINDINGS_DATABASE[normName] = entry;
+        // Also key by normalized aliases
         var aliases = primary.aliases || '';
         aliases.split(',').forEach(function (a) {
-          var trimmed = a.trim().toLowerCase();
-          if (trimmed) FINDINGS_DATABASE[trimmed] = entry;
+          var normAlias = _normalizeIngredientName(a);
+          if (normAlias) FINDINGS_DATABASE[normAlias] = entry;
         });
       });
       _dbIngredientsLoaded = true;
+      console.log('[results] Ingredient DB loaded:', Object.keys(FINDINGS_DATABASE).length, 'lookup keys');
     } catch (err) {
       console.error('[results] Failed to load ingredient DB:', err.message);
     }
@@ -900,19 +915,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---------------------------------------------------------------------
     // Match ingredient name against the dynamic FINDINGS_DATABASE (loaded from Supabase)
     function drawerEntry(it, speciesName) {
-      // Try to find a match in the DB by lowercase name
-      var nameKey = (it.name || '').toLowerCase().trim();
-      var base = FINDINGS_DATABASE[nameKey] ? Object.assign({}, FINDINGS_DATABASE[nameKey]) : null;
+      // Try to find a match in the DB by normalized name (handles whitespace/
+      // punctuation/case differences between OCR text and the Supabase data)
+      var nameKey = _normalizeIngredientName(it.name || '');
+      var base = (nameKey && FINDINGS_DATABASE[nameKey]) ? Object.assign({}, FINDINGS_DATABASE[nameKey]) : null;
 
-      // If no exact match, try partial matching against all DB keys
-      if (!base && nameKey) {
+      // If no exact match, try partial matching against all DB keys — but only
+      // for keys of meaningful length, and only whole-word-ish substrings, so
+      // short/generic keys (e.g. "salt", "oil") don't falsely swallow unrelated matches.
+      if (!base && nameKey && nameKey.length >= 3) {
         var keys = Object.keys(FINDINGS_DATABASE);
+        var bestKey = null;
         for (var ki = 0; ki < keys.length; ki++) {
-          if (nameKey.indexOf(keys[ki]) !== -1 || keys[ki].indexOf(nameKey) !== -1) {
-            base = Object.assign({}, FINDINGS_DATABASE[keys[ki]]);
-            break;
+          var k = keys[ki];
+          if (k.length < 3) continue; // skip ingredient_id / short noise keys
+          if (nameKey === k) { bestKey = k; break; }
+          if ((nameKey.indexOf(k) !== -1 || k.indexOf(nameKey) !== -1)) {
+            // Prefer the longest matching key (more specific match)
+            if (!bestKey || k.length > bestKey.length) bestKey = k;
           }
         }
+        if (bestKey) base = Object.assign({}, FINDINGS_DATABASE[bestKey]);
       }
 
       const s = RATING[it.status] || RATING.Safe;

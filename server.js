@@ -660,32 +660,113 @@ function parseOcrIngredients(rawText) {
   };
 }
 
-// Scores a list of ingredient names against the ingredients table (shared by scanning and re-opening a scan)
+// Normalizes an ingredient name for matching: lowercase, strip parentheticals/punctuation,
+// collapse whitespace. Mirrors the same normalization used client-side in results.js so
+// OCR-extracted tokens reliably match Supabase primary_name/aliases values.
+function normalizeIngredientName(str) {
+  return String(str || '')
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/[^a-z0-9%\s-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Maps a Supabase risk value to the Safe/Caution/Toxic vocabulary the rest of the app expects.
+function mapRiskToRating(risk) {
+  const r = String(risk || '').toLowerCase();
+  if (r === 'toxic' || r === 'highly toxic') return 'Toxic';
+  if (r === 'caution') return 'Caution';
+  return 'Safe';
+}
+
+// Fetches species-specific ingredient risk data directly from Supabase (dog_ingredients /
+// cat_ingredients), shaped to what analyzeIngredients() expects. Replaces the old SQLite
+// `ingredients` table as the scoring source so the live scan reflects the same data shown
+// in the Ingredient Wiki.
+async function fetchSpeciesIngredients(speciesKey) {
+  const table = (speciesKey === 'cat' || speciesKey === 'feline') ? 'cat_ingredients' : 'dog_ingredients';
+  const result = await pool.query(
+    `SELECT primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, emergency_action FROM ${table}`
+  );
+  return result.rows.map(row => ({
+    name: row.primary_name,
+    aliases: row.aliases || '',
+    category: row.category || 'Ingredient',
+    rating: mapRiskToRating(row.risk),
+    severity_score: Number(row.severity_score) || 0,
+    description: row.notes || '',
+    risks: row.notes || '',
+    clinical_symptoms: row.clinical_symptoms || '',
+    dosage: row.dosage || '',
+    emergency_action: row.emergency_action || ''
+  }));
+}
+
+// Scores a list of ingredient names against the Supabase-backed ingredient list (shared by
+// scanning and re-opening a scan). Each match carries a real severity_score (0-100) from the
+// database, so the score deduction scales with how dangerous the ingredient actually is
+// instead of a flat penalty per Caution/Toxic hit.
 function analyzeIngredients(tokens, dbIngredients) {
   const flagged = [];
   const parsedResults = [];
   let score = 95;
 
+  // Flatten name + aliases into one lookup list so either can match
+  const lookupEntries = [];
+  dbIngredients.forEach(dbItem => {
+    const primaryNorm = normalizeIngredientName(dbItem.name);
+    if (primaryNorm) lookupEntries.push({ key: primaryNorm, dbItem });
+    String(dbItem.aliases || '').split(',').forEach(a => {
+      const aliasNorm = normalizeIngredientName(a);
+      if (aliasNorm) lookupEntries.push({ key: aliasNorm, dbItem });
+    });
+  });
+
+  function findMatch(token) {
+    const tokenNorm = normalizeIngredientName(token);
+    if (!tokenNorm) return null;
+
+    const exact = lookupEntries.find(e => e.key === tokenNorm);
+    if (exact) return exact.dbItem;
+
+    if (tokenNorm.length < 3) return null;
+    let best = null;
+    lookupEntries.forEach(e => {
+      if (e.key.length < 3) return;
+      if (tokenNorm.includes(e.key) || e.key.includes(tokenNorm)) {
+        if (!best || e.key.length > best.key.length) best = e;
+      }
+    });
+    return best ? best.dbItem : null;
+  }
+
   tokens.forEach(token => {
-    const tokenLower = token.toLowerCase();
-    const matchedDbItem = dbIngredients.find(dbItem =>
-      tokenLower.includes(dbItem.name.toLowerCase()) || dbItem.name.toLowerCase().includes(tokenLower)
-    );
+    const matchedDbItem = findMatch(token);
 
     if (matchedDbItem) {
       const itemRating = matchedDbItem.rating || 'Safe';
+      const severity = matchedDbItem.severity_score || 0;
+
       if (itemRating === 'Toxic') {
-        score -= 35;
+        const deduction = Math.max(15, Math.round(severity * 0.45));
+        score -= deduction;
         flagged.push({ name: matchedDbItem.name, rating: 'Toxic', risks: matchedDbItem.risks });
       } else if (itemRating === 'Caution') {
-        score -= 15;
+        const deduction = Math.max(5, Math.round(severity * 0.3));
+        score -= deduction;
         flagged.push({ name: matchedDbItem.name, rating: 'Caution', risks: matchedDbItem.risks });
       }
+
       parsedResults.push({
         name: matchedDbItem.name,
         category: matchedDbItem.category,
         status: itemRating,
-        notes: matchedDbItem.risks || matchedDbItem.description || 'Evaluated compound'
+        notes: matchedDbItem.risks || matchedDbItem.description || 'Evaluated compound',
+        severity_score: severity,
+        clinical_symptoms: matchedDbItem.clinical_symptoms || '',
+        dosage: matchedDbItem.dosage || '',
+        emergency_action: matchedDbItem.emergency_action || ''
       });
     } else {
       parsedResults.push({
@@ -903,17 +984,21 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
     }
 
     const speciesKey = (species || '').toLowerCase();
-    const ratingCol = (speciesKey === 'cat' || speciesKey === 'feline') ? 'feline_rating' : 'canine_rating';
 
-    db.all(`SELECT name, category, ${ratingCol} AS rating, description, risks FROM ingredients`, [], (err, dbIngredients) => {
-      if (err) return res.status(500).json({ error: err.message });
+    let dbIngredients;
+    try {
+      dbIngredients = await fetchSpeciesIngredients(speciesKey);
+    } catch (dbErr) {
+      console.error('[ASSESS] Failed to load Supabase ingredient data:', dbErr.message);
+      return res.status(500).json({ error: 'Failed to load ingredient database: ' + dbErr.message });
+    }
 
-      const runAnalysis = (pet) => {
+    const runAnalysis = (pet) => {
       const analysis = analyzeIngredients(ingredientTokens, dbIngredients);
       const allergy = pet ? applyPetAllergies(analysis, ingredientTokens, pet) : null;
       const { flagged, parsedResults, score, finalRating } = analysis;
 
-const insertQuery = `
+      const insertQuery = `
         INSERT INTO scans (user_id, pet_id, product_name, species, image_url, raw_text, summary, risk_score, rating, flagged_ingredients, results_json)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
@@ -945,17 +1030,16 @@ const insertQuery = `
         });
         createScanAlert({ userId: user_id || 1, scanId: this.lastID, rating: finalRating, flagged, allergy, species });
       });
-      };
+    };
 
-      // the pet chosen on the scan page (must belong to this user) supplies the allergy list
-      if (pet_id) {
-        db.get('SELECT name, species, allergies FROM pets WHERE id = ? AND user_id = ?', [pet_id, user_id || 1], (petErr, pet) => {
-          runAnalysis(petErr ? null : pet);
-        });
-      } else {
-        runAnalysis(null);
-      }
-    });
+    // the pet chosen on the scan page (must belong to this user) supplies the allergy list
+    if (pet_id) {
+      db.get('SELECT name, species, allergies FROM pets WHERE id = ? AND user_id = ?', [pet_id, user_id || 1], (petErr, pet) => {
+        runAnalysis(petErr ? null : pet);
+      });
+    } else {
+      runAnalysis(null);
+    }
 
   } catch (error) {
     console.error('[VISION AI ERROR]', error);
@@ -1208,12 +1292,12 @@ app.get('/api/history/:id', (req, res) => {
     const tokens = String(row.raw_text || '').split(',').map(t => t.trim()).filter(Boolean);
     if (tokens.length === 0) return send([], flagged);
     const speciesKey = species.toLowerCase();
-    const ratingCol = (speciesKey === 'cat' || speciesKey === 'feline') ? 'feline_rating' : 'canine_rating';
-    db.all(`SELECT name, category, ${ratingCol} AS rating, description, risks FROM ingredients`, [], (e2, dbIngredients) => {
-      if (e2) return res.status(500).json({ error: e2.message });
-      const rebuilt = analyzeIngredients(tokens, dbIngredients);
-      send(rebuilt.parsedResults, rebuilt.flagged);
-    });
+    fetchSpeciesIngredients(speciesKey)
+      .then(dbIngredients => {
+        const rebuilt = analyzeIngredients(tokens, dbIngredients);
+        send(rebuilt.parsedResults, rebuilt.flagged);
+      })
+      .catch(e2 => res.status(500).json({ error: e2.message }));
   });
 });
 
