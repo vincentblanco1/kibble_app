@@ -2021,7 +2021,7 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
           // left every one of those tickets with no owner at all -- "Unknown owner" -- even
           // though the real account is right there. This matches either shape.
           const ticketQuery = `
-            SELECT t.id, t.category, t.message, t.created_at, u.name AS owner, u.email AS ownerEmail
+            SELECT t.id, t.category, t.message, t.created_at, u.id AS owner_id, u.name AS owner, u.email AS ownerEmail
             FROM tickets t
             LEFT JOIN users u ON t.user_id = u.id::text OR LOWER(t.user_id) = LOWER(u.email)
             ORDER BY t.created_at DESC
@@ -2044,6 +2044,11 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
                 id: t.id,
                 category: t.category,
                 message: t.message,
+                // The real account id this ticket was matched to -- sent straight through so a
+                // reply can notify that exact account by id, instead of re-matching by email a
+                // second time later (a second lookup is just one more place this can silently
+                // fail; matching once, here, and reusing the result is safer).
+                ownerId: t.owner_id || null,
                 owner: t.owner || 'Unknown owner',
                 ownerEmail: t.ownerEmail || '',
                 timestamp: toSafeDate(t.created_at).toISOString()

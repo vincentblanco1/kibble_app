@@ -349,7 +349,7 @@
     // ---- Inquiries (support tickets from pet owners) ----
     (data.tickets || []).forEach(function (tk) {
       var q = /["“]([^"”]{2,60})["”]/.exec(tk.message || '');
-      var rec = { owner: tk.owner, ownerEmail: tk.ownerEmail, category: tk.category, timestamp: tk.timestamp, message: tk.message };
+      var rec = { ownerId: tk.ownerId || null, owner: tk.owner, ownerEmail: tk.ownerEmail, category: tk.category, timestamp: tk.timestamp, message: tk.message };
       if (/^Suggest/i.test(tk.category || '')) rec.suggestedIngredient = q ? q[1] : '';
       KGDB.inquiryRecords[tk.id] = rec;
     });

@@ -275,6 +275,7 @@ function resolveInquiry(inquiryId) {
   var d = (typeof INQUIRY_RECORDS !== 'undefined') ? INQUIRY_RECORDS[inquiryId] : null;
   var ownerName = (d && d.owner) || 'the pet owner';
   var ownerEmail = (d && d.ownerEmail) || '';
+  var ownerId = (d && d.ownerId) || null;
   var btn = document.getElementById('resolve-inquiry-btn');
 
   withSavingState(btn, 'Sending...', function () {
@@ -288,8 +289,12 @@ function resolveInquiry(inquiryId) {
     computeInquiryKpis();
     showToast('Sending reply to ' + ownerName + '...', 'info');
 
+    // Sending the real account id (resolved once, server-side, when /api/admin/data built this
+    // ticket's owner) instead of re-matching by email here. That second email lookup was a
+    // separate point of failure -- this skips it entirely and goes straight to the account we
+    // already know is correct (it's the same one whose name is showing on this very page).
     var deliveries = [
-      queueInAppNotification({ type: 'inquiry-reply', inquiry: inquiryId, to: ownerEmail, name: ownerName, message: response })
+      queueInAppNotification({ type: 'inquiry-reply', inquiry: inquiryId, user_id: ownerId, to: ownerEmail, name: ownerName, message: response })
     ];
     if (ownerEmail) {
       deliveries.push(sendSystemEmail({ type: 'inquiry-reply', inquiry: inquiryId, to: ownerEmail, name: ownerName, message: response }));
