@@ -792,14 +792,33 @@ function verifyTriage(rowId) {
   var name = row.dataset.name;
   var suggestedMatch = row.dataset.suggestedMatch;
   var scan = row.dataset.scan;
-  var confidence = row.dataset.confidence;
   var isToxic = row.dataset.severity === 'Toxic';
+  // two real, different reasons land a scan here: either the matching engine
+  // couldn't find one of its ingredients in the database at all ("unrecognized"),
+  // or every ingredient matched fine but the overall verdict came back Toxic and
+  // is worth a second set of eyes before the pet owner sees it ("toxic-verdict")
+  var isToxicVerdict = row.dataset.reason === 'toxic-verdict';
   var priorityBanner = isToxic
-    ? '<div class="flex items-center gap-2 p-3 rounded-xl bg-danger/10 border border-danger/20 mb-4"><i class="fa-solid fa-triangle-exclamation text-danger"></i><p class="text-xs font-bold text-danger">Possible toxic match: review before lower-priority scans in the queue.</p></div>'
+    ? '<div class="flex items-center gap-2 p-3 rounded-xl bg-danger/10 border border-danger/20 mb-4"><i class="fa-solid fa-triangle-exclamation text-danger"></i><p class="text-xs font-bold text-danger">Toxic verdict: review before lower-priority scans in the queue.</p></div>'
     : '';
+  var explainHtml, matchBoxHtml, confirmSubtitle;
+  if (isToxicVerdict) {
+    explainHtml = '<p class="text-sm text-stone-600 leading-relaxed mb-4">This scan\'s overall verdict came back <span class="font-bold text-danger">Toxic</span>, flagged by <span class="font-bold text-dark">' + escapeHTML(name) + '</span>. Confirm the verdict is correct before the pet owner is notified of the final result.</p>';
+    matchBoxHtml = '';
+    confirmSubtitle = 'Accept this Toxic verdict and notify the pet owner';
+  } else {
+    explainHtml = '<p class="text-sm text-stone-600 leading-relaxed mb-4">The matching engine read <span class="font-bold text-dark">' + escapeHTML(name) + '</span> on this label but could not find it anywhere in the ingredient database yet' + (suggestedMatch ? ', though it may be the same substance as this close match:' : '.') + '</p>';
+    matchBoxHtml = suggestedMatch
+      ? '<div class="flex items-center gap-3 p-4 rounded-2xl bg-stone-100 border border-stone-200 mb-4">' +
+          '<div class="w-9 h-9 rounded-xl bg-white text-brand flex items-center justify-center text-sm shrink-0 shadow-sm"><i class="fa-solid fa-flask"></i></div>' +
+          '<div><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Closest Existing Entry</p><p class="text-sm font-bold text-dark">' + escapeHTML(suggestedMatch) + '</p></div>' +
+        '</div>'
+      : '';
+    confirmSubtitle = suggestedMatch ? 'Accept ' + escapeHTML(suggestedMatch) + ' as the correct ingredient node' : 'Treat this as already covered by an existing database entry';
+  }
   openModal({
     title: 'Manual Verification',
-    subtitle: scan + ' · OCR Confidence ' + confidence,
+    subtitle: scan + (isToxicVerdict ? ' · Toxic verdict' : ' · Unrecognized ingredient'),
     wide: true,
     bodyHtml:
       '<div class="grid grid-cols-2 gap-6">' +
@@ -809,21 +828,17 @@ function verifyTriage(rowId) {
         '</div>' +
         '<div>' +
           priorityBanner +
-          '<p class="text-sm text-stone-600 leading-relaxed mb-4">Comparing the photo against the label, the OCR engine read <span class="font-bold text-dark">' + escapeHTML(name) +
-          '</span> and matched it to this ingredient in the database:</p>' +
-          '<div class="flex items-center gap-3 p-4 rounded-2xl bg-stone-100 border border-stone-200 mb-4">' +
-            '<div class="w-9 h-9 rounded-xl bg-white text-brand flex items-center justify-center text-sm shrink-0 shadow-sm"><i class="fa-solid fa-flask"></i></div>' +
-            '<div><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Suggested Match</p><p class="text-sm font-bold text-dark">' + escapeHTML(suggestedMatch) + '</p></div>' +
-          '</div>' +
-          '<p class="text-xs text-stone-500 leading-relaxed mb-4">This match is below the auto-approve threshold, so it needs your confirmation before the scan\'s verdict is finalized.</p>' +
+          explainHtml +
+          matchBoxHtml +
+          '<p class="text-xs text-stone-500 leading-relaxed mb-4">This case needs your confirmation before it\'s cleared from the queue and the pet owner is told the result is final.</p>' +
           '<div class="space-y-3">' +
             '<label id="mapping-confirm-label" onclick="updateMappingChoiceStyle(\'confirm\')" class="flex items-center gap-3 p-4 rounded-2xl border-2 border-brand bg-brand-light cursor-pointer">' +
               '<input type="radio" name="mapping" id="mapping-confirm" value="confirm" checked class="accent-brand w-4 h-4">' +
-              '<div><p class="text-xs font-bold text-dark">Confirm suggested mapping</p><p class="text-[10px] text-stone-400">Accept ' + escapeHTML(suggestedMatch) + ' as the correct ingredient node</p></div>' +
+              '<div><p class="text-xs font-bold text-dark">Confirm</p><p class="text-[10px] text-stone-400">' + confirmSubtitle + '</p></div>' +
             '</label>' +
             '<label id="mapping-unrecognized-label" onclick="updateMappingChoiceStyle(\'unrecognized\')" class="flex items-center gap-3 p-4 rounded-2xl border border-stone-100 hover:border-stone-200 cursor-pointer">' +
               '<input type="radio" name="mapping" id="mapping-unrecognized" value="unrecognized" class="accent-brand w-4 h-4">' +
-              '<div><p class="text-xs font-bold text-dark">Flag as unrecognized</p><p class="text-[10px] text-stone-400">Open the Ingredient Database with a new entry pre-filled from this OCR token</p></div>' +
+              '<div><p class="text-xs font-bold text-dark">Flag as unrecognized</p><p class="text-[10px] text-stone-400">Open the Ingredient Database with a new entry pre-filled from this ingredient</p></div>' +
             '</label>' +
           '</div>' +
         '</div>' +
@@ -897,7 +912,11 @@ function submitTriageResolution(rowId) {
 // removes the row, updates the count, and notifies the pet owner their result is final
 function resolveTriage(rowId) {
   var row = document.getElementById(rowId);
-  var suggestedMatch = row ? row.dataset.suggestedMatch : '';
+  // a toxic-verdict card has no suggested database match (every ingredient
+  // already matched fine -- the verdict itself is what's being confirmed),
+  // so fall back to the flagged ingredient's own name rather than leaving
+  // the pet owner's notification referencing a blank ingredient name
+  var suggestedMatch = row ? (row.dataset.suggestedMatch || row.dataset.name.replace(/^"|"$/g, '')) : '';
   var severity = row ? row.dataset.severity : '';
   var scanRef = row ? row.dataset.scan : rowId;
 

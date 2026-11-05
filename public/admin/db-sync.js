@@ -180,11 +180,19 @@
 
   function triageCard(t) {
     var id = 'triage-' + t.scan + '-' + slug(t.name);
+    // was always hardcoded to data-severity="Safe", so a Toxic case could never sort to
+    // the top of the queue, get a hazard-floor badge, or trip the overdue-case banner --
+    // this now carries the card's real severity instead
+    var severity = t.severity || 'Caution';
+    var toxic = severity === 'Toxic';
+    var reasonLine = t.reason === 'toxic-verdict'
+      ? 'Toxic verdict &middot; Scan ID: <span class="font-mono text-stone-500">#KB-' + t.scan + '</span>'
+      : 'Scan ID: <span class="font-mono text-stone-500">#KB-' + t.scan + '</span> &middot; Not in the ingredient database yet';
     return '<div class="feed-row p-6 flex items-center justify-between group" id="' + id + '" data-name="&quot;' + esc(t.name) + '&quot;" data-suggested-match="' + esc(t.match) +
-      '" data-severity="Safe" data-scan="#KB-' + t.scan + '" data-confidence="not measured"' + (t.image ? ' data-image="' + esc(t.image) + '"' : '') + '>' +
-      '<div class="flex items-center gap-5"><div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-200"><i class="fa-solid fa-flask"></i></div>' +
+      '" data-severity="' + severity + '" data-scan="#KB-' + t.scan + '" data-confidence="not measured" data-reason="' + esc(t.reason || 'unrecognized') + '"' + (t.image ? ' data-image="' + esc(t.image) + '"' : '') + '>' +
+      '<div class="flex items-center gap-5"><div class="w-12 h-12 rounded-xl ' + (toxic ? 'bg-danger/10 text-danger' : 'bg-amber-50 text-amber-500') + ' flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-200"><i class="fa-solid ' + (toxic ? 'fa-skull' : 'fa-flask') + '"></i></div>' +
       '<div><p class="text-sm font-bold text-dark italic">&quot;' + esc(t.name) + '&quot;</p>' +
-      '<p class="text-[11px] text-stone-400">Scan ID: <span class="font-mono text-stone-500">#KB-' + t.scan + '</span> &middot; Not in the ingredient database yet</p></div></div>' +
+      '<p class="text-[11px] text-stone-400">' + reasonLine + '</p></div></div>' +
       '<button class="press px-5 py-2 text-xs font-bold text-brand border-2 border-brand rounded-xl hover:bg-brand hover:text-white transition-colors duration-200" data-perm="verifyTriage" onclick="verifyTriage(\'' + id + '\')">Verify</button></div>';
   }
 
@@ -270,7 +278,9 @@
     });
     origSet.call(localStorage, K_INGS, JSON.stringify(ingRows));
 
-    // ---- Triage: label ingredients the database does not know yet ----
+    // ---- Triage: ingredients the database does not know yet, AND any scan
+    // whose overall verdict came back Toxic (worth a second set of eyes even
+    // when every ingredient in it matched the database just fine) ----
     var known = {};
     (data.ingredients || []).forEach(function (i) { known[i.name.toLowerCase()] = true; });
     var seenTokens = {}, cards = [];
@@ -281,8 +291,17 @@
         seenTokens[key] = true;
         var match = '';
         Object.keys(known).some(function (n) { if (key.indexOf(n) !== -1 || n.indexOf(key) !== -1) { match = (data.ingredients.filter(function (i) { return i.name.toLowerCase() === n; })[0] || {}).name || ''; return true; } });
-        cards.push({ name: x.name, scan: s.id, match: match, image: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : '' });
+        cards.push({ name: x.name, scan: s.id, match: match, severity: 'Caution', image: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : '' });
       });
+    });
+    (data.scans || []).forEach(function (s) {
+      if (s.rating !== 'Toxic' || cards.length >= 15) return;
+      var toxicSubstance = (s.substances || []).filter(function (x) { return x.level === 'Toxic'; })[0];
+      var name = toxicSubstance ? toxicSubstance.name : (s.product || ('Scan #KB-' + s.id));
+      var key = 'toxic-verdict:' + String(name).toLowerCase();
+      if (seenTokens[key]) return;
+      seenTokens[key] = true;
+      cards.push({ name: name, scan: s.id, match: '', severity: 'Toxic', reason: 'toxic-verdict', image: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : '' });
     });
     var seen = parse(state[K_SEEN], []), savedTriage = parse(state[K_TRIAGE], []), fresh = [];
     cards.forEach(function (c) {

@@ -1596,58 +1596,65 @@ app.post('/api/support/tickets', (req, res) => {
   });
 });
 // --- ADMIN DASHBOARD OVERVIEW API ---
-app.get('/api/admin/dashboard-stats', (req, res) => {
-  // 1. Scans count
-  db.get(`SELECT COUNT(*) AS total_scans FROM scans`, [], (err, scanRow) => {
-    if (err) return res.status(500).json({ error: err.message });
+app.get('/api/admin/dashboard-stats', async (req, res) => {
+  try {
+    // 1. Scans count
+    const scanRow = await new Promise((resolve, reject) => {
+      db.get(`SELECT COUNT(*) AS total_scans FROM scans`, [], (err, row) => err ? reject(err) : resolve(row));
+    });
 
     // 2. Pet owners count
-    db.get(`SELECT COUNT(*) AS total_users FROM users WHERE role = 'user'`, [], (err2, userRow) => {
-      if (err2) return res.status(500).json({ error: err2.message });
-
-      // 3. Ingredients count
-      db.get(`SELECT COUNT(*) AS total_ingredients FROM ingredients`, [], (err3, ingRow) => {
-        if (err3) return res.status(500).json({ error: err3.message });
-
-        // 4. Latest 5 scans for the stream
-        const streamQuery = `
-          SELECT s.id, s.product_name, s.rating, s.created_at, u.name AS owner_name, p.name AS pet_name, COALESCE(p.species, s.species) AS species
-          FROM scans s
-          LEFT JOIN users u ON u.id = s.user_id
-          LEFT JOIN pets p ON p.id = s.pet_id
-          ORDER BY s.created_at DESC
-          LIMIT 5
-        `;
-        db.all(streamQuery, [], (err4, recentScans) => {
-          if (err4) return res.status(500).json({ error: err4.message });
-
-          // 5. Species exposure counts
-          const speciesQuery = `
-            SELECT 
-              SUM(CASE WHEN LOWER(p.species) = 'canine' OR LOWER(p.species) = 'dog' THEN 1 ELSE 0 END) AS canine_count,
-              SUM(CASE WHEN LOWER(p.species) = 'feline' OR LOWER(p.species) = 'cat' THEN 1 ELSE 0 END) AS feline_count
-            FROM scans s
-            LEFT JOIN pets p ON p.id = s.pet_id
-          `;
-          db.get(speciesQuery, [], (err5, speciesRow) => {
-            if (err5) return res.status(500).json({ error: err5.message });
-
-            res.json({
-              total_scans: scanRow?.total_scans || 0,
-              total_users: userRow?.total_users || 0,
-              total_ingredients: ingRow?.total_ingredients || 0,
-              recent_scans: (recentScans || []).map(r => ({ ...r, time_ago: timeAgo(r.created_at) })),
-              species: {
-                canine: speciesRow?.canine_count || 0,
-                feline: speciesRow?.feline_count || 0
-              }
-            });
-          });
-        });
-      });
+    const userRow = await new Promise((resolve, reject) => {
+      db.get(`SELECT COUNT(*) AS total_users FROM users WHERE role = 'user'`, [], (err, row) => err ? reject(err) : resolve(row));
     });
-  });
+
+    // 3. Ingredients count -- the real, live Supabase database (dog_ingredients
+    // + cat_ingredients, merged by ingredient_id), not the old unused SQLite
+    // "ingredients" seed table.
+    const mergedIngredients = await fetchMergedIngredients();
+    const totalIngredients = mergedIngredients.length;
+
+    // 4. Latest 5 scans for the Live Assessment Stream
+    const streamQuery = `
+      SELECT s.id, s.product_name, s.rating, s.created_at, u.name AS owner_name, p.name AS pet_name, COALESCE(p.species, s.species) AS species
+      FROM scans s
+      LEFT JOIN users u ON u.id = s.user_id
+      LEFT JOIN pets p ON p.id = s.pet_id
+      ORDER BY s.created_at DESC
+      LIMIT 5
+    `;
+    const recentScans = await new Promise((resolve, reject) => {
+      db.all(streamQuery, [], (err, rows) => err ? reject(err) : resolve(rows));
+    });
+
+    // 5. Species exposure counts (all-time; the Dashboard's own 7-day window
+    // is handled by /api/admin/species-exposure)
+    const speciesQuery = `
+      SELECT
+        SUM(CASE WHEN LOWER(p.species) = 'canine' OR LOWER(p.species) = 'dog' THEN 1 ELSE 0 END) AS canine_count,
+        SUM(CASE WHEN LOWER(p.species) = 'feline' OR LOWER(p.species) = 'cat' THEN 1 ELSE 0 END) AS feline_count
+      FROM scans s
+      LEFT JOIN pets p ON p.id = s.pet_id
+    `;
+    const speciesRow = await new Promise((resolve, reject) => {
+      db.get(speciesQuery, [], (err, row) => err ? reject(err) : resolve(row));
+    });
+
+    res.json({
+      total_scans: scanRow?.total_scans || 0,
+      total_users: userRow?.total_users || 0,
+      total_ingredients: totalIngredients,
+      recent_scans: (recentScans || []).map(r => ({ ...r, time_ago: timeAgo(r.created_at) })),
+      species: {
+        canine: speciesRow?.canine_count || 0,
+        feline: speciesRow?.feline_count || 0
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
 // =====================================================================
 // --- ADMIN PANEL: AUTH, GENERIC STATE SYNC, AND REAL-TABLE ACTIONS ---
 // =====================================================================
