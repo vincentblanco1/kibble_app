@@ -210,8 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
           severity_score: Math.max(dog?.severity_score || 0, cat?.severity_score || 0),
           dog_severity: dog?.severity_score || 0,
           cat_severity: cat?.severity_score || 0,
-          dog_risk: dog?.risk || 'safe',
-          cat_risk: cat?.risk || 'safe',
+          dog_risk: (dog?.risk || 'safe').toLowerCase(),
+          cat_risk: (cat?.risk || 'safe').toLowerCase(),
           // Notes: prefer dog notes, fallback to cat
           notes: dog?.notes || cat?.notes || '',
           dog_notes: dog?.notes || '',
@@ -256,17 +256,28 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderStats() {
     const items = Object.values(allIngredients);
     const total = items.length;
-    const toxic = items.filter(i => i.dog_risk === 'toxic' || i.cat_risk === 'toxic' || i.dog_risk === 'highly toxic' || i.cat_risk === 'highly toxic').length;
-    const caution = items.filter(i => i.dog_risk === 'caution' || i.cat_risk === 'caution').length;
+    const toxic = items.filter(i => {
+      const dr = (i.dog_risk || '').toLowerCase();
+      const cr = (i.cat_risk || '').toLowerCase();
+      return dr === 'toxic' || cr === 'toxic' || dr === 'highly toxic' || cr === 'highly toxic';
+    }).length;
+    const caution = items.filter(i => {
+      const dr = (i.dog_risk || '').toLowerCase();
+      const cr = (i.cat_risk || '').toLowerCase();
+      return dr === 'caution' || cr === 'caution';
+    }).length;
 
     if (statTotalCount) statTotalCount.textContent = total;
     if (statHazardCount) statHazardCount.textContent = toxic;
     if (statCautionCount) statCautionCount.textContent = caution;
+    updateMobileCount(total);
   }
 
   // ==========================================
   // 5. RENDER FILTER PILLS DYNAMICALLY
   // ==========================================
+  const IS_MOBILE = /mobile-/i.test(window.location.pathname);
+
   function renderFilterPills() {
     if (!filterButtonGroup) return;
 
@@ -278,10 +289,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sortedCategories = [...categories].sort();
 
-    let html = `<button type="button" class="wiki-filter-btn px-4 py-2 rounded-full text-xs font-extrabold bg-[#45671d] text-white transition-all shrink-0 shadow-xs cursor-pointer" data-category="all">All Ingredients</button>`;
+    // Mobile uses smaller pill sizing
+    const pillActive = IS_MOBILE
+      ? 'wiki-filter-btn px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-[#45671d] text-white shrink-0 cursor-pointer'
+      : 'wiki-filter-btn px-4 py-2 rounded-full text-xs font-extrabold bg-[#45671d] text-white transition-all shrink-0 shadow-xs cursor-pointer';
+    const pillInactive = IS_MOBILE
+      ? 'wiki-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0 cursor-pointer'
+      : 'wiki-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer';
+
+    let html = `<button type="button" class="${pillActive}" data-category="all">All Ingredients</button>`;
 
     sortedCategories.forEach(cat => {
-      html += `<button type="button" class="wiki-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`;
+      html += `<button type="button" class="${pillInactive}" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`;
     });
 
     filterButtonGroup.innerHTML = html;
@@ -294,9 +313,9 @@ document.addEventListener('DOMContentLoaded', () => {
         currentCategory = button.getAttribute('data-category');
 
         filterButtonGroup.querySelectorAll('.wiki-filter-btn').forEach(b => {
-          b.className = 'wiki-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer';
+          b.className = pillInactive;
         });
-        button.className = 'wiki-filter-btn px-4 py-2 rounded-full text-xs font-extrabold bg-[#45671d] text-white transition-all shrink-0 shadow-xs cursor-pointer';
+        button.className = pillActive;
 
         applyFilters();
       });
@@ -357,7 +376,9 @@ document.addEventListener('DOMContentLoaded', () => {
         item.notes, item.dog_risk, item.cat_risk
       ].filter(Boolean).join(' ').toLowerCase();
 
-      card.className = 'tactile-card p-6 bg-white space-y-4 cursor-pointer hover:border-[#45671d] transition-all group wiki-card relative';
+      card.className = IS_MOBILE
+        ? 'tactile-card p-4 bg-white space-y-2 cursor-pointer wiki-card relative'
+        : 'tactile-card p-6 bg-white space-y-4 cursor-pointer hover:border-[#45671d] transition-all group wiki-card relative';
       card.setAttribute('data-category', item.category || '');
       card.setAttribute('data-compound', item.ingredient_id);
       card.setAttribute('data-canine-risk', item.dog_risk);
@@ -368,43 +389,61 @@ document.addEventListener('DOMContentLoaded', () => {
       const aliasText = item.aliases ? escapeHtml(item.aliases) : '';
       const notesPreview = item.notes ? escapeHtml(item.notes).substring(0, 200) : 'No detailed notes available for this ingredient.';
 
-      card.innerHTML = `
-        <div class="compare-checkbox-pill hidden absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9.5px] font-extrabold text-[#788673]">
-          + Compare
-        </div>
-        <div class="flex items-start justify-between">
-          <div>
-            <span class="card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider ${tierLabelColor} block mb-0.5">${tierLabel}</span>
-            <h3 class="card-title text-base font-extrabold text-[#182811] group-hover:text-[#45671d] transition-colors">${escapeHtml(item.primary_name)}</h3>
-            ${aliasText ? `<span class="text-xs text-[#788673] font-medium">${aliasText}</span>` : ''}
+      if (IS_MOBILE) {
+        card.innerHTML = `
+          <div class="compare-checkbox-pill hidden absolute top-2 right-2 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9px] font-extrabold text-[#788673]">
+            + Compare
           </div>
-          <span class="card-score-badge px-2.5 py-1 rounded-full ${badge.badgeBg} ${badge.badgeText} font-extrabold text-[10px] uppercase border ${badge.badgeBorder}">
-            Score: ${item.severity_score}
-          </span>
-        </div>
-
-        <p class="text-xs text-[#586754] leading-relaxed line-clamp-3">
-          ${notesPreview}
-        </p>
-
-        <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
-          <div class="p-2.5 rounded-xl ${dogColor.bg} ${dogColor.border} border canine-block">
-            <strong class="${dogColor.strong} block font-bold text-[10.5px]">🐶 Canine</strong>
-            <span class="${dogColor.text} font-semibold text-[10.5px]">${getRiskLabel(item.dog_risk)}</span>
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="card-tier-label text-[9px] font-black uppercase ${tierLabelColor} block">${tierLabel}</span>
+              <h3 class="card-title text-sm font-black text-[#182811]">${escapeHtml(item.primary_name)}</h3>
+              ${aliasText ? `<span class="text-[10.5px] text-[#788673]">${aliasText}</span>` : ''}
+            </div>
+            <span class="card-score-badge px-2 py-0.5 rounded-full ${badge.badgeBg} ${badge.badgeText} font-black text-[9px] border ${badge.badgeBorder}">
+              Score: ${item.severity_score}
+            </span>
           </div>
-          <div class="p-2.5 rounded-xl ${catColor.bg} ${catColor.border} border feline-block">
-            <strong class="${catColor.strong} block font-bold text-[10.5px]">🐱 Feline</strong>
-            <span class="${catColor.text} font-semibold text-[10.5px]">${getRiskLabel(item.cat_risk)}</span>
+          <p class="text-xs text-[#586754] leading-relaxed line-clamp-2">${notesPreview}</p>
+          <span class="text-[11px] font-extrabold text-[#45671d] block">Read Clinical Dossier →</span>
+        `;
+      } else {
+        card.innerHTML = `
+          <div class="compare-checkbox-pill hidden absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9.5px] font-extrabold text-[#788673]">
+            + Compare
           </div>
-        </div>
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider ${tierLabelColor} block mb-0.5">${tierLabel}</span>
+              <h3 class="card-title text-base font-extrabold text-[#182811] group-hover:text-[#45671d] transition-colors">${escapeHtml(item.primary_name)}</h3>
+              ${aliasText ? `<span class="text-xs text-[#788673] font-medium">${aliasText}</span>` : ''}
+            </div>
+            <span class="card-score-badge px-2.5 py-1 rounded-full ${badge.badgeBg} ${badge.badgeText} font-extrabold text-[10px] uppercase border ${badge.badgeBorder}">
+              Score: ${item.severity_score}
+            </span>
+          </div>
 
-        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
-          <span class="text-[#788673] font-bold">${escapeHtml(item.category || '')}</span>
-          <span class="text-[#45671d] font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-            Read Dossier →
-          </span>
-        </div>
-      `;
+          <p class="text-xs text-[#586754] leading-relaxed line-clamp-3">${notesPreview}</p>
+
+          <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+            <div class="p-2.5 rounded-xl ${dogColor.bg} ${dogColor.border} border canine-block">
+              <strong class="${dogColor.strong} block font-bold text-[10.5px]">🐶 Canine</strong>
+              <span class="${dogColor.text} font-semibold text-[10.5px]">${getRiskLabel(item.dog_risk)}</span>
+            </div>
+            <div class="p-2.5 rounded-xl ${catColor.bg} ${catColor.border} border feline-block">
+              <strong class="${catColor.strong} block font-bold text-[10.5px]">🐱 Feline</strong>
+              <span class="${catColor.text} font-semibold text-[10.5px]">${getRiskLabel(item.cat_risk)}</span>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+            <span class="text-[#788673] font-bold">${escapeHtml(item.category || '')}</span>
+            <span class="text-[#45671d] font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+              Read Dossier →
+            </span>
+          </div>
+        `;
+      }
 
       // Click handler
       card.addEventListener('click', () => {
@@ -803,7 +842,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // ==========================================
-  // 13. INIT — LOAD INGREDIENTS FROM API
+  // 13. MOBILE ENTRY COUNT BADGE
+  // ==========================================
+  function updateMobileCount(count) {
+    const el = document.getElementById('mobileEntryCount');
+    if (el) el.textContent = count + ' DOSSIERS';
+  }
+
+  // ==========================================
+  // 14. INIT — LOAD INGREDIENTS FROM API
   // ==========================================
   loadIngredients();
 

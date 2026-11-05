@@ -516,8 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const cat = catMap[id] || null;
         const primary = dog || cat;
         const severity = Math.max(dog ? dog.severity_score : 0, cat ? cat.severity_score : 0);
-        const dogRisk = dog ? dog.risk : 'safe';
-        const catRisk = cat ? cat.risk : 'safe';
+        const dogRisk = (dog ? dog.risk : 'safe').toLowerCase();
+        const catRisk = (cat ? cat.risk : 'safe').toLowerCase();
 
         function badgeCls(risk) {
           var r = (risk || '').toLowerCase();
