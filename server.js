@@ -241,10 +241,13 @@ db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS email_codes (
     email TEXT PRIMARY KEY,
     code_hash TEXT,
-    expires_at INTEGER,
+    expires_at BIGINT,
     attempts INTEGER DEFAULT 0,
-    last_sent INTEGER
+    last_sent BIGINT
   )`);
+  // Fix columns if the table was created with INTEGER (too small for Date.now())
+  db.run(`ALTER TABLE email_codes ALTER COLUMN expires_at TYPE BIGINT`, () => {});
+  db.run(`ALTER TABLE email_codes ALTER COLUMN last_sent TYPE BIGINT`, () => {});
 
   // 3. Ingredients Table
   db.run(`CREATE TABLE IF NOT EXISTS ingredients (
