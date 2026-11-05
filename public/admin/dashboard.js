@@ -962,6 +962,20 @@ function resolveTriage(rowId) {
   });
 }
 
+// the "Registered Pet Owners" KPI card links to Users & Pets -- but that
+// page is restricted to Support/Chief Admins (restrictPageToRoles in
+// users-pets.js) and silently bounces anyone else straight back here with
+// no explanation, which just looks like the page is broken. This checks
+// the same permission first, so an Ingredient Reviewer gets a clear reason
+// instead of an unexplained round trip.
+function goToUsersPets() {
+  if (!hasPermission('manageUsers')) {
+    showToast('Users & Pets requires ' + (PERMISSION_REQUIRES_LABEL.manageUsers || 'a different role') + '.', 'danger');
+    return;
+  }
+  window.location.href = 'users-pets.html';
+}
+
 // quick preview modal when you click a scan in the Live Assessment Stream,
 // links out to the full record on OCR Scan Records
 function viewStreamDetail(product, owner, pet, time, verdict, tone, scanId) {
