@@ -538,15 +538,31 @@ document.addEventListener('DOMContentLoaded', () => {
         var entry = {
           title: primary.primary_name,
           category: primary.category || 'Ingredient',
+          aliases: primary.aliases || '',
           badge: overallWord,
           badgeClass: overallBadge,
+          severity_score: severity,
           mechanism: (dog ? dog.notes : '') || (cat ? cat.notes : '') || 'No detailed notes available.',
           canine: (dog ? dog.notes : '') || 'No canine-specific data available.',
           feline: (cat ? cat.notes : '') || 'No feline-specific data available.',
           alternative: (dog ? dog.emergency_action : '') || (cat ? cat.emergency_action : '') || 'No alternative suggested.',
           wikiSearch: 'wiki.html?search=' + encodeURIComponent(primary.primary_name),
           clinical_symptoms: (dog ? dog.clinical_symptoms : '') || (cat ? cat.clinical_symptoms : '') || '',
-          dosage: (dog ? dog.dosage : '') || (cat ? cat.dosage : '') || ''
+          dosage: (dog ? dog.dosage : '') || (cat ? cat.dosage : '') || '',
+          // Per-species breakdown for the full drill-down drawer
+          dog_risk: dogRisk,
+          cat_risk: catRisk,
+          dog_risk_word: badgeWord(dogRisk),
+          cat_risk_word: badgeWord(catRisk),
+          dog_risk_badge: badgeCls(dogRisk),
+          cat_risk_badge: badgeCls(catRisk),
+          dog_clinical: dog ? (dog.clinical_symptoms || '') : '',
+          cat_clinical: cat ? (cat.clinical_symptoms || '') : '',
+          dog_dosage: dog ? (dog.dosage || '') : '',
+          cat_dosage: cat ? (cat.dosage || '') : '',
+          dog_emergency: dog ? (dog.emergency_action || '') : '',
+          cat_emergency: cat ? (cat.emergency_action || '') : '',
+          emergency_action: (dog ? dog.emergency_action : '') || (cat ? cat.emergency_action : '') || ''
         };
 
         // Key by ingredient_id
@@ -575,30 +591,137 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeDrawerBtn2 = document.getElementById('closeDrawerBtn2');
   const drawerTitle = document.getElementById('drawerTitle');
   const drawerCategory = document.getElementById('drawerCategory');
+  const drawerAliases = document.getElementById('drawerAliases');
   const drawerBadge = document.getElementById('drawerBadge');
+  const drawerScoreBadge = document.getElementById('drawerScoreBadge');
   const drawerMechanism = document.getElementById('drawerMechanism');
   const drawerCanine = document.getElementById('drawerCanine');
+  const drawerCanineClinical = document.getElementById('drawerCanineClinical');
+  const drawerCanineDosage = document.getElementById('drawerCanineDosage');
+  const drawerCanineRiskBadge = document.getElementById('drawerCanineRiskBadge');
   const drawerFeline = document.getElementById('drawerFeline');
+  const drawerFelineClinical = document.getElementById('drawerFelineClinical');
+  const drawerFelineDosage = document.getElementById('drawerFelineDosage');
+  const drawerFelineRiskBadge = document.getElementById('drawerFelineRiskBadge');
+  const drawerEmergencySection = document.getElementById('drawerEmergencySection');
+  const drawerEmergency = document.getElementById('drawerEmergency');
+  const drawerAlternativeSection = document.getElementById('drawerAlternativeSection');
   const drawerAlternative = document.getElementById('drawerAlternative');
   const drawerWikiLink = document.getElementById('drawerWikiLink');
 
-  function openFindingDrawer(tokenKey) {
-    // Try the DB cache (populated from API)
-    const data = FINDINGS_DATABASE[tokenKey];
+  // Shared renderer: populates every field of the drawer from a FINDINGS_DATABASE-shaped entry
+  function populateDrawer(data) {
     if (!data || !drawer) return;
 
     drawerTitle.textContent = data.title;
     drawerCategory.textContent = data.category;
     drawerBadge.textContent = data.badge;
     drawerBadge.className = `px-2 py-0.5 rounded text-[9.5px] font-extrabold uppercase ${data.badgeClass}`;
+
+    if (drawerAliases) {
+      if (data.aliases) {
+        drawerAliases.textContent = data.aliases;
+        drawerAliases.classList.remove('hidden');
+      } else {
+        drawerAliases.classList.add('hidden');
+      }
+    }
+
+    if (drawerScoreBadge) {
+      if (data.severity_score !== undefined && data.severity_score !== null) {
+        drawerScoreBadge.textContent = 'Score: ' + data.severity_score;
+        drawerScoreBadge.classList.remove('hidden');
+      } else {
+        drawerScoreBadge.classList.add('hidden');
+      }
+    }
+
     drawerMechanism.textContent = data.mechanism;
+
+    // Canine block
     drawerCanine.textContent = data.canine;
+    if (drawerCanineRiskBadge) {
+      if (data.dog_risk_word) {
+        drawerCanineRiskBadge.textContent = data.dog_risk_word;
+        drawerCanineRiskBadge.className = `ml-auto px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase ${data.dog_risk_badge || 'bg-slate-100 text-slate-700'}`;
+      } else {
+        drawerCanineRiskBadge.classList.add('hidden');
+      }
+    }
+    if (drawerCanineClinical) {
+      if (data.dog_clinical) {
+        drawerCanineClinical.textContent = 'Clinical symptoms: ' + data.dog_clinical;
+        drawerCanineClinical.classList.remove('hidden');
+      } else {
+        drawerCanineClinical.classList.add('hidden');
+      }
+    }
+    if (drawerCanineDosage) {
+      if (data.dog_dosage) {
+        drawerCanineDosage.textContent = 'Dosage info: ' + data.dog_dosage;
+        drawerCanineDosage.classList.remove('hidden');
+      } else {
+        drawerCanineDosage.classList.add('hidden');
+      }
+    }
+
+    // Feline block
     drawerFeline.textContent = data.feline;
-    drawerAlternative.textContent = data.alternative;
-    if (drawerWikiLink) drawerWikiLink.href = data.wikiSearch;
+    if (drawerFelineRiskBadge) {
+      if (data.cat_risk_word) {
+        drawerFelineRiskBadge.textContent = data.cat_risk_word;
+        drawerFelineRiskBadge.className = `ml-auto px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase ${data.cat_risk_badge || 'bg-slate-100 text-slate-700'}`;
+      } else {
+        drawerFelineRiskBadge.classList.add('hidden');
+      }
+    }
+    if (drawerFelineClinical) {
+      if (data.cat_clinical) {
+        drawerFelineClinical.textContent = 'Clinical symptoms: ' + data.cat_clinical;
+        drawerFelineClinical.classList.remove('hidden');
+      } else {
+        drawerFelineClinical.classList.add('hidden');
+      }
+    }
+    if (drawerFelineDosage) {
+      if (data.cat_dosage) {
+        drawerFelineDosage.textContent = 'Dosage info: ' + data.cat_dosage;
+        drawerFelineDosage.classList.remove('hidden');
+      } else {
+        drawerFelineDosage.classList.add('hidden');
+      }
+    }
+
+    // Emergency action (only shown if present)
+    if (drawerEmergencySection && drawerEmergency) {
+      if (data.emergency_action) {
+        drawerEmergency.textContent = data.emergency_action;
+        drawerEmergencySection.classList.remove('hidden');
+      } else {
+        drawerEmergencySection.classList.add('hidden');
+      }
+    }
+
+    // Alternative / recommendation
+    if (drawerAlternativeSection && drawerAlternative) {
+      if (data.alternative && !/^No alternative/i.test(data.alternative)) {
+        drawerAlternative.textContent = data.alternative;
+        drawerAlternativeSection.classList.remove('hidden');
+      } else {
+        drawerAlternativeSection.classList.add('hidden');
+      }
+    }
+
+    if (drawerWikiLink) drawerWikiLink.href = data.wikiSearch || 'wiki.html';
 
     drawerBackdrop?.classList.remove('hidden');
     drawer.classList.add('drawer-open');
+  }
+
+  function openFindingDrawer(tokenKey) {
+    // Try the DB cache (populated from API)
+    const data = FINDINGS_DATABASE[tokenKey];
+    populateDrawer(data);
   }
 
   function closeFindingDrawer() {
@@ -794,14 +917,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const s = RATING[it.status] || RATING.Safe;
       const rated = 'Rated ' + (it.status || 'Safe') + ' for ' + (speciesName === 'Feline' ? 'cats' : 'dogs') + ' in the KibbleGuard database.';
+      const notEval = ' Not independently listed in the KibbleGuard ingredient database for the other species — treat as unverified until checked.';
       const entry = base || {
         title: it.name || 'Ingredient',
         category: it.category || 'Ingredient',
+        aliases: '',
         badge: s.word,
         badgeClass: s.badge,
-        mechanism: it.notes || 'No specific restrictions recorded.',
-        canine: speciesName === 'Canine' ? rated : 'Not evaluated for dogs in this scan.',
-        feline: speciesName === 'Feline' ? rated : 'Not evaluated for cats in this scan.',
+        severity_score: it.status === 'Toxic' ? 85 : (it.status === 'Caution' ? 45 : 0),
+        mechanism: it.notes || 'This ingredient was detected on the label but has no detailed clinical dossier in the KibbleGuard database yet. It was screened using general rule-based matching only.',
+        canine: speciesName === 'Canine' ? rated : ('Not evaluated for dogs in this scan.' + notEval),
+        feline: speciesName === 'Feline' ? rated : ('Not evaluated for cats in this scan.' + notEval),
+        dog_risk_word: speciesName === 'Canine' ? s.word : null,
+        cat_risk_word: speciesName === 'Feline' ? s.word : null,
+        dog_risk_badge: speciesName === 'Canine' ? s.badge : null,
+        cat_risk_badge: speciesName === 'Feline' ? s.badge : null,
         alternative: 'No alternative suggested for this ingredient.',
         wikiSearch: 'wiki.html?search=' + encodeURIComponent(it.name || '')
       };
@@ -816,17 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const liveFindings = {};
     function openLiveDrawer(key) {
       const data = liveFindings[key] || (typeof FINDINGS_DATABASE === 'object' ? FINDINGS_DATABASE[key] : null);
-      if (!data || !drawer) return;
-      if (drawerTitle) drawerTitle.textContent = data.title;
-      if (drawerCategory) drawerCategory.textContent = data.category;
-      if (drawerBadge) { drawerBadge.textContent = data.badge; drawerBadge.className = 'px-2 py-0.5 rounded text-[9.5px] font-extrabold uppercase ' + data.badgeClass; }
-      if (drawerMechanism) drawerMechanism.textContent = data.mechanism;
-      if (drawerCanine) drawerCanine.textContent = data.canine;
-      if (drawerFeline) drawerFeline.textContent = data.feline;
-      if (drawerAlternative) drawerAlternative.textContent = data.alternative;
-      if (drawerWikiLink) drawerWikiLink.href = data.wikiSearch;
-      if (drawerBackdrop) drawerBackdrop.classList.remove('hidden');
-      drawer.classList.add('drawer-open');
+      populateDrawer(data);
     }
 
     function cardHtml(it, key) {
