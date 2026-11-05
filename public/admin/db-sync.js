@@ -24,7 +24,7 @@
     'kibbleguard-users-seed-version': 1
   };
   var K_USERS = 'kibbleguard-users-rows', K_SCANS = 'kibbleguard-scans-rows', K_INGS = 'kibbleguard-ingredients-rows',
-      K_TRIAGE = 'kibbleguard-triage-rows', K_SEEN = 'kibbleguard-triage-seen';
+      K_TRIAGE = 'kibbleguard-triage-rows', K_SEEN = 'kibbleguard-triage-seen', K_ALERTS = 'kibbleguard-alerts-rows';
 
   // Postgres' `pg` driver returns a bigint (int8) column as a JS STRING, not a number, to avoid
   // silently losing precision -- so a `0`/`1` flag column can come back as the string "0" / "1"
@@ -225,9 +225,14 @@
     return { name: f('name'), category: f('category'), canine: ds.canine || 'Unrated', feline: ds.feline || 'Unrated', description: ds.metabolic || '', risks: ds.symptoms || '' };
   }
   function ingSig(i) { return [i.canine || 'Unrated', i.feline || 'Unrated', i.category || '', i.description || '', i.risks || ''].join('|'); }
+  function alertFromRow(tr) {
+    var ds = tr.dataset;
+    var f = function (n) { var e = tr.querySelector('[data-field="' + n + '"]'); return e ? e.textContent.trim() : ''; };
+    return { id: tr.id, title: f('title'), type: f('type'), severity: f('severity-badge'), species: f('species'), body: ds.body || '', status: ds.status || 'draft' };
+  }
 
   /* ------------------------------ load everything ------------------------------ */
-  var baseline = { ings: {}, users: {} };
+  var baseline = { ings: {}, users: {}, alerts: {} };
 
   function hydrate() {
     if (!getToken()) return;                                   // login page / invite page: nothing to load yet
@@ -235,6 +240,15 @@
     if (st.status === 401) { origRemove.call(localStorage, 'kibbleguard-admin-email'); origRemove.call(localStorage, TOKEN_KEY); return; }
     if (st.status !== 200 || !st.json) { KGDB.offline = true; return; }
     var state = st.json.state || {};
+
+    // Which Safety Feed alerts have already been broadcast to pet owners -- grounded from the
+    // real backend log, not an in-memory flag, so a page refresh (which starts this whole script
+    // over) can never re-send an alert that already went out, and an alert whose broadcast
+    // somehow never landed can still be retried.
+    var pub = xhr('/api/admin/safety-alerts/published-ids');
+    if (pub.status === 200 && pub.json && pub.json.ids) {
+      pub.json.ids.forEach(function (id) { baseline.alerts[id] = true; });
+    }
 
     var i, k, local = [];
     for (i = 0; i < localStorage.length; i++) local.push(localStorage.key(i));
@@ -365,7 +379,7 @@
       .then(function (r) { return r.ok; }).catch(function () { return false; });
   }
 
-  var ingTimer = null, userTimer = null;
+  var ingTimer = null, userTimer = null, alertTimer = null;
   function syncIngredients() {
     var rows = parseRows(parse(localStorage.getItem(K_INGS), [])), cur = {}, upsert = [], remove = [];
     rows.forEach(function (tr) { var r = ingFromRow(tr); if (r.name) cur[r.name.toLowerCase()] = r; });
@@ -390,6 +404,21 @@
       });
     });
   }
+  // Publishing used to only save the alert row into the admin's own synced state -- nothing
+  // ever told a real pet owner it existed. This watches for a row transitioning to Live (either
+  // a brand-new alert saved as Live, or an existing draft flipped Live) and broadcasts it as a
+  // real notification to every matching pet owner. baseline.alerts is grounded from the backend
+  // at hydrate() time (see above), so this can't double-send on a page refresh, and an alert
+  // that failed to broadcast the first time (e.g. the request dropped) will retry next edit.
+  function syncAlerts() {
+    parseRows(parse(localStorage.getItem(K_ALERTS), [])).forEach(function (tr) {
+      var a = alertFromRow(tr);
+      if (!a.id || a.status !== 'live' || baseline.alerts[a.id]) return;
+      post('/api/admin/safety-alerts/publish', a).then(function (ok) {
+        if (ok) baseline.alerts[a.id] = true;
+      });
+    });
+  }
 
   Storage.prototype.setItem = function (k, v) {
     origSet.call(this, k, v);
@@ -399,6 +428,7 @@
     queue(k, String(v));
     if (k === K_INGS) { clearTimeout(ingTimer); ingTimer = setTimeout(syncIngredients, 500); }
     if (k === K_USERS) { clearTimeout(userTimer); userTimer = setTimeout(syncUsers, 500); }
+    if (k === K_ALERTS) { clearTimeout(alertTimer); alertTimer = setTimeout(syncAlerts, 500); }
   };
   Storage.prototype.removeItem = function (k) {
     origRemove.call(this, k);

@@ -340,6 +340,17 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  // De-dupe log for Safety Feed broadcasts -- the admin page's alert row ids are generated
+  // client-side and are NOT guaranteed unique across browser sessions, so this keys off a
+  // stable id minted once when an alert first goes Live, to make "publish" idempotent (a page
+  // refresh or a second admin re-saving the same alert should never re-notify every pet owner).
+  db.run(`CREATE TABLE IF NOT EXISTS safety_alert_broadcasts (
+    alert_id TEXT PRIMARY KEY,
+    title TEXT,
+    delivered_count INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
   // Seed Ingredients
   const seedIngredients = [
     ['BHA (Butylated Hydroxyanisole)', 'Preservative', 'Caution', 'Toxic', 'Synthetic preservative used to prevent fat spoilage.', 'Known metabolic risk factor; cats lack glucuronidation pathways to safely process it.'],
@@ -1586,6 +1597,72 @@ app.post('/api/notifications/in-app', (req, res) => {
 
 app.get('/api/alerts/live', (req, res) => {
   res.json(null);
+});
+
+// ---------- Safety Feed publishing: the admin "Publish New Alert" button used to only save the
+// alert into the admin's own browser-synced state -- nothing ever told a real pet owner. These
+// two endpoints make "Live" actually mean something: publish writes a real notifications row for
+// every matching (non-banned, species-matching) pet owner, and published-ids lets the admin page
+// know on load which alerts have already gone out, so a refresh can't re-send one. ----------
+app.get('/api/admin/safety-alerts/published-ids', requireAdminAuth, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT alert_id FROM safety_alert_broadcasts');
+    res.json({ ids: result.rows.map(r => r.alert_id) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/safety-alerts/publish', requireAdminAuth, async (req, res) => {
+  const { id, title, body, species, severity } = req.body || {};
+  if (!id || !title) return res.status(400).json({ error: 'Missing alert id or title.' });
+  try {
+    const already = await pool.query('SELECT 1 FROM safety_alert_broadcasts WHERE alert_id = $1', [id]);
+    if (already.rows.length) return res.json({ success: true, alreadySent: true, delivered: 0 });
+
+    const [users, pets] = await Promise.all([
+      new Promise((resolve, reject) => {
+        db.all(`SELECT id, is_banned FROM users WHERE role = 'user'`, [], (err, rows) => err ? reject(err) : resolve(rows || []));
+      }),
+      new Promise((resolve, reject) => {
+        db.all(`SELECT user_id, species FROM pets`, [], (err, rows) => err ? reject(err) : resolve(rows || []));
+      })
+    ]);
+    const petsByUser = {};
+    pets.forEach(p => { (petsByUser[p.user_id] = petsByUser[p.user_id] || []).push(p); });
+
+    // Same truthy check used everywhere else this flag is read, because a Postgres bigint
+    // column comes back as the STRING "0"/"1", not a real boolean/number.
+    const isBanned = (v) => v === true || v === 1 || v === '1' || v === 'true';
+    const targetUserIds = users.filter(u => {
+      if (isBanned(u.is_banned)) return false;
+      const myPets = petsByUser[u.id] || [];
+      if (!myPets.length) return false;
+      if (species === 'Canine') return myPets.some(p => !/fel|cat/i.test(p.species || ''));
+      if (species === 'Feline') return myPets.some(p => /fel|cat/i.test(p.species || ''));
+      return true; // 'Both' (or anything unrecognized) reaches every owner with a registered pet
+    }).map(u => u.id);
+
+    const message = String(body || title).trim();
+    await Promise.all(targetUserIds.map(uid => new Promise((resolve) => {
+      createNotification(uid, {
+        type: severity === 'Urgent' ? 'warning' : 'info',
+        category: 'safety-feed',
+        title: 'Safety Alert: ' + title,
+        message,
+        link: 'wiki.html',
+        source: 'admin'
+      }, () => resolve());
+    })));
+
+    await pool.query(
+      'INSERT INTO safety_alert_broadcasts (alert_id, title, delivered_count) VALUES ($1, $2, $3) ON CONFLICT (alert_id) DO NOTHING',
+      [id, title, targetUserIds.length]
+    );
+    res.json({ success: true, delivered: targetUserIds.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/user/status', (req, res) => {

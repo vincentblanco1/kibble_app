@@ -39,7 +39,14 @@ function verdictBadgeHtml(level) {
 }
 
 /* ---------- Safety Feed-specific interactions ---------- */
-var alertCounter = 0;
+// A counter reset to 0 on every page load would hand out the same row id ("alert-new-1") to
+// two completely different alerts created in two different browser sessions -- and that id is
+// also what the backend uses to decide whether an alert has already been broadcast, so a
+// collision there could silently swallow a brand-new alert's notification. This is collision-safe
+// across sessions instead.
+function newAlertId() {
+  return 'alert-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
 
 var currentFeedStatusFilter = 'all';
 var currentFeedSeverityFilter = 'all';
@@ -220,8 +227,7 @@ function saveAlert(mode, rowId, status) {
     logAdminAction('Edited alert: ' + title, 'edit');
     filterAlerts();
   } else {
-    alertCounter++;
-    var newId = 'alert-new-' + alertCounter;
+    var newId = newAlertId();
     var tbody = document.getElementById('feed-table-body');
     var tr = document.createElement('tr');
     tr.className = 'feed-row hover:bg-stone-50/50 group';
