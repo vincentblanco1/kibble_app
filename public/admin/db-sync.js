@@ -26,6 +26,15 @@
   var K_USERS = 'kibbleguard-users-rows', K_SCANS = 'kibbleguard-scans-rows', K_INGS = 'kibbleguard-ingredients-rows',
       K_TRIAGE = 'kibbleguard-triage-rows', K_SEEN = 'kibbleguard-triage-seen';
 
+  // Postgres' `pg` driver returns a bigint (int8) column as a JS STRING, not a number, to avoid
+  // silently losing precision -- so a `0`/`1` flag column can come back as the string "0" / "1"
+  // instead of the number 0 / 1. Plain `!!v` treats the string "0" as truthy (any non-empty
+  // string is), which would show every unbanned user as banned. This checks the real meaning of
+  // the value instead of its JS type.
+  function isFlagTrue(v) {
+    return v === true || v === 1 || v === '1' || v === 'true';
+  }
+
   function isSynced(key) {
     key = String(key);
     if (key.indexOf('kibbleguard-') !== 0) return false;
@@ -97,7 +106,7 @@
   function initials(name) { return String(name || '?').split(/\s+/).map(function (p) { return p.charAt(0); }).join('').slice(0, 2).toUpperCase(); }
 
   function userRow(u, pets, st) {
-    var banned = !!u.is_banned;
+    var banned = isFlagTrue(u.is_banned);
     var joined = new Date(u.created_at);
     var petData = pets.map(function (p) {
       var sp = /fel|cat/i.test(p.species || '') ? 'cat' : 'dog';
@@ -248,8 +257,8 @@
       if (!x.last || s.timestamp > x.last) x.last = s.timestamp;
     });
     var builtUsers = (data.users || []).slice().reverse().map(function (u) {
-      baseline.users[u.id] = { banned: !!u.is_banned, reason: u.ban_reason || '' };
-      return { id: 'row-u' + u.id, banned: !!u.is_banned, html: userRow(u, petsByUser[u.id] || [], stats[u.id] || { n: 0, warn: 0, last: null }) };
+      baseline.users[u.id] = { banned: isFlagTrue(u.is_banned), reason: u.ban_reason || '' };
+      return { id: 'row-u' + u.id, banned: isFlagTrue(u.is_banned), html: userRow(u, petsByUser[u.id] || [], stats[u.id] || { n: 0, warn: 0, last: null }) };
     });
     var savedUsers = {};
     parse(state[K_USERS], []).forEach(function (h) { var id = rowId(h); if (id) savedUsers[id] = h; });
