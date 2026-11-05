@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     country: '',
     region: '',
     city: '',
+    barangay: '',
     caregiverRole: 'Primary Caregiver',
     feedingStyle: 'Commercial Dry Kibble',
     avatar: ''
@@ -79,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setField('countryInput', userProfile.country);
     setField('regionInput', userProfile.region);
     setField('cityInput', userProfile.city);
+    setField('barangayInput', userProfile.barangay);
     setField('caregiverRoleInput', userProfile.caregiverRole);
     setField('feedingStyleInput', userProfile.feedingStyle);
 
@@ -195,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
       country: getVal('countryInput'),
       region: getVal('regionInput'),
       city: getVal('cityInput'),
+      barangay: getVal('barangayInput'),
       caregiverRole: getVal('caregiverRoleInput'),
       petCount: getRegisteredPetCount(),
       feedingStyle: getVal('feedingStyleInput')
@@ -211,6 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
           birthdate: userProfile.birthdate,
           gender: userProfile.gender,
           city: userProfile.city,
+          barangay: userProfile.barangay,
           region: userProfile.region,
           country: userProfile.country,
           caregiver_role: userProfile.caregiverRole,

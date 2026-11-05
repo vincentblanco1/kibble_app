@@ -181,6 +181,7 @@ db.serialize(() => {
   db.run(`ALTER TABLE users ADD COLUMN city TEXT`, () => {});
   db.run(`ALTER TABLE users ADD COLUMN region TEXT`, () => {});
   db.run(`ALTER TABLE users ADD COLUMN country TEXT`, () => {});
+  db.run(`ALTER TABLE users ADD COLUMN barangay TEXT`, () => {});
   db.run(`ALTER TABLE users ADD COLUMN caregiver_role TEXT`, () => {});
   db.run(`ALTER TABLE users ADD COLUMN feeding_style TEXT`, () => {});
   db.run(`ALTER TABLE users ADD COLUMN pet_count INTEGER`, () => {});
@@ -490,7 +491,7 @@ app.post('/api/login', (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   const query = `
     SELECT id, name, middle_name, email, role, is_banned, ban_reason,
-           birthdate, gender, city, region, country, caregiver_role, feeding_style, pet_count, avatar
+           birthdate, gender, city, region, country, barangay, caregiver_role, feeding_style, pet_count, avatar
     FROM users
     WHERE LOWER(email) = ? AND (password = ? OR password_hash = ?)
   `;
@@ -523,6 +524,7 @@ if (isBanned) {
       city: user.city || '',
       region: user.region || '',
       country: user.country || '',
+      barangay: user.barangay || '',
       caregiverRole: user.caregiver_role || '',
       feedingStyle: user.feeding_style || '',
       avatar: user.avatar || ''
@@ -544,7 +546,7 @@ if (isBanned) {
 // --- USER PROFILE UPDATE ---
 app.patch('/api/users/:id', (req, res) => {
   const userId = parseInt(req.params.id);
-  const { name, middle_name, birthdate, gender, city, region, country, caregiver_role, feeding_style, pet_count, avatar } = req.body || {};
+  const { name, middle_name, birthdate, gender, city, region, country, barangay, caregiver_role, feeding_style, pet_count, avatar } = req.body || {};
   if (!userId) return res.status(400).json({ error: 'Invalid user ID.' });
 
   const fields = [];
@@ -556,6 +558,7 @@ app.patch('/api/users/:id', (req, res) => {
   if (city !== undefined)          { fields.push('city=?');           vals.push(city); }
   if (region !== undefined)        { fields.push('region=?');         vals.push(region); }
   if (country !== undefined)       { fields.push('country=?');        vals.push(country); }
+  if (barangay !== undefined)      { fields.push('barangay=?');       vals.push(barangay); }
   if (caregiver_role !== undefined){ fields.push('caregiver_role=?'); vals.push(caregiver_role); }
   if (feeding_style !== undefined) { fields.push('feeding_style=?');  vals.push(feeding_style); }
   if (pet_count !== undefined)     { fields.push('pet_count=?');      vals.push(pet_count); }
@@ -567,7 +570,7 @@ app.patch('/api/users/:id', (req, res) => {
   db.run(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, vals, function(err) {
     if (err) return res.status(500).json({ error: err.message });
     if (this.changes === 0) return res.status(404).json({ error: 'User not found.' });
-    db.get(`SELECT id, name, middle_name, email, role, birthdate, gender, city, region, country, caregiver_role, feeding_style, pet_count, avatar FROM users WHERE id = ?`, [userId], (err2, row) => {
+    db.get(`SELECT id, name, middle_name, email, role, birthdate, gender, city, region, country, barangay, caregiver_role, feeding_style, pet_count, avatar FROM users WHERE id = ?`, [userId], (err2, row) => {
       if (err2) return res.json({ success: true });
       res.json({ success: true, user: row });
     });
