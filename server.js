@@ -1925,10 +1925,15 @@ app.get('/api/admin/data', requireAdminAuth, (req, res) => {
               substances
             };
           });
+          // Postgres doesn't guarantee it only tries t.user_id::integer on rows that already
+          // passed the '^[0-9]+$' check -- it's free to evaluate AND conditions in any order,
+          // so a non-numeric user_id (anonymous tickets are saved with user_id = 'Anonymous')
+          // could still hit the cast and throw "invalid input syntax for type integer",
+          // crashing this whole endpoint. Casting u.id to text instead never fails.
           const ticketQuery = `
             SELECT t.id, t.category, t.message, t.created_at, u.name AS owner, u.email AS ownerEmail
             FROM tickets t
-            LEFT JOIN users u ON t.user_id ~ '^[0-9]+$' AND t.user_id::integer = u.id
+            LEFT JOIN users u ON t.user_id = u.id::text
             ORDER BY t.created_at DESC
           `;
           db.all(ticketQuery, [], (e5, tickets) => {

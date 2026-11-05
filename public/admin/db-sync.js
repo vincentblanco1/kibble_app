@@ -60,6 +60,13 @@
     x.open('GET', url, false);                               // synchronous on purpose: the pages read storage the moment they load
     x.setRequestHeader('Authorization', 'Bearer ' + getToken());
     try { x.send(); } catch (e) { return { status: 0 }; }
+    // a non-2xx response here used to fail silently (the page just stayed on
+    // its empty/demo state with nothing in the console explaining why) --
+    // this logs the server's own error message so the real cause shows up
+    // right in devtools instead of needing a trip to the Render logs
+    if (x.status < 200 || x.status >= 300) {
+      console.error('[db-sync] ' + url + ' -> HTTP ' + x.status + ': ' + x.responseText);
+    }
     return { status: x.status, json: parse(x.responseText, null) };
   }
 
