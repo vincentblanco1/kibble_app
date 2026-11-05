@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     city: '',
     caregiverRole: 'Primary Caregiver',
     feedingStyle: 'Commercial Dry Kibble',
-    avatar: 'https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg'
+    avatar: ''
   };
 
   let userProfile = { ...defaultProfile, ...JSON.parse(localStorage.getItem('kibbleguard_user_profile') || '{}') };
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Compute live pet count from pet profiles database
   function getRegisteredPetCount() {
     const pets = JSON.parse(localStorage.getItem('kibbleguard_pets') || '[]');
-    return pets.length > 0 ? pets.length : 2;
+    return pets.length;
   }
 
   function calculateAge(dateStr) {
@@ -99,7 +99,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (displayFullName) displayFullName.textContent = fullName;
     if (displayEmail) displayEmail.textContent = userProfile.email || kgUser.email || '—';
     if (displayRole) displayRole.textContent = `Verified Owner${userProfile.city ? ' • ' + userProfile.city : ''}`;
-    if (profileAvatarPreview && userProfile.avatar) profileAvatarPreview.src = userProfile.avatar;
+
+    // Handle avatar: show initials by default, photo if uploaded
+    const profileAvatarInitials = document.getElementById('profileAvatarInitials');
+    const profileInitialsText = document.getElementById('profileInitialsText');
+    const hasCustomAvatar = userProfile.avatar && !userProfile.avatar.includes('uxpilot-auth.appspot.com');
+
+    if (hasCustomAvatar && profileAvatarPreview) {
+      profileAvatarPreview.src = userProfile.avatar;
+      profileAvatarPreview.classList.remove('hidden');
+      if (profileAvatarInitials) profileAvatarInitials.classList.add('hidden');
+    } else {
+      if (profileAvatarPreview) profileAvatarPreview.classList.add('hidden');
+      if (profileAvatarInitials) profileAvatarInitials.classList.remove('hidden');
+      if (profileInitialsText) {
+        const fi = (firstName || kgUser.name || 'U').charAt(0);
+        const li = lastName ? lastName.charAt(0) : '';
+        profileInitialsText.textContent = `${fi}${li}`.toUpperCase() || 'U';
+      }
+    }
   }
 
   function setEditMode(isEditing) {
@@ -136,8 +154,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        if (profileAvatarPreview) profileAvatarPreview.src = event.target.result;
         userProfile.avatar = event.target.result;
+        // Switch from initials to photo
+        if (profileAvatarPreview) {
+          profileAvatarPreview.src = event.target.result;
+          profileAvatarPreview.classList.remove('hidden');
+        }
+        const profileAvatarInitials = document.getElementById('profileAvatarInitials');
+        if (profileAvatarInitials) profileAvatarInitials.classList.add('hidden');
       };
       reader.readAsDataURL(file);
     }

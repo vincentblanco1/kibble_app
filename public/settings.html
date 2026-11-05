@@ -119,11 +119,11 @@
     <div class="space-y-2">
       <a href="profile.html" class="user-profile-badge border border-[#ebdcd0] hover:border-[#45671d] hover:bg-white transition-all cursor-pointer block" title="View & Edit Profile">
         <div class="flex items-center gap-2.5">
-          <div class="avatar-circle" id="sidebarAvatarCircle">VG</div>
+          <div class="avatar-circle" id="sidebarAvatarCircle"></div>
           <div class="user-info min-w-0 flex-1">
-            <p class="name truncate" id="sidebarUserName">Vincent G. Blanco</p>
+            <p class="name truncate" id="sidebarUserName"></p>
             <p class="role" id="sidebarUserRole">VERIFIED OWNER</p>
-            <p class="loc truncate" id="sidebarUserLoc">Las Piñas City • 2 Pets</p>
+            <p class="loc truncate" id="sidebarUserLoc"></p>
           </div>
         </div>
       </a>
@@ -195,7 +195,7 @@
             <div class="flex items-center justify-between p-2.5 rounded-xl bg-[#fbf9f6] border border-[#ebdcd0]">
               <div>
                 <span class="text-[10px] uppercase font-bold text-[#788673] block">Account Holder</span>
-                <span class="font-extrabold text-xs text-[#182811]">Vincent Gregg Blanco</span>
+                <span class="font-extrabold text-xs text-[#182811]" id="settingsAccountHolder"></span>
               </div>
               <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-[#16a34a] border border-emerald-200 text-[10px] font-black uppercase">Active</span>
             </div>
@@ -334,5 +334,17 @@
 
   <script src="app.js"></script>
   <script src="settings.js"></script>
+  <script>
+    // Populate account holder name dynamically
+    document.addEventListener('DOMContentLoaded', () => {
+      const el = document.getElementById('settingsAccountHolder');
+      if (el) {
+        const profile = JSON.parse(localStorage.getItem('kibbleguard_user_profile') || '{}');
+        const user = JSON.parse(localStorage.getItem('kibbleguard_user') || '{}');
+        const parts = [profile.firstName, profile.middleName, profile.lastName].filter(Boolean);
+        el.textContent = parts.length > 0 ? parts.join(' ') : (user.name || 'Account Holder');
+      }
+    });
+  </script>
 </body>
 </html>

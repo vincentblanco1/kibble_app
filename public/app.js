@@ -3,39 +3,56 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. Universal User Profile & Title Sync across all pages
   // ==========================================
   const defaultProfile = {
-    firstName: 'Vincent',
-    middleName: 'Gregg',
-    lastName: 'Blanco',
-    city: 'Las Piñas City',
-    petCount: 2,
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    city: '',
+    petCount: 0,
     role: 'VERIFIED OWNER'
   };
 
-  const savedProfile = JSON.parse(localStorage.getItem('kibbleguard_user_profile')) || defaultProfile;
-  
+  // Read user data from auth (set at login/signup)
+  const kgUserRaw = JSON.parse(localStorage.getItem('kibbleguard_user') || '{}');
+  const savedProfile = { ...defaultProfile, ...JSON.parse(localStorage.getItem('kibbleguard_user_profile') || '{}') };
+
+  // Use auth user name as fallback if profile names are empty
+  if (!savedProfile.firstName && kgUserRaw.name) {
+    const parts = kgUserRaw.name.trim().split(/\s+/);
+    savedProfile.firstName = parts[0] || '';
+    savedProfile.lastName = parts[parts.length - 1] || '';
+    if (parts.length > 2) savedProfile.middleName = parts.slice(1, -1).join(' ');
+  }
+
+  // Compute actual pet count from localStorage
+  const actualPets = JSON.parse(localStorage.getItem('kibbleguard_pets') || '[]');
+  const actualPetCount = actualPets.length;
+
   const sidebarUserName = document.getElementById('sidebarUserName');
   const sidebarUserRole = document.getElementById('sidebarUserRole');
   const sidebarUserLoc = document.getElementById('sidebarUserLoc');
   const sidebarAvatarCircle = document.getElementById('sidebarAvatarCircle');
 
   if (sidebarUserName) {
-    const fName = savedProfile.firstName || 'Vincent';
-    const lName = savedProfile.lastName || 'Blanco';
-    sidebarUserName.textContent = `${fName} G. ${lName}`;
+    const fName = savedProfile.firstName || '';
+    const mName = savedProfile.middleName || '';
+    const lName = savedProfile.lastName || '';
+    const middleInitial = mName ? ` ${mName.charAt(0)}.` : '';
+    const displayName = fName && lName ? `${fName}${middleInitial} ${lName}` : (fName || lName || kgUserRaw.name || 'User');
+    sidebarUserName.textContent = displayName;
     if (sidebarAvatarCircle) {
-      sidebarAvatarCircle.textContent = `${fName.charAt(0)}${lName.charAt(0)}`.toUpperCase();
+      const initials = `${(fName || displayName).charAt(0)}${lName ? lName.charAt(0) : ''}`.toUpperCase();
+      sidebarAvatarCircle.textContent = initials || 'U';
     }
   }
 
   if (sidebarUserRole) {
-    // Enforce "VERIFIED OWNER" consistency
     sidebarUserRole.textContent = 'VERIFIED OWNER';
   }
 
   if (sidebarUserLoc) {
-    const city = savedProfile.city || 'Las Piñas City';
-    const pets = savedProfile.petCount || 2;
-    sidebarUserLoc.textContent = `${city} • ${pets} Pets`;
+    const city = savedProfile.city || '';
+    const petText = actualPetCount > 0 ? `${actualPetCount} Pet${actualPetCount === 1 ? '' : 's'}` : 'No Pets';
+    sidebarUserLoc.textContent = city ? `${city} • ${petText}` : petText;
   }
 
   // ==========================================
@@ -949,7 +966,7 @@ document.addEventListener('DOMContentLoaded', () => {
           user_id: kgUserId,
           name: name.trim(),
           species: species,
-          breed: ((document.getElementById('mPetBreedInput') || {}).value || '').trim() || (species === 'Canine' ? 'Mixed Canine' : 'Domestic Shorthair'),
+          breed: ((document.getElementById('mPetBreedInput') || {}).value || '').trim() || '',
           gender: (document.getElementById('mPetGenderInput') || {}).value || null,
           birthdate: (document.getElementById('mPetBirthdateInput') || {}).value || null,
           weight: parseFloat((document.getElementById('mPetWeightInput') || {}).value) || null,

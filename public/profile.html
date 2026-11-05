@@ -90,11 +90,11 @@
     <div class="space-y-2">
       <a href="profile.html" class="user-profile-badge border-2 border-[#45671d] transition-all hover:bg-slate-50 block">
         <div class="flex items-center gap-2.5">
-          <div class="avatar-circle" id="sidebarAvatarCircle">VG</div>
+          <div class="avatar-circle" id="sidebarAvatarCircle"></div>
           <div class="user-info min-w-0 flex-1">
-            <p class="name truncate" id="sidebarUserName">Vincent G. Blanco</p>
+            <p class="name truncate" id="sidebarUserName"></p>
             <p class="role" id="sidebarUserRole">VERIFIED OWNER</p>
-            <p class="loc truncate" id="sidebarUserLoc">Las Piñas City • 2 Pets</p>
+            <p class="loc truncate" id="sidebarUserLoc"></p>
           </div>
         </div>
       </a>
@@ -134,19 +134,24 @@
             </div>
           </div>
 
-          <!-- Avatar Image Preview & Upload -->
+          <!-- Avatar Preview & Upload -->
           <div class="flex items-center gap-4 py-1">
             <div class="relative shrink-0">
-              <img id="profileAvatarPreview" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" class="w-16 h-16 rounded-2xl object-cover ring-2 ring-[#45671d]/20 shadow-xs" alt="User Avatar">
+              <!-- Initials avatar (shown when no custom photo) -->
+              <div id="profileAvatarInitials" class="w-16 h-16 rounded-2xl ring-2 ring-[#45671d]/20 shadow-xs bg-[#45671d] flex items-center justify-center">
+                <span class="text-white font-extrabold text-xl" id="profileInitialsText">U</span>
+              </div>
+              <!-- Custom photo avatar (hidden by default, shown when user uploads) -->
+              <img id="profileAvatarPreview" src="" class="w-16 h-16 rounded-2xl object-cover ring-2 ring-[#45671d]/20 shadow-xs hidden" alt="User Avatar">
               <label for="avatarInput" id="avatarUploadLabel" class="hidden absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#45671d] hover:bg-[#324c14] text-white flex items-center justify-center cursor-pointer shadow-sm transition-all text-[10px]">
                 <i class="fa-solid fa-camera"></i>
               </label>
               <input type="file" id="avatarInput" accept="image/*" class="hidden" disabled>
             </div>
             <div class="min-w-0">
-              <h3 id="displayFullName" class="font-extrabold text-sm text-[#182811] leading-tight truncate">Vincent Gregg Blanco</h3>
-              <p id="displayEmail" class="text-[11px] text-[#788673] truncate">vincent.gregg@uphsd.edu.ph</p>
-              <p id="displayRole" class="text-[10px] font-bold text-[#45671d] uppercase tracking-wide mt-0.5">Verified Owner • Contributor</p>
+              <h3 id="displayFullName" class="font-extrabold text-sm text-[#182811] leading-tight truncate"></h3>
+              <p id="displayEmail" class="text-[11px] text-[#788673] truncate"></p>
+              <p id="displayRole" class="text-[10px] font-bold text-[#45671d] uppercase tracking-wide mt-0.5">Verified Owner</p>
             </div>
           </div>
 
@@ -154,24 +159,24 @@
           <div class="space-y-3 text-xs">
             <div>
               <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">First Name *</label>
-              <input type="text" id="firstNameInput" required value="Vincent" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+              <input type="text" id="firstNameInput" required value="" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
             </div>
 
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Middle Name</label>
-                <input type="text" id="middleNameInput" value="Gregg" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+                <input type="text" id="middleNameInput" value="" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
               </div>
               <div>
                 <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Last Name *</label>
-                <input type="text" id="lastNameInput" required value="Blanco" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+                <input type="text" id="lastNameInput" required value="" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
               </div>
             </div>
 
             <!-- Email Address Field -->
             <div>
               <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Email Address *</label>
-              <input type="email" id="emailInput" required value="vincent.gregg@uphsd.edu.ph" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+              <input type="email" id="emailInput" required value="" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -223,7 +228,7 @@
             </div>
             <div>
               <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">City / Municipality</label>
-              <input type="text" id="cityInput" value="Las Piñas City" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
+              <input type="text" id="cityInput" value="" disabled class="w-full px-3 py-2 rounded-xl bg-white border border-[#ebdcd0] text-xs font-semibold focus:outline-none focus:border-[#45671d] disabled:bg-slate-50 disabled:text-slate-500">
             </div>
             <div>
               <label class="block font-bold text-[#788673] uppercase text-[10px] mb-1">Caregiver Status / Role</label>
@@ -255,7 +260,7 @@
                 <a href="pets.html" class="text-[10px] font-bold text-[#45671d] hover:underline" title="Add or edit animals in Pet Profiles">Manage in Pets →</a>
               </div>
               <div class="relative">
-                <input type="text" id="petCountInput" value="2 Registered Pets" readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 border border-[#ebdcd0] text-xs font-bold text-[#182811] cursor-not-allowed">
+                <input type="text" id="petCountInput" value="" readonly class="w-full px-3 py-2 rounded-xl bg-slate-100 border border-[#ebdcd0] text-xs font-bold text-[#182811] cursor-not-allowed">
                 <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" title="Synced from Pet Profiles database">
                   <i class="fa-solid fa-lock"></i>
                 </span>

@@ -119,11 +119,11 @@
     <div class="space-y-2">
       <a href="profile.html" class="user-profile-badge border border-[#ebdcd0] hover:border-[#45671d] transition-all block bg-white">
         <div class="flex items-center gap-2.5">
-          <div class="avatar-circle" id="sidebarAvatarCircle">VB</div>
+          <div class="avatar-circle" id="sidebarAvatarCircle"></div>
           <div class="user-info min-w-0 flex-1">
-            <p class="name truncate" id="sidebarUserName">Vincent G. Blanco</p>
+            <p class="name truncate" id="sidebarUserName"></p>
             <p class="role" id="sidebarUserRole">VERIFIED OWNER</p>
-            <p class="loc truncate" id="sidebarUserLoc">Las Piñas City • 2 Pets</p>
+            <p class="loc truncate" id="sidebarUserLoc"></p>
           </div>
         </div>
       </a>
@@ -186,6 +186,14 @@
         </button>
       </div>
     </header>
+
+    <!-- Veterinary Disclaimer Banner -->
+    <div class="mb-4 p-3 rounded-2xl bg-amber-50 border border-amber-200 flex items-center gap-3">
+      <i class="fa-solid fa-stethoscope text-amber-700 text-lg shrink-0"></i>
+      <p class="text-xs font-semibold text-amber-800">
+        <strong>Not a replacement for Veterinary Check ups.</strong> This tool provides educational ingredient screening only. Always consult a licensed veterinarian for clinical diagnosis and treatment.
+      </p>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       
@@ -271,29 +279,8 @@
         <div class="tactile-card p-5 bg-white">
           <span class="text-[10.5px] font-extrabold uppercase text-[#788673] tracking-wider block mb-3">Evaluating metabolic risk for</span>
           
-          <div class="flex flex-col gap-3">
-            <div id="targetBusterOption" class="w-full p-3.5 rounded-2xl border-2 border-[#45671d] bg-emerald-50/40 flex items-center justify-between cursor-pointer transition-all">
-              <div class="flex items-center gap-3.5 flex-1 min-w-0">
-                <span class="text-2xl shrink-0">🐶</span>
-                <div class="flex flex-col min-w-0 flex-1">
-                  <h4 class="font-extrabold text-sm text-[#182811] leading-tight">Buster (Canine)</h4>
-                  <p class="text-[11px] text-[#788673] font-semibold truncate mt-0.5">Golden Retriever • 24.5 kg • Sensitive</p>
-                </div>
-              </div>
-              <div id="busterIndicator" class="w-5 h-5 rounded-full bg-[#45671d] text-white flex items-center justify-center text-[10px] shrink-0 ml-3">
-                <i class="fa-solid fa-check"></i>
-              </div>
-            </div>
-
-            <div id="targetMiloOption" class="w-full p-3.5 rounded-2xl border border-[#ebdcd0] bg-white opacity-75 hover:opacity-100 flex items-center justify-between cursor-pointer transition-all">
-              <div class="flex items-center gap-3.5 flex-1 min-w-0">
-                <span class="text-2xl shrink-0">🐱</span>
-                <div class="flex flex-col min-w-0 flex-1">
-                  <h4 class="font-extrabold text-sm text-[#182811] leading-tight">Milo (Feline)</h4>
-                  <p class="text-[11px] text-[#788673] font-medium truncate mt-0.5">Domestic Shorthair • 4.2 kg • Renal Watch</p>
-                </div>
-              </div>
-              <div id="miloIndicator" class="w-4 h-4 rounded-full border-2 border-slate-300 shrink-0 ml-3"></div>
+          <div class="flex flex-col gap-3" id="petEvalSwitcher">
+            <!-- Dynamically populated from localStorage pets -->
             </div>
           </div>
 
@@ -499,5 +486,48 @@
   <script src="app.js"></script>
   <script src="notifications.js"></script>
   <script src="results.js"></script>
+  <script>
+    // Populate pet evaluation switcher dynamically
+    document.addEventListener('DOMContentLoaded', () => {
+      const container = document.getElementById('petEvalSwitcher');
+      if (!container) return;
+      const pets = JSON.parse(localStorage.getItem('kibbleguard_pets') || '[]');
+      if (pets.length === 0) {
+        container.innerHTML = '<p class="text-xs text-[#788673] py-2">No pets registered. <a href="pets.html" class="text-[#45671d] font-extrabold hover:underline">Add a pet</a> to evaluate.</p>';
+        return;
+      }
+      container.innerHTML = '';
+      pets.forEach((pet, i) => {
+        const emoji = pet.species === 'Canine' ? String.fromCodePoint(0x1F436) : (pet.species === 'Feline' ? String.fromCodePoint(0x1F431) : String.fromCodePoint(0x1F43E));
+        const speciesLabel = pet.species || 'Pet';
+        const details = [pet.breed, pet.weight ? pet.weight + ' kg' : ''].filter(Boolean).join(' • ');
+        const isSelected = i === 0;
+        const div = document.createElement('div');
+        div.className = `w-full p-3.5 rounded-2xl ${isSelected ? 'border-2 border-[#45671d] bg-emerald-50/40' : 'border border-[#ebdcd0] bg-white opacity-75 hover:opacity-100'} flex items-center justify-between cursor-pointer transition-all`;
+        div.setAttribute('data-pet-index', i);
+        div.innerHTML = `
+          <div class="flex items-center gap-3.5 flex-1 min-w-0">
+            <span class="text-2xl shrink-0">${emoji}</span>
+            <div class="flex flex-col min-w-0 flex-1">
+              <h4 class="font-extrabold text-sm text-[#182811] leading-tight">${pet.name || 'Unnamed'} (${speciesLabel})</h4>
+              <p class="text-[11px] text-[#788673] font-semibold truncate mt-0.5">${details || 'No details'}</p>
+            </div>
+          </div>
+          <div class="${isSelected ? 'w-5 h-5 rounded-full bg-[#45671d] text-white flex items-center justify-center text-[10px]' : 'w-4 h-4 rounded-full border-2 border-slate-300'} shrink-0 ml-3">${isSelected ? '<i class="fa-solid fa-check"></i>' : ''}</div>`;
+        div.addEventListener('click', () => {
+          container.querySelectorAll('[data-pet-index]').forEach((el, j) => {
+            const sel = j === i;
+            el.className = `w-full p-3.5 rounded-2xl ${sel ? 'border-2 border-[#45671d] bg-emerald-50/40' : 'border border-[#ebdcd0] bg-white opacity-75 hover:opacity-100'} flex items-center justify-between cursor-pointer transition-all`;
+            const indicator = el.querySelector('.shrink-0.ml-3');
+            if (indicator) {
+              indicator.className = `${sel ? 'w-5 h-5 rounded-full bg-[#45671d] text-white flex items-center justify-center text-[10px]' : 'w-4 h-4 rounded-full border-2 border-slate-300'} shrink-0 ml-3`;
+              indicator.innerHTML = sel ? '<i class="fa-solid fa-check"></i>' : '';
+            }
+          });
+        });
+        container.appendChild(div);
+      });
+    });
+  </script>
 </body>
 </html>
