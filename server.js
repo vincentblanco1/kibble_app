@@ -767,12 +767,39 @@ function analyzeIngredients(tokens, mergedIngredients, speciesKey) {
     return best ? best.item : null;
   }
 
+  // Builds a short "Also known as: X, Y" line listing the database's primary name and
+  // aliases that differ from what was actually scanned — so the label's own wording is never
+  // replaced, but the reader still sees that e.g. a scanned "Chicken Broth" is the same
+  // database entry as "Meat Broth".
+  function buildAlsoKnownAs(matchedItem, token) {
+    const tokenNorm = normalizeIngredientName(token);
+    const seen = new Set([tokenNorm]);
+    const names = [];
+
+    const primaryNorm = normalizeIngredientName(matchedItem.name);
+    if (primaryNorm && !seen.has(primaryNorm)) {
+      names.push(matchedItem.name);
+      seen.add(primaryNorm);
+    }
+    String(matchedItem.aliases || '').split(',').forEach(a => {
+      const aTrim = a.trim();
+      const aNorm = normalizeIngredientName(aTrim);
+      if (aTrim && aNorm && !seen.has(aNorm)) {
+        names.push(aTrim);
+        seen.add(aNorm);
+      }
+    });
+
+    return names.length ? `Also known in the database as: ${names.join(', ')}.` : '';
+  }
+
   tokens.forEach(token => {
     const matchedItem = findMatch(token);
 
     if (matchedItem) {
       const speciesData = isFeline ? matchedItem.cat : matchedItem.dog;
       const otherSpeciesData = isFeline ? matchedItem.dog : matchedItem.cat;
+      const alsoKnownAs = buildAlsoKnownAs(matchedItem, token);
 
       if (speciesData) {
         // We have a species-specific row — score normally off its real severity_score
@@ -782,18 +809,19 @@ function analyzeIngredients(tokens, mergedIngredients, speciesKey) {
         if (itemRating === 'Toxic') {
           const deduction = Math.max(15, Math.round(severity * 0.45));
           score -= deduction;
-          flagged.push({ name: matchedItem.name, rating: 'Toxic', risks: speciesData.notes });
+          flagged.push({ name: token, rating: 'Toxic', risks: speciesData.notes });
         } else if (itemRating === 'Caution') {
           const deduction = Math.max(5, Math.round(severity * 0.3));
           score -= deduction;
-          flagged.push({ name: matchedItem.name, rating: 'Caution', risks: speciesData.notes });
+          flagged.push({ name: token, rating: 'Caution', risks: speciesData.notes });
         }
 
+        const baseNotes = speciesData.notes || 'Evaluated compound';
         parsedResults.push({
-          name: matchedItem.name,
+          name: token,
           category: matchedItem.category,
           status: itemRating,
-          notes: speciesData.notes || 'Evaluated compound',
+          notes: alsoKnownAs ? `${baseNotes} ${alsoKnownAs}` : baseNotes,
           severity_score: severity,
           clinical_symptoms: speciesData.clinical_symptoms || '',
           dosage: speciesData.dosage || '',
@@ -804,15 +832,15 @@ function analyzeIngredients(tokens, mergedIngredients, speciesKey) {
         // "no restrictions recorded" — say plainly it hasn't been independently evaluated
         // for this species, and surface what IS known from the other species' entry.
         const speciesWord = isFeline ? 'cats' : 'dogs';
-        const note = otherSpeciesData
+        const baseNote = otherSpeciesData
           ? `Not independently evaluated for ${speciesWord} in the KibbleGuard database yet. Known data for the other species: ${otherSpeciesData.notes || 'no notes recorded'}.`
           : `Recognized as "${matchedItem.category}" but not yet evaluated for ${speciesWord} in the KibbleGuard database.`;
 
         parsedResults.push({
-          name: matchedItem.name,
+          name: token,
           category: matchedItem.category,
           status: 'Safe',
-          notes: note
+          notes: alsoKnownAs ? `${baseNote} ${alsoKnownAs}` : baseNote
         });
       }
     } else {

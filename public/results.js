@@ -495,6 +495,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // ---- Ingredient database cache (populated from Supabase API) ----
   const FINDINGS_DATABASE = {};
   let _dbIngredientsLoaded = false;
+  // Desktop and mobile share this file; point "Inspect Full Dossier" links at whichever
+  // wiki page matches the page currently loaded.
+  const WIKI_PAGE = /mobile-/i.test(window.location.pathname) ? 'mobile-wiki.html' : 'wiki.html';
 
   // Normalize a name for matching: lowercase, trim, collapse whitespace,
   // strip trailing punctuation/parentheticals so DB values with slightly
@@ -559,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
           canine: (dog ? dog.notes : '') || 'No canine-specific data available.',
           feline: (cat ? cat.notes : '') || 'No feline-specific data available.',
           alternative: (dog ? dog.emergency_action : '') || (cat ? cat.emergency_action : '') || 'No alternative suggested.',
-          wikiSearch: 'wiki.html?search=' + encodeURIComponent(primary.primary_name),
+          wikiSearch: WIKI_PAGE + '?search=' + encodeURIComponent(primary.primary_name),
           clinical_symptoms: (dog ? dog.clinical_symptoms : '') || (cat ? cat.clinical_symptoms : '') || '',
           dosage: (dog ? dog.dosage : '') || (cat ? cat.dosage : '') || '',
           // Per-species breakdown for the full drill-down drawer
@@ -727,7 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    if (drawerWikiLink) drawerWikiLink.href = data.wikiSearch || 'wiki.html';
+    if (drawerWikiLink) drawerWikiLink.href = data.wikiSearch || WIKI_PAGE;
 
     drawerBackdrop?.classList.remove('hidden');
     drawer.classList.add('drawer-open');
@@ -956,8 +959,30 @@ document.addEventListener('DOMContentLoaded', () => {
         dog_risk_badge: speciesName === 'Canine' ? s.badge : null,
         cat_risk_badge: speciesName === 'Feline' ? s.badge : null,
         alternative: 'No alternative suggested for this ingredient.',
-        wikiSearch: 'wiki.html?search=' + encodeURIComponent(it.name || '')
+        wikiSearch: WIKI_PAGE + '?search=' + encodeURIComponent(it.name || '')
       };
+
+      // Keep the scanned label's own wording as the displayed name — never replace it with
+      // the database's primary name — but if the DB match came in under a different name or
+      // alias (e.g. scanned "Chicken Broth" matched DB entry "Meat Broth"), note that in the
+      // description instead, so the connection is visible without renaming the ingredient.
+      if (base) {
+        var scannedNorm = _normalizeIngredientName(it.name || '');
+        var altNames = [];
+        var seenNorm = { };
+        seenNorm[scannedNorm] = true;
+        var dbTitleNorm = _normalizeIngredientName(base.title || '');
+        if (dbTitleNorm && !seenNorm[dbTitleNorm]) { altNames.push(base.title); seenNorm[dbTitleNorm] = true; }
+        (base.aliases || '').split(',').forEach(function (a) {
+          var aTrim = a.trim();
+          var aNorm = _normalizeIngredientName(aTrim);
+          if (aTrim && aNorm && !seenNorm[aNorm]) { altNames.push(aTrim); seenNorm[aNorm] = true; }
+        });
+        if (altNames.length) {
+          entry.mechanism = (entry.mechanism || '') + ' Also known in the database as: ' + altNames.join(', ') + '.';
+        }
+      }
+
       entry.title = it.name || entry.title;
       if (it.allergy) {
         entry.badge = it.allergy.match === 'direct' ? 'ALLERGY' : 'POSSIBLE ALLERGY';
