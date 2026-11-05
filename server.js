@@ -198,6 +198,21 @@ db.serialize(() => {
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  // Seed the admin roster into admin_state so the frontend recognises seeded
+  // admins as active.  Uses INSERT … ON CONFLICT DO NOTHING so it only writes
+  // the roster once — after that, the admin settings page owns the data.
+  const seedRoster = seedAdmins.map(a => ({
+    name: a.name,
+    email: a.email.toLowerCase(),
+    role: a.role,
+    status: 'active'
+  }));
+  db.run(
+    `INSERT INTO admin_state (key, value) VALUES (?, ?)
+     ON CONFLICT (key) DO NOTHING`,
+    ['kibbleguard-admin-accounts', JSON.stringify(seedRoster)]
+  );
+
   // Admin login sessions (Bearer tokens the admin pages send as
   // Authorization: Bearer <token>, or ?t=<token> for <img> tags).
   db.run(`CREATE TABLE IF NOT EXISTS admin_sessions (
