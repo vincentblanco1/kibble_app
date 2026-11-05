@@ -40,8 +40,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayName = fName && lName ? `${fName}${middleInitial} ${lName}` : (fName || lName || kgUserRaw.name || 'User');
     sidebarUserName.textContent = displayName;
     if (sidebarAvatarCircle) {
-      const initials = `${(fName || displayName).charAt(0)}${lName ? lName.charAt(0) : ''}`.toUpperCase();
-      sidebarAvatarCircle.textContent = initials || 'U';
+      const hasAvatar = savedProfile.avatar && !savedProfile.avatar.includes('uxpilot-auth.appspot.com');
+      if (hasAvatar) {
+        // Show uploaded profile photo in sidebar
+        sidebarAvatarCircle.textContent = '';
+        sidebarAvatarCircle.style.backgroundImage = `url(${savedProfile.avatar})`;
+        sidebarAvatarCircle.style.backgroundSize = 'cover';
+        sidebarAvatarCircle.style.backgroundPosition = 'center';
+      } else {
+        const initials = `${(fName || displayName).charAt(0)}${lName ? lName.charAt(0) : ''}`.toUpperCase();
+        sidebarAvatarCircle.textContent = initials || 'U';
+      }
     }
   }
 
