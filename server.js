@@ -1395,7 +1395,8 @@ function requireAdminAuth(req, res, next) {
     (err, row) => {
       if (err) return res.status(500).json({ error: err.message });
       if (!row || !row.user_id) return res.status(401).json({ error: 'Session expired. Please log in again.' });
-      if (row.is_banned) return res.status(403).json({ error: 'This account cannot log in.' });
+      const banned = row.is_banned === true || row.is_banned === 1 || row.is_banned === '1' || row.is_banned === 'true';
+      if (banned) return res.status(403).json({ error: 'This account cannot log in.' });
       req.adminUser = { id: row.user_id, email: row.email || row.session_email, name: row.name, role: row.role };
       next();
     }
@@ -1439,7 +1440,8 @@ app.post('/api/admin/login', (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     const ok = user && (password === user.password || password === user.password_hash);
     if (!ok) return res.status(401).json({ error: 'Incorrect email or password.' });
-    if (user.is_banned) return res.status(403).json({ error: 'This account cannot log in.' });
+    const isBanned = user.is_banned === true || user.is_banned === 1 || user.is_banned === '1' || user.is_banned === 'true';
+    if (isBanned) return res.status(403).json({ error: 'This account cannot log in.' });
 
     readAdminAccounts((accounts) => {
       const acc = accounts.find(a => String(a.email).toLowerCase() === cleanEmail);
