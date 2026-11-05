@@ -295,7 +295,18 @@ function resolveInquiry(inquiryId) {
       deliveries.push(sendSystemEmail({ type: 'inquiry-reply', inquiry: inquiryId, to: ownerEmail, name: ownerName, message: response }));
     }
 
-    Promise.all(deliveries).then(function () {
+    Promise.all(deliveries).then(function (results) {
+      // queueInAppNotification resolves successfully (HTTP 200) even when the server couldn't
+      // match this to a real pet-owner account -- it just comes back with delivered:false. That
+      // used to be swallowed (only a console.warn), so the admin saw "Reply sent" even though
+      // nobody actually got it. Surface that honestly instead.
+      var inAppResult = results[0];
+      if (inAppResult && inAppResult.delivered === false) {
+        logAdminAction('Reply to inquiry ' + inquiryId + ' saved, but could not be delivered in-app: "' + response + '"', 'inquiry');
+        showToast('Reply saved, but ' + ownerName + ' has no matching account to notify in-app' + (ownerEmail ? ' (email reply was still sent)' : ''), 'danger');
+        renderNavBadges();
+        return;
+      }
       logAdminAction('Replied to inquiry ' + inquiryId + ' (in-app + email): "' + response + '"', 'inquiry');
       showToast('Reply sent to ' + ownerName, 'success');
       renderNavBadges();

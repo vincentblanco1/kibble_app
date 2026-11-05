@@ -2015,10 +2015,15 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
           // so a non-numeric user_id (anonymous tickets are saved with user_id = 'Anonymous')
           // could still hit the cast and throw "invalid input syntax for type integer",
           // crashing this whole endpoint. Casting u.id to text instead never fails.
+          // The pet-owner app has a bug (being fixed separately in settings.js) where it was
+          // sending the user's EMAIL as `user_id` instead of their numeric id, so some tickets
+          // have a real email sitting in a column meant for a numeric id. Matching on id alone
+          // left every one of those tickets with no owner at all -- "Unknown owner" -- even
+          // though the real account is right there. This matches either shape.
           const ticketQuery = `
             SELECT t.id, t.category, t.message, t.created_at, u.name AS owner, u.email AS ownerEmail
             FROM tickets t
-            LEFT JOIN users u ON t.user_id = u.id::text
+            LEFT JOIN users u ON t.user_id = u.id::text OR LOWER(t.user_id) = LOWER(u.email)
             ORDER BY t.created_at DESC
           `;
           db.all(ticketQuery, [], (e5, tickets) => {
