@@ -872,6 +872,25 @@ document.addEventListener('DOMContentLoaded', () => {
       sel.innerHTML = opts.map(function(o){ return '<option value="' + o + '"' + (o === cur ? ' selected' : '') + '>' + o + '</option>'; }).join('');
     }
 
+    // iOS Safari has a long-standing bug where, after its native <select> picker closes inside a
+    // scrollable overlay like this bottom sheet, the page can get stuck at its current scroll
+    // position and stop responding to swipes entirely until reloaded. Forcing a reflow right
+    // after the picker closes (toggling overflow off and back on, one frame later) is the
+    // standard workaround -- it makes Safari recompute the scrollable area instead of leaving it
+    // wedged in whatever state the picker left it in.
+    function mUnstickScroll() {
+      var panel = document.querySelector('#mobileAddPetModal > div');
+      if (!panel) return;
+      panel.style.overflow = 'hidden';
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { panel.style.overflow = 'auto'; });
+      });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('#mobileAddPetForm select, #mobileAddPetForm input'), function (el) {
+      el.addEventListener('change', mUnstickScroll);
+      el.addEventListener('blur', mUnstickScroll);
+    });
+
     // Mobile only ever had Add + Delete for pets -- there was no way to fix a typo in a pet's
     // name, update their weight, or change a medical condition without deleting and re-adding
     // them from scratch. The backend already supports this (POST /api/pets upserts by id when
