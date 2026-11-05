@@ -43,6 +43,15 @@ app.use(cors());
 app.use(express.json({ limit: '12mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// The very first page a customer sees when they open the shared Render link.
+// Without this, express.static's default "/" lookup falls through to
+// public/index.html -- the logged-in scan dashboard -- instead of the public
+// marketing page. landing.html's own script still handles sending mobile
+// visitors to mobile-landing.html (or mobile-index.html if already logged in).
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+});
+
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname)));
