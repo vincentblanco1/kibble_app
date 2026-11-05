@@ -1462,17 +1462,50 @@ app.post('/api/admin/login', (req, res) => {
     const isBanned = user.is_banned === true || user.is_banned === 1 || user.is_banned === '1' || user.is_banned === 'true';
     if (isBanned) return res.status(403).json({ error: 'This account cannot log in.' });
 
+    // Ensure the admin roster exists in admin_state so the dashboard recognises
+    // logged-in admins.  If no roster exists yet, build one from the users table.
     readAdminAccounts((accounts) => {
       const acc = accounts.find(a => String(a.email).toLowerCase() === cleanEmail);
       if (acc && acc.status === 'deactivated') {
         return res.status(403).json({ error: 'Your admin access was deactivated. A Chief Admin can restore it.' });
       }
-      const token = crypto.randomBytes(32).toString('hex');
-      db.run('INSERT INTO admin_sessions (token, user_id, email) VALUES (?, ?, ?)', [token, user.id, cleanEmail], (e2) => {
-        if (e2) { console.error('[admin-login] session insert error:', e2.message); return res.status(500).json({ error: e2.message }); }
-        console.log('[admin-login] success for', cleanEmail);
-        res.json({ token, email: user.email, name: user.name, role: user.role });
-      });
+
+      const finishLogin = (roster) => {
+        const token = crypto.randomBytes(32).toString('hex');
+        db.run('INSERT INTO admin_sessions (token, user_id, email) VALUES (?, ?, ?)', [token, user.id, cleanEmail], (e2) => {
+          if (e2) { console.error('[admin-login] session insert error:', e2.message); return res.status(500).json({ error: e2.message }); }
+          console.log('[admin-login] success for', cleanEmail);
+          res.json({ token, email: user.email, name: user.name, role: user.role, accounts: roster });
+        });
+      };
+
+      if (accounts.length > 0) {
+        // Roster exists — make sure this user is in it
+        if (!acc) {
+          accounts.push({ name: user.name, email: cleanEmail, role: user.role, status: 'active' });
+          writeAdminState('kibbleguard-admin-accounts', JSON.stringify(accounts), () => finishLogin(accounts));
+        } else {
+          finishLogin(accounts);
+        }
+      } else {
+        // No roster at all — build one from all admin users in the DB
+        console.log('[admin-login] no roster found, building from users table');
+        db.all(`SELECT name, email, role FROM users WHERE role != 'user'`, [], (e3, admins) => {
+          const newRoster = (admins || []).map(a => ({
+            name: a.name,
+            email: String(a.email).toLowerCase(),
+            role: a.role,
+            status: 'active'
+          }));
+          if (!newRoster.find(a => a.email === cleanEmail)) {
+            newRoster.push({ name: user.name, email: cleanEmail, role: user.role, status: 'active' });
+          }
+          writeAdminState('kibbleguard-admin-accounts', JSON.stringify(newRoster), () => {
+            console.log('[admin-login] roster created with', newRoster.length, 'admins');
+            finishLogin(newRoster);
+          });
+        });
+      }
     });
   });
 });

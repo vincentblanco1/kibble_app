@@ -235,6 +235,11 @@
       clearFailedLogins(email);
       localStorage.setItem('kibbleguard-admin-email', r.data.email || email);
       localStorage.setItem('kibbleguard-session-token', r.data.token);
+      // Store the admin roster so the dashboard recognises this account
+      // immediately, before db-sync.js has a chance to hydrate from the server.
+      if (r.data.accounts) {
+        localStorage.setItem('kibbleguard-admin-accounts', JSON.stringify(r.data.accounts));
+      }
       window.location.href = 'dashboard.html';
     }).catch(function () {
       resetLoginButton();
