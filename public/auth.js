@@ -194,6 +194,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('kibbleguard_auth_user', user.email || email);
                     localStorage.setItem('kibbleguard_user', JSON.stringify(user));
 
+                    // Save profile data (including avatar) from server
+                    if (data.profile) {
+                        localStorage.setItem('kibbleguard_user_profile', JSON.stringify(data.profile));
+                    }
+
                     // Check user role: redirect staff to admin panel, pet owners to app dashboard
                     const adminRoles = ['Chief Admin', 'Ingredient Reviewer', 'Support Admin'];
                     if (adminRoles.includes(user.role)) {

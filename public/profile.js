@@ -215,7 +215,8 @@ document.addEventListener('DOMContentLoaded', () => {
           country: userProfile.country,
           caregiver_role: userProfile.caregiverRole,
           feeding_style: userProfile.feedingStyle,
-          pet_count: userProfile.petCount
+          pet_count: userProfile.petCount,
+          avatar: userProfile.avatar || ''
         };
         const resp = await fetch('/api/users/' + kgUserId, {
           method: 'PATCH',

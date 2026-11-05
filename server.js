@@ -184,6 +184,7 @@ db.serialize(() => {
   db.run(`ALTER TABLE users ADD COLUMN caregiver_role TEXT`, () => {});
   db.run(`ALTER TABLE users ADD COLUMN feeding_style TEXT`, () => {});
   db.run(`ALTER TABLE users ADD COLUMN pet_count INTEGER`, () => {});
+  db.run(`ALTER TABLE users ADD COLUMN avatar TEXT`, () => {});
 
   // Admin panel: generic key-value store for admin UI state that the admin
   // pages already treat as a synced "kibbleguard-..." localStorage key --
@@ -488,8 +489,9 @@ app.post('/api/login', (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
   const query = `
-    SELECT id, name, email, role, is_banned, ban_reason 
-    FROM users 
+    SELECT id, name, middle_name, email, role, is_banned, ban_reason,
+           birthdate, gender, city, region, country, caregiver_role, feeding_style, pet_count, avatar
+    FROM users
     WHERE LOWER(email) = ? AND (password = ? OR password_hash = ?)
   `;
 
@@ -509,6 +511,23 @@ if (isBanned) {
 }
 
     console.log(`[AUTH] User logged in: \({user.email} (\){user.role})`);
+    // Build profile object so the frontend can store it in localStorage
+    const nameParts = (user.name || '').trim().split(/\s+/);
+    const profile = {
+      firstName: nameParts[0] || '',
+      middleName: user.middle_name || (nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : ''),
+      lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : '',
+      email: user.email,
+      birthdate: user.birthdate || '',
+      gender: user.gender || '',
+      city: user.city || '',
+      region: user.region || '',
+      country: user.country || '',
+      caregiverRole: user.caregiver_role || '',
+      feedingStyle: user.feeding_style || '',
+      avatar: user.avatar || ''
+    };
+
     res.json({
       message: 'Login successful',
       user: {
@@ -516,7 +535,8 @@ if (isBanned) {
         name: user.name,
         email: user.email,
         role: user.role || 'user'
-      }
+      },
+      profile: profile
     });
   });
 });
@@ -524,7 +544,7 @@ if (isBanned) {
 // --- USER PROFILE UPDATE ---
 app.patch('/api/users/:id', (req, res) => {
   const userId = parseInt(req.params.id);
-  const { name, middle_name, birthdate, gender, city, region, country, caregiver_role, feeding_style, pet_count } = req.body || {};
+  const { name, middle_name, birthdate, gender, city, region, country, caregiver_role, feeding_style, pet_count, avatar } = req.body || {};
   if (!userId) return res.status(400).json({ error: 'Invalid user ID.' });
 
   const fields = [];
@@ -539,6 +559,7 @@ app.patch('/api/users/:id', (req, res) => {
   if (caregiver_role !== undefined){ fields.push('caregiver_role=?'); vals.push(caregiver_role); }
   if (feeding_style !== undefined) { fields.push('feeding_style=?');  vals.push(feeding_style); }
   if (pet_count !== undefined)     { fields.push('pet_count=?');      vals.push(pet_count); }
+  if (avatar !== undefined)        { fields.push('avatar=?');         vals.push(avatar); }
 
   if (fields.length === 0) return res.status(400).json({ error: 'No fields to update.' });
   vals.push(userId);
@@ -546,7 +567,7 @@ app.patch('/api/users/:id', (req, res) => {
   db.run(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, vals, function(err) {
     if (err) return res.status(500).json({ error: err.message });
     if (this.changes === 0) return res.status(404).json({ error: 'User not found.' });
-    db.get(`SELECT id, name, middle_name, email, role, birthdate, gender, city, region, country, caregiver_role, feeding_style, pet_count FROM users WHERE id = ?`, [userId], (err2, row) => {
+    db.get(`SELECT id, name, middle_name, email, role, birthdate, gender, city, region, country, caregiver_role, feeding_style, pet_count, avatar FROM users WHERE id = ?`, [userId], (err2, row) => {
       if (err2) return res.json({ success: true });
       res.json({ success: true, user: row });
     });
