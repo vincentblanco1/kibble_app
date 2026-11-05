@@ -65,7 +65,8 @@ function postgresSql(sql) {
     .replace(/INSERT\s+OR\s+IGNORE\s+INTO/ig, 'INSERT INTO')
     .replace(/INSERT\s+OR\s+REPLACE\s+INTO/ig, 'INSERT INTO')
     .replace(/datetime\(\s*'now'\s*\)/ig, 'CURRENT_TIMESTAMP')
-    .replace(/\s+COLLATE\s+NOCASE/ig, '');
+    .replace(/\s+COLLATE\s+NOCASE/ig, '')
+    .replace(/\bDATETIME\b/ig, 'TIMESTAMP');
   q = q.replace(/INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT/ig, 'SERIAL PRIMARY KEY');
   let n = 0;
   q = q.replace(/\?/g, () => '$' + (++n));
