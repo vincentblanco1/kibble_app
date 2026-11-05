@@ -12,10 +12,24 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
 
-// "5m ago" style label from a SQLite UTC timestamp (used by the admin dashboard stream)
+// A Postgres TIMESTAMP column comes back from `pg` as a real JS Date object,
+// not a string -- but most of this file was written against the old SQLite
+// build, which always returned "YYYY-MM-DD HH:MM:SS" text, and "fixed" that
+// into a real Date with `new Date(String(ts).replace(' ', 'T') + 'Z')`. Fed a
+// Date object instead of a string, that hack produces an Invalid Date (its
+// String() form has a space in the wrong place), and anything calling
+// .toISOString() or .toLocaleDateString() on the result throws -- silently
+// crashing the request before a response is ever sent. This handles both
+// shapes safely and never throws.
+function toSafeDate(ts) {
+  if (ts instanceof Date) return isNaN(ts.getTime()) ? new Date() : ts;
+  const d = new Date(String(ts).replace(' ', 'T') + 'Z');
+  return isNaN(d.getTime()) ? new Date() : d;
+}
+
+// "5m ago" style label from a scan/notification timestamp
 function timeAgo(ts) {
-  const then = new Date(String(ts).replace(' ', 'T') + 'Z').getTime();
-  if (isNaN(then)) return 'Just now';
+  const then = toSafeDate(ts).getTime();
   const mins = Math.max(0, Math.floor((Date.now() - then) / 60000));
   if (mins < 1) return 'Just now';
   if (mins < 60) return mins + 'm ago';
@@ -1355,7 +1369,7 @@ app.get('/api/history/:id', (req, res) => {
       results,
       flagged: flaggedOut,
       image,
-      date: new Date(String(row.created_at).replace(' ', 'T') + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      date: toSafeDate(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     });
 
     // Scans saved after this update keep their exact results
@@ -1496,7 +1510,7 @@ app.get('/api/notifications', (req, res) => {
       link: r.link,
       source: r.source,
       read: !!r.is_read,
-      createdAt: new Date(String(r.created_at).replace(' ', 'T') + 'Z').toISOString(),
+      createdAt: toSafeDate(r.created_at).toISOString(),
       time: timeAgo(r.created_at)
     })));
   });
@@ -1893,7 +1907,7 @@ app.get('/api/admin/data', requireAdminAuth, (req, res) => {
               unrated: x.category === 'Ingredient' && /no specific restrictions/i.test(x.notes || ''),
               note: x.notes || ''
             }));
-            const createdIso = new Date(String(r.created_at).replace(' ', 'T') + 'Z').toISOString();
+            const createdIso = toSafeDate(r.created_at).toISOString();
             return {
               id: r.id,
               user_id: r.user_id,
@@ -1933,7 +1947,7 @@ app.get('/api/admin/data', requireAdminAuth, (req, res) => {
                 message: t.message,
                 owner: t.owner || 'Unknown owner',
                 ownerEmail: t.ownerEmail || '',
-                timestamp: new Date(String(t.created_at).replace(' ', 'T') + 'Z').toISOString()
+                timestamp: toSafeDate(t.created_at).toISOString()
               }))
             });
           });
