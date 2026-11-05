@@ -644,6 +644,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateCompareSelectionUI() {
+    // Preserve current hidden/visible state so this never fights toggleCompareMode's visibility toggle
+    const hiddenPrefix = isCompareMode ? '' : 'hidden ';
     allCards.forEach(card => {
       const key = card.getAttribute('data-compound');
       const pill = card.querySelector('.compare-checkbox-pill');
@@ -651,13 +653,13 @@ document.addEventListener('DOMContentLoaded', () => {
         card.classList.add('ring-2', 'ring-[#45671d]', 'border-[#45671d]');
         if (pill) {
           pill.textContent = '✓ Selected';
-          pill.className = 'compare-checkbox-pill absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-[#45671d] text-white text-[9.5px] font-black shadow-xs';
+          pill.className = `compare-checkbox-pill ${hiddenPrefix}absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-[#45671d] text-white text-[9.5px] font-black shadow-xs`;
         }
       } else {
         card.classList.remove('ring-2', 'ring-[#45671d]', 'border-[#45671d]');
         if (pill) {
           pill.textContent = '+ Compare';
-          pill.className = 'compare-checkbox-pill absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9.5px] font-extrabold text-[#788673]';
+          pill.className = `compare-checkbox-pill ${hiddenPrefix}absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9.5px] font-extrabold text-[#788673]`;
         }
       }
     });
