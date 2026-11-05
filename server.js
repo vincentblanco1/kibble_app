@@ -710,7 +710,7 @@ async function fetchSpeciesIngredients(speciesKey) {
 function analyzeIngredients(tokens, dbIngredients) {
   const flagged = [];
   const parsedResults = [];
-  let score = 95;
+  let score = 100;
 
   // Flatten name + aliases into one lookup list so either can match
   const lookupEntries = [];
