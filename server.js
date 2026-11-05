@@ -337,8 +337,16 @@ db.serialize(() => {
     category TEXT,
     message TEXT,
     timestamp TEXT,
+    status TEXT DEFAULT 'pending',
+    reply_message TEXT,
+    resolved_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+  // these three are no-ops on a brand-new table (the CREATE above already has them) but fill
+  // them in on a table that existed before this change -- same pattern as is_banned below
+  db.run(`ALTER TABLE tickets ADD COLUMN status TEXT DEFAULT 'pending'`, () => {});
+  db.run(`ALTER TABLE tickets ADD COLUMN reply_message TEXT`, () => {});
+  db.run(`ALTER TABLE tickets ADD COLUMN resolved_at DATETIME`, () => {});
 
   // De-dupe log for Safety Feed broadcasts -- the admin page's alert row ids are generated
   // client-side and are NOT guaranteed unique across browser sessions, so this keys off a
@@ -1683,9 +1691,51 @@ app.post('/api/support/tickets', (req, res) => {
       return res.status(500).json({ success: false, error: 'Database error' });
     }
     console.log(`New Ticket Saved: \({ticketId} by User:\){finalUserId}`);
-    res.json({ success: true, message: 'Ticket received and saved' });
+    res.json({ success: true, message: 'Ticket received and saved', ticketId });
   });
 });
+
+// Lets the pet-owner app show real status instead of every report being permanently stuck on
+// "Under Review" -- that label used to be hardcoded client-side at submit time and never
+// checked again. This is the live source of truth, read by the same account id the ticket was
+// submitted under.
+app.get('/api/support/tickets', (req, res) => {
+  const userId = req.query.user_id;
+  if (!userId) return res.json([]);
+  db.all(
+    `SELECT id, category, message, scan_id, status, reply_message, resolved_at, created_at FROM tickets WHERE user_id = ? ORDER BY created_at DESC`,
+    [String(userId)],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json((rows || []).map(r => ({
+        id: r.id,
+        category: r.category,
+        message: r.message,
+        reference: r.scan_id || 'N/A',
+        status: r.status === 'resolved' ? 'Resolved' : 'Under Review',
+        reply: r.reply_message || '',
+        resolvedAt: r.resolved_at ? toSafeDate(r.resolved_at).toISOString() : null,
+        createdAt: toSafeDate(r.created_at).toISOString()
+      })));
+    }
+  );
+});
+
+// The admin "resolve + reply" action used to only ever touch the admin's own synced state
+// (kibbleguard-inquiry-replies) -- the ticket row itself never learned it had been answered, so
+// the pet owner's own dispute log had no way to ever find out. This is what actually marks it.
+app.post('/api/admin/tickets/:id/resolve', requireAdminAuth, (req, res) => {
+  const reply = String((req.body || {}).reply || '').trim();
+  db.run(
+    `UPDATE tickets SET status = 'resolved', reply_message = ?, resolved_at = CURRENT_TIMESTAMP WHERE id = ?`,
+    [reply, req.params.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true, updated: this.changes });
+    }
+  );
+});
+
 // --- ADMIN DASHBOARD OVERVIEW API ---
 app.get('/api/admin/dashboard-stats', async (req, res) => {
   try {

@@ -40,14 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 2. Render Stored Dispute Reports
-  function renderStoredReports() {
+  // `status` used to be hardcoded to 'Under Review' at submit time and never looked at again --
+  // so no matter what an admin did with the report afterward, this list could never show it.
+  // This now renders from the real backend record (status + the admin's actual reply, if any)
+  // whenever it can reach it, and only falls back to the locally-saved copy (still permanently
+  // "Under Review", since a device with no connection has no way to know better) if it can't.
+  function renderReportRows(reports) {
     if (!recentReportsList) return;
-    const reports = JSON.parse(localStorage.getItem('kibbleguard_reports') || '[]');
-
-    if (reportsCountBadge) {
-      reportsCountBadge.textContent = `${reports.length} Logged`;
-    }
-
+    if (reportsCountBadge) reportsCountBadge.textContent = `${reports.length} Logged`;
     if (reports.length === 0) {
       recentReportsList.innerHTML = `
         <div class="py-6 text-center text-[#788673] text-xs">
@@ -56,19 +56,44 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       return;
     }
-
-    recentReportsList.innerHTML = reports.map(r => `
+    recentReportsList.innerHTML = reports.map(r => {
+      const resolved = (r.status || 'Under Review') === 'Resolved';
+      const badgeCls = resolved ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-[#b45309]';
+      return `
       <div class="p-3 rounded-xl bg-[#fbf9f6] border border-[#ebdcd0] flex items-start justify-between gap-3 text-xs">
         <div class="space-y-0.5 min-w-0">
           <div class="flex items-center gap-2">
             <span class="font-bold text-[#182811] truncate">${r.category}</span>
-            <span class="px-2 py-0.2 rounded-full bg-orange-100 text-[#b45309] text-[9.5px] font-extrabold uppercase shrink-0">${r.status || 'Under Review'}</span>
+            <span class="px-2 py-0.2 rounded-full ${badgeCls} text-[9.5px] font-extrabold uppercase shrink-0">${r.status || 'Under Review'}</span>
           </div>
           <p class="text-[10.5px] text-[#788673] truncate">Ref: ${r.reference} • ${r.description}</p>
+          ${resolved && r.reply ? `<p class="text-[10.5px] text-[#45671d] font-medium truncate">Reply: ${r.reply}</p>` : ''}
         </div>
         <span class="text-[10px] text-[#788673] font-medium shrink-0">${new Date(r.timestamp).toLocaleDateString()}</span>
       </div>
-    `).join('');
+    `;
+    }).join('');
+  }
+
+  function renderStoredReports() {
+    const localReports = JSON.parse(localStorage.getItem('kibbleguard_reports') || '[]');
+    renderReportRows(localReports);
+
+    var kgUser = {};
+    try { kgUser = JSON.parse(localStorage.getItem('kibbleguard_user')) || {}; } catch (e) { kgUser = {}; }
+    var uid = kgUser.id || localStorage.getItem('kibbleguard_auth_user');
+    if (!uid) return;
+
+    fetch('/api/support/tickets?user_id=' + encodeURIComponent(uid))
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (liveTickets) {
+        if (!liveTickets) return; // offline / request failed -- keep showing the local copy
+        var mapped = liveTickets.map(function (t) {
+          return { category: t.category, reference: t.reference, description: t.message, timestamp: t.createdAt, status: t.status, reply: t.reply };
+        });
+        renderReportRows(mapped);
+      })
+      .catch(function () { /* offline -- local copy already shown */ });
   }
 
   // 3. Dispute & Flag Submission Handler
@@ -89,6 +114,14 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('kibbleguard_reports', JSON.stringify(existingReports));
 
     // also send the report to the database so the admin sees it in the tickets queue
+    // `kibbleguard_auth_user` only ever holds the signed-in owner's EMAIL, not their numeric id
+    // (set that way at login in auth.js) -- sending it as `user_id` meant the admin's ticket
+    // join could never match it back to a real account, so every reply went nowhere and the
+    // admin panel showed "Unknown owner" even for a real, logged-in pet owner. The real numeric
+    // id lives in the `kibbleguard_user` record also saved at login; fall back to the email only
+    // if that's somehow missing, since the backend now also matches tickets by email.
+    var kgUser = {};
+    try { kgUser = JSON.parse(localStorage.getItem('kibbleguard_user')) || {}; } catch (e) { kgUser = {}; }
     fetch('/api/support/tickets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -97,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         message: reportPayload.description,
         scan_id: reportPayload.reference === 'N/A' ? null : reportPayload.reference,
         timestamp: reportPayload.timestamp,
-        user_id: localStorage.getItem('kibbleguard_auth_user') || 'Unknown User'
+        user_id: kgUser.id || localStorage.getItem('kibbleguard_auth_user') || 'Unknown User'
       })
     }).catch(function (err) { console.warn('Report saved on this device only:', err); });
 

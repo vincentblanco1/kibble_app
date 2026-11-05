@@ -294,7 +294,18 @@ function resolveInquiry(inquiryId) {
     // separate point of failure -- this skips it entirely and goes straight to the account we
     // already know is correct (it's the same one whose name is showing on this very page).
     var deliveries = [
-      queueInAppNotification({ type: 'inquiry-reply', inquiry: inquiryId, user_id: ownerId, to: ownerEmail, name: ownerName, message: response })
+      queueInAppNotification({ type: 'inquiry-reply', inquiry: inquiryId, user_id: ownerId, to: ownerEmail, name: ownerName, message: response }),
+      // "Resolved" used to only ever get written into the admin's own synced state
+      // (kibbleguard-inquiry-replies) -- the actual ticket row never learned it had been
+      // answered, so the pet owner's own "Recent Inquiries & Dispute Log" stayed stuck on
+      // "Under Review" forever, no matter what the admin did. This is what actually updates it.
+      // (window.fetch is patched by db-sync.js to attach the admin's auth token to any
+      // /api/admin/... URL automatically, so no token handling is needed here.)
+      fetch('/api/admin/tickets/' + encodeURIComponent(inquiryId) + '/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reply: response })
+      }).then(function (r) { return r.ok; }).catch(function () { return false; })
     ];
     if (ownerEmail) {
       deliveries.push(sendSystemEmail({ type: 'inquiry-reply', inquiry: inquiryId, to: ownerEmail, name: ownerName, message: response }));
