@@ -1879,13 +1879,21 @@ app.put('/api/admin/state', requireAdminAuth, (req, res) => {
 // ---------- Real, normalized data the admin pages build their tables from
 // (pet owners, pets, ingredients, scans with per-ingredient breakdown, and
 // support tickets) ----------
-app.get('/api/admin/data', requireAdminAuth, (req, res) => {
+app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
+  // Real Supabase ingredient data (650 rows across dog_ingredients/cat_ingredients), not the old
+  // 10-row SQLite `ingredients` table. Fetched up front so a failure here returns a clean 500
+  // instead of getting buried inside the callback pyramid below.
+  let mergedIngredients;
+  try {
+    mergedIngredients = await fetchMergedIngredients();
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
   db.all(`SELECT id, name, email, is_banned, ban_reason, created_at FROM users WHERE role = 'user' ORDER BY created_at DESC`, [], (e1, users) => {
     if (e1) return res.status(500).json({ error: e1.message });
     db.all(`SELECT * FROM pets`, [], (e2, pets) => {
       if (e2) return res.status(500).json({ error: e2.message });
-      db.all(`SELECT * FROM ingredients ORDER BY name ASC`, [], (e3, ingredients) => {
-        if (e3) return res.status(500).json({ error: e3.message });
+      {
         const scanQuery = `
           SELECT s.id, s.user_id, s.product_name, s.rating, s.risk_score, s.image_url, s.raw_text, s.results_json,
                  s.created_at, COALESCE(s.species, p.species) AS species,
@@ -1941,9 +1949,13 @@ app.get('/api/admin/data', requireAdminAuth, (req, res) => {
             res.json({
               users: users || [],
               pets: pets || [],
-              ingredients: (ingredients || []).map(i => ({
-                name: i.name, category: i.category, canine: i.canine_rating, feline: i.feline_rating,
-                description: i.description, risks: i.risks
+              ingredients: mergedIngredients.map(i => ({
+                name: i.name,
+                category: i.category,
+                canine: i.dog ? i.dog.rating : 'Unrated',
+                feline: i.cat ? i.cat.rating : 'Unrated',
+                description: (i.dog && i.dog.notes) || (i.cat && i.cat.notes) || '',
+                risks: (i.dog && i.dog.clinical_symptoms) || (i.cat && i.cat.clinical_symptoms) || ''
               })),
               scans,
               tickets: (tickets || []).map(t => ({
@@ -1957,7 +1969,7 @@ app.get('/api/admin/data', requireAdminAuth, (req, res) => {
             });
           });
         });
-      });
+      }
     });
   });
 });
@@ -1972,29 +1984,68 @@ app.post('/api/admin/users/status', requireAdminAuth, (req, res) => {
   });
 });
 
-// ---------- Ingredient Database edits (real ingredients table) ----------
-app.post('/api/admin/ingredients/sync', requireAdminAuth, (req, res) => {
+// ---------- Ingredient Database edits (real Supabase dog_ingredients/cat_ingredients tables) ----------
+// The admin page's editor only knows name/category/canine rating/feline rating/description/risks --
+// it has no UI for severity_score, dosage, weight/age/breed-specific data, aliases or
+// emergency_action, so those richer fields are never overwritten here: an UPDATE touches only the
+// columns this form actually controls, and a brand-new ingredient gets safe, empty defaults for the
+// rest rather than blanks stomping real clinical data later.
+
+// Finds the shared ingredient_id for a name by matching either table's primary_name or aliases.
+async function findIngredientId(name) {
+  const [dogHit, catHit] = await Promise.all([
+    pool.query(`SELECT ingredient_id FROM dog_ingredients WHERE LOWER(primary_name) = LOWER($1) OR $1 = ANY(aliases) LIMIT 1`, [name]),
+    pool.query(`SELECT ingredient_id FROM cat_ingredients WHERE LOWER(primary_name) = LOWER($1) OR $1 = ANY(aliases) LIMIT 1`, [name])
+  ]);
+  const found = dogHit.rows[0] || catHit.rows[0];
+  return found ? found.ingredient_id : null;
+}
+
+// Creates or updates one species' row for an ingredient. If the admin left that species
+// "Unrated", no row is created/touched for it -- an ingredient can legitimately be documented
+// for only one species, and writing a blank "Unrated" row would just be noise.
+async function upsertSpeciesIngredient(table, ingredientId, name, category, rating, notes, clinicalSymptoms) {
+  if (!rating || rating === 'Unrated') return;
+  const existing = await pool.query(`SELECT ingredient_id FROM ${table} WHERE ingredient_id = $1`, [ingredientId]);
+  if (existing.rows.length) {
+    await pool.query(
+      `UPDATE ${table} SET category = $2, primary_name = $3, risk = $4, notes = $5, clinical_symptoms = $6, updated_at = NOW() WHERE ingredient_id = $1`,
+      [ingredientId, category || 'Ingredient', name, rating, notes || '', clinicalSymptoms || '']
+    );
+  } else {
+    await pool.query(
+      `INSERT INTO ${table}
+         (ingredient_id, category, primary_name, aliases, risk, severity_score, notes, dosage, weight_specific_data, age_specific_data, breed_specific_data, clinical_symptoms, emergency_action, updated_at)
+       VALUES ($1, $2, $3, '{}', $4, '0', $5, '', '', '', '', $6, '', NOW())`,
+      [ingredientId, category || 'Ingredient', name, rating, notes || '', clinicalSymptoms || '']
+    );
+  }
+}
+
+app.post('/api/admin/ingredients/sync', requireAdminAuth, async (req, res) => {
   const { upsert, remove } = req.body || {};
-  const tasks = [];
-  (upsert || []).forEach((i) => {
-    tasks.push(new Promise((resolve) => {
-      db.run(
-        `INSERT INTO ingredients (name, category, canine_rating, feline_rating, description, risks)
-         VALUES (?, ?, ?, ?, ?, ?)
-         ON CONFLICT (name) DO UPDATE SET category = EXCLUDED.category, canine_rating = EXCLUDED.canine_rating,
-           feline_rating = EXCLUDED.feline_rating, description = EXCLUDED.description, risks = EXCLUDED.risks
-         RETURNING id`,
-        [i.name, i.category || null, i.canine || 'Unrated', i.feline || 'Unrated', i.description || '', i.risks || ''],
-        (err) => resolve(!err)
-      );
-    }));
-  });
-  (remove || []).forEach((name) => {
-    tasks.push(new Promise((resolve) => {
-      db.run('DELETE FROM ingredients WHERE name = ?', [name], (err) => resolve(!err));
-    }));
-  });
-  Promise.all(tasks).then(() => res.json({ success: true })).catch(() => res.status(500).json({ error: 'Sync failed.' }));
+  try {
+    for (const i of (upsert || [])) {
+      if (!i.name) continue;
+      let ingredientId = await findIngredientId(i.name);
+      if (!ingredientId) {
+        // New ingredient the admin typed in that doesn't match anything in either table yet.
+        ingredientId = 'ADM' + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 1000);
+      }
+      await upsertSpeciesIngredient('dog_ingredients', ingredientId, i.name, i.category, i.canine, i.description, i.risks);
+      await upsertSpeciesIngredient('cat_ingredients', ingredientId, i.name, i.category, i.feline, i.description, i.risks);
+    }
+    for (const name of (remove || [])) {
+      const ingredientId = await findIngredientId(name);
+      if (ingredientId) {
+        await pool.query(`DELETE FROM dog_ingredients WHERE ingredient_id = $1`, [ingredientId]);
+        await pool.query(`DELETE FROM cat_ingredients WHERE ingredient_id = $1`, [ingredientId]);
+      }
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ---------- Scan photo for the admin Inspect window (data: URI stored on
