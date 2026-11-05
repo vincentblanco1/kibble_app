@@ -680,46 +680,72 @@ function mapRiskToRating(risk) {
   return 'Safe';
 }
 
-// Fetches species-specific ingredient risk data directly from Supabase (dog_ingredients /
-// cat_ingredients), shaped to what analyzeIngredients() expects. Replaces the old SQLite
-// `ingredients` table as the scoring source so the live scan reflects the same data shown
-// in the Ingredient Wiki.
-async function fetchSpeciesIngredients(speciesKey) {
-  const table = (speciesKey === 'cat' || speciesKey === 'feline') ? 'cat_ingredients' : 'dog_ingredients';
-  const result = await pool.query(
-    `SELECT primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, emergency_action FROM ${table}`
-  );
-  return result.rows.map(row => ({
-    name: row.primary_name,
-    aliases: row.aliases || '',
-    category: row.category || 'Ingredient',
-    rating: mapRiskToRating(row.risk),
-    severity_score: Number(row.severity_score) || 0,
-    description: row.notes || '',
-    risks: row.notes || '',
-    clinical_symptoms: row.clinical_symptoms || '',
-    dosage: row.dosage || '',
-    emergency_action: row.emergency_action || ''
-  }));
+// Fetches ALL ingredient risk data from Supabase — both dog_ingredients and cat_ingredients —
+// merged by ingredient_id. An ingredient documented for only one species (e.g. "Egg" with a
+// cat_ingredients row but no dog_ingredients row) is still recognized during a scan for the
+// OTHER species too, instead of silently falling back to "no restrictions recorded". The
+// species-specific risk/severity is still what drives scoring; the merge only affects whether
+// the ingredient is *recognized* at all.
+async function fetchMergedIngredients() {
+  const [dogResult, catResult] = await Promise.all([
+    pool.query(`SELECT ingredient_id, primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, emergency_action FROM dog_ingredients`),
+    pool.query(`SELECT ingredient_id, primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, emergency_action FROM cat_ingredients`)
+  ]);
+
+  const dogMap = new Map(dogResult.rows.map(r => [r.ingredient_id, r]));
+  const catMap = new Map(catResult.rows.map(r => [r.ingredient_id, r]));
+  const allIds = new Set([...dogMap.keys(), ...catMap.keys()]);
+
+  function shapeSpeciesRow(row) {
+    if (!row) return null;
+    return {
+      rating: mapRiskToRating(row.risk),
+      severity_score: Number(row.severity_score) || 0,
+      notes: row.notes || '',
+      clinical_symptoms: row.clinical_symptoms || '',
+      dosage: row.dosage || '',
+      emergency_action: row.emergency_action || ''
+    };
+  }
+
+  const merged = [];
+  allIds.forEach(id => {
+    const dogRow = dogMap.get(id) || null;
+    const catRow = catMap.get(id) || null;
+    const primary = dogRow || catRow;
+    merged.push({
+      id,
+      name: primary.primary_name,
+      aliases: primary.aliases || '',
+      category: primary.category || 'Ingredient',
+      dog: shapeSpeciesRow(dogRow),
+      cat: shapeSpeciesRow(catRow)
+    });
+  });
+
+  return merged;
 }
 
-// Scores a list of ingredient names against the Supabase-backed ingredient list (shared by
+// Scores a list of ingredient names against the merged Supabase ingredient list (shared by
 // scanning and re-opening a scan). Each match carries a real severity_score (0-100) from the
-// database, so the score deduction scales with how dangerous the ingredient actually is
-// instead of a flat penalty per Caution/Toxic hit.
-function analyzeIngredients(tokens, dbIngredients) {
+// database for the species being scanned, so the score deduction scales with how dangerous the
+// ingredient actually is instead of a flat penalty per Caution/Toxic hit. An ingredient that's
+// recognized but only documented for the OTHER species is still identified (with a note saying
+// so) rather than treated as completely unknown.
+function analyzeIngredients(tokens, mergedIngredients, speciesKey) {
   const flagged = [];
   const parsedResults = [];
   let score = 100;
+  const isFeline = speciesKey === 'cat' || speciesKey === 'feline';
 
   // Flatten name + aliases into one lookup list so either can match
   const lookupEntries = [];
-  dbIngredients.forEach(dbItem => {
-    const primaryNorm = normalizeIngredientName(dbItem.name);
-    if (primaryNorm) lookupEntries.push({ key: primaryNorm, dbItem });
-    String(dbItem.aliases || '').split(',').forEach(a => {
+  mergedIngredients.forEach(item => {
+    const primaryNorm = normalizeIngredientName(item.name);
+    if (primaryNorm) lookupEntries.push({ key: primaryNorm, item });
+    String(item.aliases || '').split(',').forEach(a => {
       const aliasNorm = normalizeIngredientName(a);
-      if (aliasNorm) lookupEntries.push({ key: aliasNorm, dbItem });
+      if (aliasNorm) lookupEntries.push({ key: aliasNorm, item });
     });
   });
 
@@ -728,7 +754,7 @@ function analyzeIngredients(tokens, dbIngredients) {
     if (!tokenNorm) return null;
 
     const exact = lookupEntries.find(e => e.key === tokenNorm);
-    if (exact) return exact.dbItem;
+    if (exact) return exact.item;
 
     if (tokenNorm.length < 3) return null;
     let best = null;
@@ -738,36 +764,57 @@ function analyzeIngredients(tokens, dbIngredients) {
         if (!best || e.key.length > best.key.length) best = e;
       }
     });
-    return best ? best.dbItem : null;
+    return best ? best.item : null;
   }
 
   tokens.forEach(token => {
-    const matchedDbItem = findMatch(token);
+    const matchedItem = findMatch(token);
 
-    if (matchedDbItem) {
-      const itemRating = matchedDbItem.rating || 'Safe';
-      const severity = matchedDbItem.severity_score || 0;
+    if (matchedItem) {
+      const speciesData = isFeline ? matchedItem.cat : matchedItem.dog;
+      const otherSpeciesData = isFeline ? matchedItem.dog : matchedItem.cat;
 
-      if (itemRating === 'Toxic') {
-        const deduction = Math.max(15, Math.round(severity * 0.45));
-        score -= deduction;
-        flagged.push({ name: matchedDbItem.name, rating: 'Toxic', risks: matchedDbItem.risks });
-      } else if (itemRating === 'Caution') {
-        const deduction = Math.max(5, Math.round(severity * 0.3));
-        score -= deduction;
-        flagged.push({ name: matchedDbItem.name, rating: 'Caution', risks: matchedDbItem.risks });
+      if (speciesData) {
+        // We have a species-specific row — score normally off its real severity_score
+        const itemRating = speciesData.rating || 'Safe';
+        const severity = speciesData.severity_score || 0;
+
+        if (itemRating === 'Toxic') {
+          const deduction = Math.max(15, Math.round(severity * 0.45));
+          score -= deduction;
+          flagged.push({ name: matchedItem.name, rating: 'Toxic', risks: speciesData.notes });
+        } else if (itemRating === 'Caution') {
+          const deduction = Math.max(5, Math.round(severity * 0.3));
+          score -= deduction;
+          flagged.push({ name: matchedItem.name, rating: 'Caution', risks: speciesData.notes });
+        }
+
+        parsedResults.push({
+          name: matchedItem.name,
+          category: matchedItem.category,
+          status: itemRating,
+          notes: speciesData.notes || 'Evaluated compound',
+          severity_score: severity,
+          clinical_symptoms: speciesData.clinical_symptoms || '',
+          dosage: speciesData.dosage || '',
+          emergency_action: speciesData.emergency_action || ''
+        });
+      } else {
+        // Recognized ingredient, but no row for THIS species yet. Don't silently claim
+        // "no restrictions recorded" — say plainly it hasn't been independently evaluated
+        // for this species, and surface what IS known from the other species' entry.
+        const speciesWord = isFeline ? 'cats' : 'dogs';
+        const note = otherSpeciesData
+          ? `Not independently evaluated for ${speciesWord} in the KibbleGuard database yet. Known data for the other species: ${otherSpeciesData.notes || 'no notes recorded'}.`
+          : `Recognized as "${matchedItem.category}" but not yet evaluated for ${speciesWord} in the KibbleGuard database.`;
+
+        parsedResults.push({
+          name: matchedItem.name,
+          category: matchedItem.category,
+          status: 'Safe',
+          notes: note
+        });
       }
-
-      parsedResults.push({
-        name: matchedDbItem.name,
-        category: matchedDbItem.category,
-        status: itemRating,
-        notes: matchedDbItem.risks || matchedDbItem.description || 'Evaluated compound',
-        severity_score: severity,
-        clinical_symptoms: matchedDbItem.clinical_symptoms || '',
-        dosage: matchedDbItem.dosage || '',
-        emergency_action: matchedDbItem.emergency_action || ''
-      });
     } else {
       parsedResults.push({
         name: token,
@@ -985,16 +1032,16 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
 
     const speciesKey = (species || '').toLowerCase();
 
-    let dbIngredients;
+    let mergedIngredients;
     try {
-      dbIngredients = await fetchSpeciesIngredients(speciesKey);
+      mergedIngredients = await fetchMergedIngredients();
     } catch (dbErr) {
       console.error('[ASSESS] Failed to load Supabase ingredient data:', dbErr.message);
       return res.status(500).json({ error: 'Failed to load ingredient database: ' + dbErr.message });
     }
 
     const runAnalysis = (pet) => {
-      const analysis = analyzeIngredients(ingredientTokens, dbIngredients);
+      const analysis = analyzeIngredients(ingredientTokens, mergedIngredients, speciesKey);
       const allergy = pet ? applyPetAllergies(analysis, ingredientTokens, pet) : null;
       const { flagged, parsedResults, score, finalRating } = analysis;
 
@@ -1292,9 +1339,9 @@ app.get('/api/history/:id', (req, res) => {
     const tokens = String(row.raw_text || '').split(',').map(t => t.trim()).filter(Boolean);
     if (tokens.length === 0) return send([], flagged);
     const speciesKey = species.toLowerCase();
-    fetchSpeciesIngredients(speciesKey)
-      .then(dbIngredients => {
-        const rebuilt = analyzeIngredients(tokens, dbIngredients);
+    fetchMergedIngredients()
+      .then(mergedIngredients => {
+        const rebuilt = analyzeIngredients(tokens, mergedIngredients, speciesKey);
         send(rebuilt.parsedResults, rebuilt.flagged);
       })
       .catch(e2 => res.status(500).json({ error: e2.message }));
