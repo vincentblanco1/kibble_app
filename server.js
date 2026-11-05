@@ -1027,6 +1027,82 @@ app.get('/api/products', (req, res) => {
   });
 });
 
+// --- WIKI INGREDIENT TABLES (Supabase dog_ingredients / cat_ingredients) ---
+app.get('/api/dog-ingredients', async (req, res) => {
+  try {
+    const search = req.query.q ? `%${req.query.q}%` : null;
+    let sql = `SELECT id, category, ingredient_id, primary_name, aliases, risk, severity_score, notes, dosage, weight_specific_data, age_specific_data, breed_specific_data, clinical_symptoms, emergency_action, updated_at FROM dog_ingredients`;
+    const params = [];
+    if (search) {
+      sql += ` WHERE primary_name ILIKE $1 OR category ILIKE $1 OR notes ILIKE $1`;
+      params.push(search);
+    }
+    sql += ` ORDER BY category ASC, primary_name ASC`;
+    const result = await pool.query(sql, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('[dog-ingredients]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/cat-ingredients', async (req, res) => {
+  try {
+    const search = req.query.q ? `%${req.query.q}%` : null;
+    let sql = `SELECT id, category, ingredient_id, primary_name, aliases, risk, severity_score, notes, dosage, weight_specific_data, age_specific_data, breed_specific_data, clinical_symptoms, emergency_action, updated_at FROM cat_ingredients`;
+    const params = [];
+    if (search) {
+      sql += ` WHERE primary_name ILIKE $1 OR category ILIKE $1 OR notes ILIKE $1`;
+      params.push(search);
+    }
+    sql += ` ORDER BY category ASC, primary_name ASC`;
+    const result = await pool.query(sql, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('[cat-ingredients]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Combined endpoint for wiki page (both species)
+app.get('/api/wiki-ingredients', async (req, res) => {
+  try {
+    const search = req.query.q ? `%${req.query.q}%` : null;
+    const category = req.query.category || null;
+
+    let dogSql = `SELECT *, 'dog' AS species FROM dog_ingredients`;
+    let catSql = `SELECT *, 'cat' AS species FROM cat_ingredients`;
+    const conditions = [];
+    const params = [];
+    let paramIdx = 1;
+
+    if (search) {
+      conditions.push(`(primary_name ILIKE $${paramIdx} OR category ILIKE $${paramIdx} OR notes ILIKE $${paramIdx})`);
+      params.push(search);
+      paramIdx++;
+    }
+    if (category) {
+      conditions.push(`category = $${paramIdx}`);
+      params.push(category);
+      paramIdx++;
+    }
+
+    const where = conditions.length ? ` WHERE ${conditions.join(' AND ')}` : '';
+    dogSql += where;
+    catSql += where;
+
+    const [dogResult, catResult] = await Promise.all([
+      pool.query(dogSql + ` ORDER BY category ASC, primary_name ASC`, params),
+      pool.query(catSql + ` ORDER BY category ASC, primary_name ASC`, params)
+    ]);
+
+    res.json({ dog: dogResult.rows, cat: catResult.rows });
+  } catch (err) {
+    console.error('[wiki-ingredients]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- INGREDIENTS & SCANS ROUTES ---
 app.get('/api/ingredients', (req, res) => {
   db.all(`SELECT * FROM ingredients ORDER BY name ASC`, [], (err, rows) => {

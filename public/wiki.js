@@ -152,231 +152,282 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // ==========================================
-  // 2. CLINICAL DOSSIER DATASET
+  // 2. DYNAMIC INGREDIENT DATA FROM DATABASE
   // ==========================================
-  const DOSSIER_DETAILS = {
-    'xylitol': {
-      title: 'Xylitol (Birch Sugar)',
-      category: 'Critical Lethal Sweetener',
-      aliases: 'Wood Sugar, E967, Birch Bark Extract',
-      score: 98,
-      canineTier: 'LETHAL TO CANINES',
-      canineScore: 'Score: 98',
-      canineBadgeClass: 'bg-red-100 text-red-700 border-red-200',
-      felineTier: 'LOW TOXICITY (FELINE)',
-      felineScore: 'Score: 10',
-      felineBadgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
-      statusBadge: 'bg-red-100 text-red-700 border-red-200',
-      mechanism: 'In canines, xylitol stimulates rapid, unregulated release of insulin from the pancreatic beta cells, causing a profound drop in blood glucose (hypoglycemia) within 30 to 60 minutes. Higher doses cause severe acute hepatic necrosis and liver failure.',
-      canine: 'Fatal toxicity dose: >0.1 g/kg induces acute hypoglycemia and ataxia; >0.5 g/kg triggers acute liver failure and coagulopathy.',
-      feline: 'Felines do not exhibit the same acute insulin spike. However, it provides zero nutritional value and is not recommended.',
-      alternatives: 'Pure organic pumpkin puree, unsweetened applesauce, or natural sweet potato mash.'
-    },
-    'bha': {
-      title: 'BHA & BHT (Synthetic Antioxidants)',
-      category: 'Preservative / Endocrine Disruptor',
-      aliases: 'Butylated Hydroxyanisole (E320), Butylated Hydroxytoluene (E321)',
-      score: 48,
-      canineTier: 'ENDOCRINE CAUTION',
-      canineScore: 'Score: 48',
-      canineBadgeClass: 'bg-orange-100 text-[#b45309] border-orange-200',
-      felineTier: 'HEPATIC STRAIN (FELINE)',
-      felineScore: 'Score: 54',
-      felineBadgeClass: 'bg-orange-100 text-[#b45309] border-orange-200',
-      statusBadge: 'bg-orange-100 text-[#b45309] border-orange-200',
-      mechanism: 'Synthetic phenolic compounds added to fats and oils to delay oxidative rancidity. Slowly metabolized and excreted, resulting in chronic bioaccumulation in adipose tissue and hepatic strain.',
-      canine: 'Associated with chronic allergic dermatitis, mast-cell degranulation, and cumulative liver stress over extended feeding.',
-      feline: 'Cats clear phenolic compounds significantly slower due to liver glucuronidation deficiencies, heightening organ strain.',
-      alternatives: 'Mixed natural tocopherols (Vitamin E), rosemary extract, and citric acid.'
-    },
-    'propylene-glycol': {
-      title: 'Propylene Glycol (Humectant)',
-      category: 'Strictly Prohibited for Felines',
-      aliases: '1,2-Propanediol, E1520',
-      score: 92,
-      canineTier: 'REGULATED HUMECTANT',
-      canineScore: 'Score: 30',
-      canineBadgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
-      felineTier: 'STRICTLY FATAL TO CATS',
-      felineScore: 'Score: 92 (CAT)',
-      felineBadgeClass: 'bg-purple-100 text-purple-700 border-purple-200',
-      statusBadge: 'bg-purple-100 text-purple-700 border-purple-200',
-      mechanism: 'Synthetic chemical humectant used to maintain soft texture in semi-moist foods. Cats strictly lack glucuronidation metabolic pathways, causing toxic metabolites to damage red blood cell membranes.',
-      canine: 'Tolerated in regulated small concentrations in canine food; not considered acutely toxic to dogs.',
-      feline: 'Strictly lethal to felines. Causes oxidation of hemoglobin, triggering massive Heinz body hemolytic anemia and collapse.',
-      alternatives: 'Vegetable glycerin or natural honey moisture binders.'
-    },
-    'taurine': {
-      title: 'Taurine (Essential Amino Acid)',
-      category: 'Mandatory Feline Nutrient',
-      aliases: '2-aminoethanesulfonic acid',
-      score: '00',
-      canineTier: 'HEALTH BENEFIT (CANINE)',
-      canineScore: 'Score: 00',
-      canineBadgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      felineTier: 'MANDATORY FELINE NUTRIENT',
-      felineScore: 'Score: 00 (ESSENTIAL)',
-      felineBadgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      statusBadge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      mechanism: 'Crucial for conjugation of bile salts, retinal photoreceptor structure, normal reproductive performance, and cardiac myocardial calcium flux.',
-      canine: 'Synthesized endogenously in most dogs; supplemental taurine prevents dilated cardiomyopathy (DCM) in large breeds.',
-      feline: 'Mandatory dietary requirement. Cats cannot synthesize taurine; deficiency leads to irreversible central retinal degeneration and DCM.',
-      alternatives: 'Fresh muscle meats (chicken heart, dark poultry, salmon, organ meats).'
-    },
-    'ethoxyquin': {
-      title: 'Ethoxyquin (Synthetic Stabilizer)',
-      category: 'Pesticide Derivative Preservative',
-      aliases: '6-ethoxy-2,2,4-trimethyl-1,2-dihydroquinoline, E324',
-      score: 58,
-      canineTier: 'SYNTHETIC STABILIZER',
-      canineScore: 'Score: 58',
-      canineBadgeClass: 'bg-orange-100 text-[#b45309] border-orange-200',
-      felineTier: 'RENAL RISK (FELINE)',
-      felineScore: 'Score: 66',
-      felineBadgeClass: 'bg-orange-100 text-[#b45309] border-orange-200',
-      statusBadge: 'bg-orange-100 text-[#b45309] border-orange-200',
-      mechanism: 'Originally registered as a pesticide and rubber anti-cracking agent. Added to overseas fish meals to prevent maritime combustion; associated with renal failure and elevated hepatic enzymes.',
-      canine: 'Linked to elevated liver enzymes, immune deficiencies, and skin lesions in long-term feeding studies.',
-      feline: 'Renal sensitivity makes felines vulnerable to accumulation; FDA recommends strict limits in pet diets.',
-      alternatives: 'Freshly milled fish oils preserved with natural astaxanthin and Vitamin E.'
-    },
-    'carrageenan': {
-      title: 'Carrageenan (Hydrocolloid Binder)',
-      category: 'GI Mucosal Toxin & Inflammatory Agent',
-      aliases: 'Chondrus crispus extract, Poligeenan, E407',
-      score: 78,
-      canineTier: 'ULCERATIVE COLITIS TRIGGER',
-      canineScore: 'Score: 78',
-      canineBadgeClass: 'bg-red-100 text-red-700 border-red-200',
-      felineTier: 'SEVERE IBD TRIGGER',
-      felineScore: 'Score: 84',
-      felineBadgeClass: 'bg-red-100 text-red-700 border-red-200',
-      statusBadge: 'bg-red-100 text-red-700 border-red-200',
-      mechanism: 'Seaweed extract used as a gelling agent in canned wet food. Degraded carrageenan (poligeenan) stimulates severe pro-inflammatory cascades, macrophage infiltration, and intestinal epithelial ulceration.',
-      canine: 'Triggers chronic loose stools, irritable bowel syndrome, and intestinal inflammation.',
-      feline: 'Strongly associated with feline Inflammatory Bowel Disease (IBD) and chronic gastrointestinal distress.',
-      alternatives: 'Agar-agar, guar gum, or gelatin.'
-    },
-    'dyes': {
-      title: 'Synthetic Food Dyes (Red 40, Yellow 5 & 6)',
-      category: 'Cosmetic Petroleum Colorants',
-      aliases: 'Allura Red AC (E129), Tartrazine (E102), Sunset Yellow (E110)',
-      score: 52,
-      canineTier: 'ALLERGIC DERMATITIS',
-      canineScore: 'Score: 52',
-      canineBadgeClass: 'bg-orange-100 text-[#b45309] border-orange-200',
-      felineTier: 'ZERO BENEFIT / METABOLIC LOAD',
-      felineScore: 'Score: 50',
-      felineBadgeClass: 'bg-orange-100 text-[#b45309] border-orange-200',
-      statusBadge: 'bg-orange-100 text-[#b45309] border-orange-200',
-      mechanism: 'Coal-tar petroleum derivatives added strictly for human cosmetic preference. Dogs and cats have dichromatic vision and cannot distinguish these shades.',
-      canine: 'Documented triggers for allergic dermatitis, facial pruritus, and behavioral hyperactivity.',
-      feline: 'Zero biological or behavioral utility; increases metabolic detoxification burden.',
-      alternatives: 'Organic beetroot powder, turmeric, or spirulina.'
-    },
-    'garlic': {
-      title: 'Garlic & Onion Derivatives',
-      category: 'Hemolytic Allium Toxin',
-      aliases: 'Allium sativum, Allium cepa, Onion Powder',
-      score: 89,
-      canineTier: 'HEMOLYTIC ALLIUM TOXIN',
-      canineScore: 'Score: 82',
-      canineBadgeClass: 'bg-red-100 text-red-700 border-red-200',
-      felineTier: 'ACUTE LETHAL HEMOLYSIS',
-      felineScore: 'Score: 94',
-      felineBadgeClass: 'bg-red-100 text-red-700 border-red-200',
-      statusBadge: 'bg-red-100 text-red-700 border-red-200',
-      mechanism: 'Contains sulfur compounds (N-propyl disulfide) that overwhelm antioxidant defenses in red blood cells, precipitating hemoglobin clusters known as Heinz bodies.',
-      canine: 'Causes hemolytic anemia at doses above 15 g/kg; smaller daily doses still cause cumulative oxidative damage.',
-      feline: 'Felines are extremely susceptible; toxic symptoms emerge at as little as 5 g/kg.',
-      alternatives: 'Nutritional yeast, bone broth, or dried oregano.'
-    },
-    'omega3': {
-      title: 'Omega-3 Marine Fatty Acids (EPA & DHA)',
-      category: 'Essential Anti-Inflammatory Nutrient',
-      aliases: 'Eicosapentaenoic acid, Docosahexaenoic acid, Wild Salmon Oil',
-      score: '00',
-      canineTier: 'JOINT & COAT INTEGRITY',
-      canineScore: 'Score: 00',
-      canineBadgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      felineTier: 'RENAL GLOMERULAR PROTECTION',
-      felineScore: 'Score: 00',
-      felineBadgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      statusBadge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      mechanism: 'Incorporates directly into cell membrane phospholipids, displacing arachidonic acid and suppressing pro-inflammatory eicosanoids and cytokines.',
-      canine: 'Provides clinically proven relief for canine osteoarthritis and atopic dermatitis.',
-      feline: 'Crucial for slowing progression of feline chronic renal disease and maintaining cognitive health.',
-      alternatives: 'Cold-pressed wild Alaskan salmon oil, sardines, or green-lipped mussel.'
-    },
-    'sodium-nitrite': {
-      title: 'Sodium Nitrite & Nitrate',
-      category: 'Curing Salt Preservative',
-      aliases: 'E250, Curing Salt #1',
-      score: 62,
-      canineTier: 'CURING PRESERVATIVE',
-      canineScore: 'Score: 62',
-      canineBadgeClass: 'bg-orange-100 text-[#b45309] border-orange-200',
-      felineTier: 'VASCULAR STRAIN',
-      felineScore: 'Score: 68',
-      felineBadgeClass: 'bg-orange-100 text-[#b45309] border-orange-200',
-      statusBadge: 'bg-orange-100 text-[#b45309] border-orange-200',
-      mechanism: 'Fixes pigment in cured meat treats and prevents bacterial growth. Combines with secondary amines in the stomach to form carcinogenic N-nitrosamines.',
-      canine: 'High doses convert hemoglobin into methemoglobin, depriving vital tissues of oxygen.',
-      feline: 'Small body mass increases susceptibility to methemoglobinemia; offers zero nutritive value.',
-      alternatives: 'Naturally air-dried, freeze-dried single-ingredient muscle meats.'
-    },
-    'l-carnitine': {
-      title: 'L-Carnitine',
-      category: 'Metabolic Amino Acid',
-      aliases: 'L-3-hydroxy-4-(trimethylammonio)butanoate',
-      score: '00',
-      canineTier: 'LEAN MUSCLE METABOLISM',
-      canineScore: 'Score: 00',
-      canineBadgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      felineTier: 'HEPATIC LIPIDOSIS SHIELD',
-      felineScore: 'Score: 00',
-      felineBadgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      statusBadge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      mechanism: 'Transports activated fatty acids across the inner mitochondrial membrane where beta-oxidation takes place, generating cellular ATP.',
-      canine: 'Promotes lean muscle mass, aids in weight loss programs, and supports myocardial function.',
-      feline: 'Protects overweight cats undergoing caloric restriction against fatal hepatic lipidosis (fatty liver syndrome).',
-      alternatives: 'Grass-fed beef heart, dark meat poultry, and dairy fractions.'
-    },
-    'choline': {
-      title: 'Choline Chloride',
-      category: 'Essential Vitamin B4 Complex',
-      aliases: 'Hepato-protectant, Vitamin B4',
-      score: '00',
-      canineTier: 'COGNITIVE SUPPORT',
-      canineScore: 'Score: 00',
-      canineBadgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      felineTier: 'MANDATORY CLEARANCE NUTRIENT',
-      felineScore: 'Score: 00',
-      felineBadgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      statusBadge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      mechanism: 'Precursor for acetylcholine neurotransmitter and phosphatidylcholine, a structural component of cellular membranes essential for exporting triglycerides from the liver.',
-      canine: 'Supports cognitive health in aging canines and prevents fatty liver infiltration.',
-      feline: 'Mandatory nutrient required by AAFCO and FEDIAF feline nutritional profiles.',
-      alternatives: 'Pasture-raised egg yolks, liver, and organ meats.'
-    }
-  };
-
-  // 3. DOM Elements for Wiki Filtering & Species Perspective
-  const filterButtons = document.querySelectorAll('.wiki-filter-btn');
-  const speciesViewButtons = document.querySelectorAll('.species-view-btn');
-  const cards = document.querySelectorAll('.wiki-card');
-  const searchInput = document.getElementById('wikiSearchInput');
-  const noResults = document.getElementById('wikiNoResults');
+  // Combined ingredient data keyed by ingredient_id
+  let allIngredients = {};  // { ingredient_id: { dog: {...}, cat: {...}, merged fields } }
+  let allCards = [];         // rendered card DOM elements
 
   let currentCategory = 'all';
   let activeSpecies = 'dual';
 
-  // 4. Species Perspective Dynamic Recalibration
+  // DOM refs
+  const cardsContainer = document.getElementById('wikiCardsContainer');
+  const filterButtonGroup = document.getElementById('wikiFilterButtonGroup');
+  const speciesViewButtons = document.querySelectorAll('.species-view-btn');
+  const searchInput = document.getElementById('wikiSearchInput');
+  const noResults = document.getElementById('wikiNoResults');
+
+  // Stats
+  const statTotalCount = document.getElementById('statTotalCount');
+  const statHazardCount = document.getElementById('statHazardCount');
+  const statCautionCount = document.getElementById('statCautionCount');
+
+  // ==========================================
+  // 3. FETCH & MERGE INGREDIENT DATA
+  // ==========================================
+  async function loadIngredients() {
+    try {
+      const res = await fetch('/api/wiki-ingredients');
+      if (!res.ok) throw new Error('Failed to fetch ingredients');
+      const data = await res.json();
+
+      const dogList = data.dog || [];
+      const catList = data.cat || [];
+
+      // Index by ingredient_id
+      const dogMap = {};
+      dogList.forEach(d => { dogMap[d.ingredient_id] = d; });
+      const catMap = {};
+      catList.forEach(c => { catMap[c.ingredient_id] = c; });
+
+      // Merge: use all unique ingredient_ids from both tables
+      const allIds = new Set([...Object.keys(dogMap), ...Object.keys(catMap)]);
+
+      allIds.forEach(id => {
+        const dog = dogMap[id] || null;
+        const cat = catMap[id] || null;
+        const primary = dog || cat;
+
+        allIngredients[id] = {
+          ingredient_id: id,
+          primary_name: primary.primary_name,
+          category: primary.category,
+          aliases: primary.aliases || '',
+          dog: dog,
+          cat: cat,
+          // Merged severity: use max of both
+          severity_score: Math.max(dog?.severity_score || 0, cat?.severity_score || 0),
+          dog_severity: dog?.severity_score || 0,
+          cat_severity: cat?.severity_score || 0,
+          dog_risk: dog?.risk || 'safe',
+          cat_risk: cat?.risk || 'safe',
+          // Notes: prefer dog notes, fallback to cat
+          notes: dog?.notes || cat?.notes || '',
+          dog_notes: dog?.notes || '',
+          cat_notes: cat?.notes || '',
+          clinical_symptoms: dog?.clinical_symptoms || cat?.clinical_symptoms || '',
+          dog_clinical: dog?.clinical_symptoms || '',
+          cat_clinical: cat?.clinical_symptoms || '',
+          dosage: dog?.dosage || cat?.dosage || '',
+          dog_dosage: dog?.dosage || '',
+          cat_dosage: cat?.dosage || '',
+          emergency_action: dog?.emergency_action || cat?.emergency_action || '',
+          dog_emergency: dog?.emergency_action || '',
+          cat_emergency: cat?.emergency_action || '',
+          weight_specific: dog?.weight_specific_data || cat?.weight_specific_data || '',
+          age_specific: dog?.age_specific_data || cat?.age_specific_data || '',
+          breed_specific: dog?.breed_specific_data || cat?.breed_specific_data || ''
+        };
+      });
+
+      renderStats();
+      renderFilterPills();
+      renderCards();
+      applyFilters();
+
+    } catch (err) {
+      console.error('[wiki] Failed to load ingredients:', err);
+      if (cardsContainer) {
+        cardsContainer.innerHTML = `
+          <div class="col-span-full py-16 text-center text-[#788673] space-y-2">
+            <i class="fa-solid fa-triangle-exclamation text-2xl text-red-400"></i>
+            <p class="font-bold text-sm">Failed to load ingredient database</p>
+            <p class="text-xs">${err.message}. Please try refreshing the page.</p>
+          </div>
+        `;
+      }
+    }
+  }
+
+  // ==========================================
+  // 4. RENDER STATS RIBBON
+  // ==========================================
+  function renderStats() {
+    const items = Object.values(allIngredients);
+    const total = items.length;
+    const toxic = items.filter(i => i.dog_risk === 'toxic' || i.cat_risk === 'toxic' || i.dog_risk === 'highly toxic' || i.cat_risk === 'highly toxic').length;
+    const caution = items.filter(i => i.dog_risk === 'caution' || i.cat_risk === 'caution').length;
+
+    if (statTotalCount) statTotalCount.textContent = total;
+    if (statHazardCount) statHazardCount.textContent = toxic;
+    if (statCautionCount) statCautionCount.textContent = caution;
+  }
+
+  // ==========================================
+  // 5. RENDER FILTER PILLS DYNAMICALLY
+  // ==========================================
+  function renderFilterPills() {
+    if (!filterButtonGroup) return;
+
+    // Collect unique categories
+    const categories = new Set();
+    Object.values(allIngredients).forEach(i => {
+      if (i.category) categories.add(i.category);
+    });
+
+    const sortedCategories = [...categories].sort();
+
+    let html = `<button type="button" class="wiki-filter-btn px-4 py-2 rounded-full text-xs font-extrabold bg-[#45671d] text-white transition-all shrink-0 shadow-xs cursor-pointer" data-category="all">All Ingredients</button>`;
+
+    sortedCategories.forEach(cat => {
+      html += `<button type="button" class="wiki-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`;
+    });
+
+    filterButtonGroup.innerHTML = html;
+
+    // Rebind filter click events
+    filterButtonGroup.querySelectorAll('.wiki-filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const button = e.currentTarget;
+        currentCategory = button.getAttribute('data-category');
+
+        filterButtonGroup.querySelectorAll('.wiki-filter-btn').forEach(b => {
+          b.className = 'wiki-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer';
+        });
+        button.className = 'wiki-filter-btn px-4 py-2 rounded-full text-xs font-extrabold bg-[#45671d] text-white transition-all shrink-0 shadow-xs cursor-pointer';
+
+        applyFilters();
+      });
+    });
+  }
+
+  // ==========================================
+  // 6. RENDER INGREDIENT CARDS
+  // ==========================================
+  function getRiskColor(risk) {
+    const r = (risk || '').toLowerCase();
+    if (r === 'toxic' || r === 'highly toxic') return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', strong: 'text-red-700', label: 'text-red-600', badgeBg: 'bg-red-100', badgeBorder: 'border-red-200', badgeText: 'text-red-700' };
+    if (r === 'caution') return { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-amber-700', strong: 'text-amber-800', label: 'text-[#b45309]', badgeBg: 'bg-orange-100', badgeBorder: 'border-orange-200', badgeText: 'text-[#b45309]' };
+    // safe / beneficial
+    return { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', strong: 'text-emerald-800', label: 'text-emerald-700', badgeBg: 'bg-emerald-100', badgeBorder: 'border-emerald-200', badgeText: 'text-emerald-800' };
+  }
+
+  function getRiskLabel(risk) {
+    const r = (risk || '').toLowerCase();
+    if (r === 'toxic') return 'Toxic';
+    if (r === 'highly toxic') return 'Highly Toxic';
+    if (r === 'caution') return 'Caution';
+    if (r === 'safe') return 'Safe';
+    if (r === 'beneficial') return 'Beneficial';
+    return risk || 'Unknown';
+  }
+
+  function getOverallBadge(item) {
+    // Use the higher severity between dog and cat
+    const maxSeverity = item.severity_score;
+    if (maxSeverity >= 70) return getRiskColor('toxic');
+    if (maxSeverity >= 30) return getRiskColor('caution');
+    return getRiskColor('safe');
+  }
+
+  function renderCards() {
+    if (!cardsContainer) return;
+
+    const items = Object.values(allIngredients);
+    // Sort: highest severity first, then alphabetically
+    items.sort((a, b) => b.severity_score - a.severity_score || a.primary_name.localeCompare(b.primary_name));
+
+    allCards = [];
+    cardsContainer.innerHTML = '';
+
+    items.forEach(item => {
+      const card = document.createElement('div');
+      const badge = getOverallBadge(item);
+      const dogColor = getRiskColor(item.dog_risk);
+      const catColor = getRiskColor(item.cat_risk);
+
+      // Determine tier label based on species perspective
+      let tierLabel = escapeHtml(item.category || 'Ingredient');
+      let tierLabelColor = badge.label;
+
+      const searchText = [
+        item.primary_name, item.aliases, item.category,
+        item.notes, item.dog_risk, item.cat_risk
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      card.className = 'tactile-card p-6 bg-white space-y-4 cursor-pointer hover:border-[#45671d] transition-all group wiki-card relative';
+      card.setAttribute('data-category', item.category || '');
+      card.setAttribute('data-compound', item.ingredient_id);
+      card.setAttribute('data-canine-risk', item.dog_risk);
+      card.setAttribute('data-feline-risk', item.cat_risk);
+      card.setAttribute('data-severity', item.severity_score);
+      card.setAttribute('data-search', searchText);
+
+      const aliasText = item.aliases ? escapeHtml(item.aliases) : '';
+      const notesPreview = item.notes ? escapeHtml(item.notes).substring(0, 200) : 'No detailed notes available for this ingredient.';
+
+      card.innerHTML = `
+        <div class="compare-checkbox-pill hidden absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-white border border-[#ebdcd0] text-[9.5px] font-extrabold text-[#788673]">
+          + Compare
+        </div>
+        <div class="flex items-start justify-between">
+          <div>
+            <span class="card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider ${tierLabelColor} block mb-0.5">${tierLabel}</span>
+            <h3 class="card-title text-base font-extrabold text-[#182811] group-hover:text-[#45671d] transition-colors">${escapeHtml(item.primary_name)}</h3>
+            ${aliasText ? `<span class="text-xs text-[#788673] font-medium">${aliasText}</span>` : ''}
+          </div>
+          <span class="card-score-badge px-2.5 py-1 rounded-full ${badge.badgeBg} ${badge.badgeText} font-extrabold text-[10px] uppercase border ${badge.badgeBorder}">
+            Score: ${item.severity_score}
+          </span>
+        </div>
+
+        <p class="text-xs text-[#586754] leading-relaxed line-clamp-3">
+          ${notesPreview}
+        </p>
+
+        <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+          <div class="p-2.5 rounded-xl ${dogColor.bg} ${dogColor.border} border canine-block">
+            <strong class="${dogColor.strong} block font-bold text-[10.5px]">🐶 Canine</strong>
+            <span class="${dogColor.text} font-semibold text-[10.5px]">${getRiskLabel(item.dog_risk)}</span>
+          </div>
+          <div class="p-2.5 rounded-xl ${catColor.bg} ${catColor.border} border feline-block">
+            <strong class="${catColor.strong} block font-bold text-[10.5px]">🐱 Feline</strong>
+            <span class="${catColor.text} font-semibold text-[10.5px]">${getRiskLabel(item.cat_risk)}</span>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#ebdcd0] flex items-center justify-between text-xs">
+          <span class="text-[#788673] font-bold">${escapeHtml(item.category || '')}</span>
+          <span class="text-[#45671d] font-extrabold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+            Read Dossier →
+          </span>
+        </div>
+      `;
+
+      // Click handler
+      card.addEventListener('click', () => {
+        if (isCompareMode) {
+          handleCardSelection(item.ingredient_id, card);
+        } else {
+          openDossier(item.ingredient_id);
+        }
+      });
+
+      cardsContainer.appendChild(card);
+      allCards.push(card);
+    });
+  }
+
+  // ==========================================
+  // 7. SPECIES PERSPECTIVE
+  // ==========================================
   function applySpeciesPerspective() {
-    cards.forEach(card => {
+    allCards.forEach(card => {
       const compoundKey = card.getAttribute('data-compound');
-      const data = DOSSIER_DETAILS[compoundKey];
-      if (!data) return;
+      const item = allIngredients[compoundKey];
+      if (!item) return;
 
       const tierLabel = card.querySelector('.card-tier-label');
       const scoreBadge = card.querySelector('.card-score-badge');
@@ -384,24 +435,32 @@ document.addEventListener('DOMContentLoaded', () => {
       const felineBlock = card.querySelector('.feline-block');
 
       if (activeSpecies === 'canine') {
-        if (tierLabel) tierLabel.textContent = data.canineTier;
+        const dogColor = getRiskColor(item.dog_risk);
+        if (tierLabel) {
+          tierLabel.textContent = getRiskLabel(item.dog_risk).toUpperCase() + ' (CANINE)';
+          tierLabel.className = `card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider ${dogColor.label} block mb-0.5`;
+        }
         if (scoreBadge) {
-          scoreBadge.textContent = data.canineScore;
-          scoreBadge.className = `card-score-badge px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase border ${data.canineBadgeClass}`;
+          scoreBadge.textContent = `Score: ${item.dog_severity}`;
+          scoreBadge.className = `card-score-badge px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase border ${dogColor.badgeBg} ${dogColor.badgeText} ${dogColor.badgeBorder}`;
         }
         if (canineBlock) {
           canineBlock.classList.add('ring-2', 'ring-[#45671d]', 'scale-[1.02]');
-          canineBlock.classList.remove('opacity-60');
+          canineBlock.classList.remove('opacity-40');
         }
         if (felineBlock) {
           felineBlock.classList.add('opacity-40');
-          felineBlock.classList.remove('ring-2', 'ring-[#45671d]', 'scale-[1.02]');
+          felineBlock.classList.remove('ring-2', 'ring-purple-600', 'scale-[1.02]');
         }
       } else if (activeSpecies === 'feline') {
-        if (tierLabel) tierLabel.textContent = data.felineTier;
+        const catColor = getRiskColor(item.cat_risk);
+        if (tierLabel) {
+          tierLabel.textContent = getRiskLabel(item.cat_risk).toUpperCase() + ' (FELINE)';
+          tierLabel.className = `card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider ${catColor.label} block mb-0.5`;
+        }
         if (scoreBadge) {
-          scoreBadge.textContent = data.felineScore;
-          scoreBadge.className = `card-score-badge px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase border ${data.felineBadgeClass}`;
+          scoreBadge.textContent = `Score: ${item.cat_severity}`;
+          scoreBadge.className = `card-score-badge px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase border ${catColor.badgeBg} ${catColor.badgeText} ${catColor.badgeBorder}`;
         }
         if (felineBlock) {
           felineBlock.classList.add('ring-2', 'ring-purple-600', 'scale-[1.02]');
@@ -412,46 +471,37 @@ document.addEventListener('DOMContentLoaded', () => {
           canineBlock.classList.remove('ring-2', 'ring-[#45671d]', 'scale-[1.02]');
         }
       } else {
-        // Dual view (default)
-        if (tierLabel) tierLabel.textContent = data.category.toUpperCase();
+        // Dual view
+        const badge = getOverallBadge(item);
+        if (tierLabel) {
+          tierLabel.textContent = item.category || 'Ingredient';
+          tierLabel.className = `card-tier-label text-[9.5px] font-extrabold uppercase tracking-wider ${badge.label} block mb-0.5`;
+        }
         if (scoreBadge) {
-          scoreBadge.textContent = `Score: ${data.score}`;
-          scoreBadge.className = `card-score-badge px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase border ${data.statusBadge}`;
+          scoreBadge.textContent = `Score: ${item.severity_score}`;
+          scoreBadge.className = `card-score-badge px-2.5 py-1 rounded-full font-extrabold text-[10px] uppercase border ${badge.badgeBg} ${badge.badgeText} ${badge.badgeBorder}`;
         }
-        if (canineBlock) {
-          canineBlock.classList.remove('ring-2', 'ring-[#45671d]', 'scale-[1.02]', 'opacity-40');
-        }
-        if (felineBlock) {
-          felineBlock.classList.remove('ring-2', 'ring-purple-600', 'scale-[1.02]', 'opacity-40');
-        }
+        if (canineBlock) canineBlock.classList.remove('ring-2', 'ring-[#45671d]', 'scale-[1.02]', 'opacity-40');
+        if (felineBlock) felineBlock.classList.remove('ring-2', 'ring-purple-600', 'scale-[1.02]', 'opacity-40');
       }
     });
   }
 
-  // 5. Filter & Search Engine
+  // ==========================================
+  // 8. FILTER & SEARCH
+  // ==========================================
   function applyFilters() {
     const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
     let matchCount = 0;
 
-    cards.forEach(card => {
+    allCards.forEach(card => {
       const cardCategory = card.getAttribute('data-category') || '';
       const cardText = card.innerText.toLowerCase();
       const cardSearch = (card.getAttribute('data-search') || '').toLowerCase();
-      const canineHazard = card.getAttribute('data-canine-hazard');
-      const felineHazard = card.getAttribute('data-feline-hazard');
+      const canineRisk = card.getAttribute('data-canine-risk') || '';
+      const felineRisk = card.getAttribute('data-feline-risk') || '';
 
       let matchesCategory = (currentCategory === 'all') || (cardCategory === currentCategory);
-
-      // Category filter respecting active species perspective
-      if (currentCategory === 'hazard') {
-        if (activeSpecies === 'canine') {
-          matchesCategory = (canineHazard === 'toxic');
-        } else if (activeSpecies === 'feline') {
-          matchesCategory = (felineHazard === 'toxic');
-        } else {
-          matchesCategory = (cardCategory === 'hazard');
-        }
-      }
 
       const matchesSearch = !query || cardText.includes(query) || cardSearch.includes(query);
 
@@ -473,7 +523,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 6. Handle Species Perspective Button Toggles
+  // ==========================================
+  // 9. SPECIES VIEW BUTTON TOGGLES
+  // ==========================================
   speciesViewButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -497,30 +549,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 7. Handle Category Pill Button Clicking
-  filterButtons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      
-      const button = e.currentTarget;
-      currentCategory = button.getAttribute('data-category');
-
-      filterButtons.forEach(b => {
-        b.className = 'wiki-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0 cursor-pointer';
-      });
-
-      button.className = 'wiki-filter-btn px-4 py-2 rounded-full text-xs font-extrabold bg-[#45671d] text-white transition-all shrink-0 shadow-xs cursor-pointer';
-
-      applyFilters();
-    });
-  });
-
-  // 8. Handle Live Search Input
+  // Live search
   searchInput?.addEventListener('input', applyFilters);
 
 
   // ==========================================
-  // 9. INGREDIENT COMPARISON MODE ENGINE
+  // 10. COMPARISON MODE ENGINE
   // ==========================================
   const toggleCompareBtn = document.getElementById('toggleCompareModeBtn');
   const compareBtnLabel = document.getElementById('compareBtnLabel');
@@ -571,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateCompareSelectionUI() {
-    cards.forEach(card => {
+    allCards.forEach(card => {
       const key = card.getAttribute('data-compound');
       const pill = card.querySelector('.compare-checkbox-pill');
       if (selectedCompounds.includes(key)) {
@@ -596,74 +630,82 @@ document.addEventListener('DOMContentLoaded', () => {
         launchCompareBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         launchCompareBtn.classList.add('cursor-pointer', 'hover:bg-[#324c14]');
         if (comparePrompt) {
-          const name1 = DOSSIER_DETAILS[selectedCompounds[0]]?.title.split('(')[0].trim();
-          const name2 = DOSSIER_DETAILS[selectedCompounds[1]]?.title.split('(')[0].trim();
-          comparePrompt.innerHTML = `Ready! Comparing <strong class="text-[#182811]">${name1}</strong> vs <strong class="text-[#182811]">${name2}</strong>. Click 'View Side-by-Side' to launch.`;
+          const name1 = allIngredients[selectedCompounds[0]]?.primary_name || selectedCompounds[0];
+          const name2 = allIngredients[selectedCompounds[1]]?.primary_name || selectedCompounds[1];
+          comparePrompt.innerHTML = `Ready! Comparing <strong class="text-[#182811]">${escapeHtml(name1)}</strong> vs <strong class="text-[#182811]">${escapeHtml(name2)}</strong>. Click 'View Side-by-Side' to launch.`;
         }
       } else {
         launchCompareBtn.disabled = true;
         launchCompareBtn.classList.add('opacity-50', 'cursor-not-allowed');
         launchCompareBtn.classList.remove('cursor-pointer', 'hover:bg-[#324c14]');
         if (comparePrompt) {
-          comparePrompt.textContent = selectedCompounds.length === 1 
-            ? '1 compound chosen. Select 1 more compound from the grid.' 
+          comparePrompt.textContent = selectedCompounds.length === 1
+            ? '1 compound chosen. Select 1 more compound from the grid.'
             : 'Select 2 compounds from the grid to compare canine & feline toxicology side-by-side.';
         }
       }
     }
   }
 
+  function renderCompareColumn(item) {
+    const badge = getOverallBadge(item);
+    const dogColor = getRiskColor(item.dog_risk);
+    const catColor = getRiskColor(item.cat_risk);
+
+    return `
+      <div class="tactile-card p-5 space-y-4 bg-[#fbf9f6]">
+        <div class="flex items-start justify-between pb-2 border-b border-[#ebdcd0]">
+          <div>
+            <span class="text-[9.5px] font-extrabold uppercase tracking-wider text-[#788673] block">${escapeHtml(item.category || '')}</span>
+            <h4 class="font-extrabold text-base text-[#182811]">${escapeHtml(item.primary_name)}</h4>
+            <p class="text-[10.5px] text-[#788673]">${escapeHtml(item.aliases || '')}</p>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-black border ${badge.badgeBg} ${badge.badgeText} ${badge.badgeBorder}">
+            Score: ${item.severity_score}
+          </span>
+        </div>
+
+        <div class="p-3.5 rounded-2xl ${dogColor.bg} ${dogColor.border} border space-y-1">
+          <div class="flex items-center gap-1.5 ${dogColor.strong}">
+            <i class="fa-solid fa-dog text-xs"></i>
+            <strong class="font-bold uppercase tracking-wide text-[10px]">Canine — ${getRiskLabel(item.dog_risk)}</strong>
+          </div>
+          <p class="text-[11.5px] leading-relaxed ${dogColor.text} font-medium">${escapeHtml(item.dog_notes || 'No canine-specific data available.')}</p>
+        </div>
+
+        <div class="p-3.5 rounded-2xl ${catColor.bg} ${catColor.border} border space-y-1">
+          <div class="flex items-center gap-1.5 ${catColor.strong}">
+            <i class="fa-solid fa-cat text-xs"></i>
+            <strong class="font-bold uppercase tracking-wide text-[10px]">Feline — ${getRiskLabel(item.cat_risk)}</strong>
+          </div>
+          <p class="text-[11.5px] leading-relaxed ${catColor.text} font-medium">${escapeHtml(item.cat_notes || 'No feline-specific data available.')}</p>
+        </div>
+
+        ${item.notes ? `
+        <div class="p-3.5 rounded-2xl bg-white border border-[#ebdcd0] space-y-1">
+          <strong class="text-[#182811] text-[10.5px] font-bold block uppercase tracking-wide">Overview</strong>
+          <p class="text-xs text-[#586754] leading-relaxed">${escapeHtml(item.notes)}</p>
+        </div>
+        ` : ''}
+
+        ${item.emergency_action ? `
+        <div class="p-3.5 rounded-2xl bg-red-50 border border-red-200 space-y-1">
+          <strong class="text-red-900 text-[10.5px] font-bold block uppercase tracking-wide">Emergency Action</strong>
+          <p class="text-xs text-red-800 leading-relaxed font-semibold">${escapeHtml(item.emergency_action)}</p>
+        </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
   function launchComparisonModal() {
     if (selectedCompounds.length < 2 || !compareColsContainer) return;
 
-    const dataA = DOSSIER_DETAILS[selectedCompounds[0]];
-    const dataB = DOSSIER_DETAILS[selectedCompounds[1]];
+    const dataA = allIngredients[selectedCompounds[0]];
+    const dataB = allIngredients[selectedCompounds[1]];
     if (!dataA || !dataB) return;
 
-    function renderColumn(data) {
-      return `
-        <div class="tactile-card p-5 space-y-4 bg-[#fbf9f6]">
-          <div class="flex items-start justify-between pb-2 border-b border-[#ebdcd0]">
-            <div>
-              <span class="text-[9.5px] font-extrabold uppercase tracking-wider text-[#788673] block">${data.category}</span>
-              <h4 class="font-extrabold text-base text-[#182811]">${data.title}</h4>
-              <p class="text-[10.5px] text-[#788673]">${data.aliases}</p>
-            </div>
-            <span class="px-2.5 py-1 rounded-full text-xs font-black border ${data.statusBadge}">
-              Score: ${data.score}
-            </span>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-orange-50 border border-orange-200 space-y-1">
-            <div class="flex items-center gap-1.5 text-[#b45309]">
-              <i class="fa-solid fa-dog text-xs"></i>
-              <strong class="font-bold uppercase tracking-wide text-[10px]">Canine Clinical Tolerance</strong>
-            </div>
-            <p class="text-[11.5px] leading-relaxed text-[#b45309] font-medium">${data.canine}</p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 space-y-1">
-            <div class="flex items-center gap-1.5 text-purple-800">
-              <i class="fa-solid fa-cat text-xs"></i>
-              <strong class="font-bold uppercase tracking-wide text-[10px]">Feline Clinical Tolerance</strong>
-            </div>
-            <p class="text-[11.5px] leading-relaxed text-purple-800 font-medium">${data.feline}</p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-white border border-[#ebdcd0] space-y-1">
-            <strong class="text-[#182811] text-[10.5px] font-bold block uppercase tracking-wide">Mechanism of Action</strong>
-            <p class="text-xs text-[#586754] leading-relaxed">${data.mechanism}</p>
-          </div>
-
-          <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1">
-            <strong class="text-emerald-900 text-[10.5px] font-bold block uppercase tracking-wide">Recommended Alternative</strong>
-            <p class="text-xs text-emerald-800 leading-relaxed font-semibold">${data.alternatives}</p>
-          </div>
-        </div>
-      `;
-    }
-
-    compareColsContainer.innerHTML = renderColumn(dataA) + renderColumn(dataB);
+    compareColsContainer.innerHTML = renderCompareColumn(dataA) + renderCompareColumn(dataB);
     compareModal?.classList.remove('hidden');
   }
 
@@ -682,23 +724,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   // ==========================================
-  // 10. Clinical Dossier Modal Opening & Closing
+  // 11. DOSSIER MODAL (DETAIL VIEW)
   // ==========================================
   const modal = document.getElementById('wikiDossierModal');
   const closeModalBtn = document.getElementById('closeDossierModalBtn');
   const closeModalBtn2 = document.getElementById('closeDossierModalBtn2');
 
-  function openDossier(compoundKey) {
-    const data = DOSSIER_DETAILS[compoundKey];
-    if (!data || !modal) return;
+  function openDossier(ingredientId) {
+    const item = allIngredients[ingredientId];
+    if (!item || !modal) return;
 
-    document.getElementById('dossierModalTitle').textContent = data.title;
-    document.getElementById('dossierModalCategory').textContent = data.category;
-    document.getElementById('dossierModalAliases').textContent = data.aliases;
-    document.getElementById('dossierModalMechanism').textContent = data.mechanism;
-    document.getElementById('dossierModalCanine').textContent = data.canine;
-    document.getElementById('dossierModalFeline').textContent = data.feline;
-    document.getElementById('dossierModalAlternatives').textContent = data.alternatives;
+    const dogColor = getRiskColor(item.dog_risk);
+    const catColor = getRiskColor(item.cat_risk);
+
+    document.getElementById('dossierModalTitle').textContent = item.primary_name;
+    document.getElementById('dossierModalCategory').textContent = (item.category || 'Ingredient').toUpperCase();
+    document.getElementById('dossierModalAliases').textContent = item.aliases || 'No known aliases';
+
+    // Mechanism / Notes
+    document.getElementById('dossierModalMechanism').textContent = item.notes || 'No detailed notes available for this ingredient.';
+
+    // Canine details
+    const canineEl = document.getElementById('dossierModalCanine');
+    let canineText = item.dog_notes || 'No canine-specific data available.';
+    if (item.dog_clinical) canineText += '\n\nClinical symptoms: ' + item.dog_clinical;
+    if (item.dog_dosage) canineText += '\n\nDosage info: ' + item.dog_dosage;
+    canineEl.textContent = canineText;
+
+    // Feline details
+    const felineEl = document.getElementById('dossierModalFeline');
+    let felineText = item.cat_notes || 'No feline-specific data available.';
+    if (item.cat_clinical) felineText += '\n\nClinical symptoms: ' + item.cat_clinical;
+    if (item.cat_dosage) felineText += '\n\nDosage info: ' + item.cat_dosage;
+    felineEl.textContent = felineText;
+
+    // Emergency action section
+    const altEl = document.getElementById('dossierModalAlternatives');
+    const emergencySection = document.getElementById('dossierModalEmergencySection');
+    if (item.emergency_action) {
+      altEl.textContent = item.emergency_action;
+      if (emergencySection) emergencySection.classList.remove('hidden');
+    } else {
+      altEl.textContent = '';
+      if (emergencySection) emergencySection.classList.add('hidden');
+    }
 
     modal.classList.remove('hidden');
   }
@@ -706,17 +775,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function closeDossier() {
     if (modal) modal.classList.add('hidden');
   }
-
-  cards.forEach(card => {
-    card.addEventListener('click', (e) => {
-      const compoundKey = card.getAttribute('data-compound');
-      if (isCompareMode) {
-        handleCardSelection(compoundKey, card);
-      } else {
-        openDossier(compoundKey);
-      }
-    });
-  });
 
   closeModalBtn?.addEventListener('click', closeDossier);
   closeModalBtn2?.addEventListener('click', closeDossier);
@@ -732,5 +790,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  applyFilters();
+
+  // ==========================================
+  // 12. UTILITY
+  // ==========================================
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+
+  // ==========================================
+  // 13. INIT — LOAD INGREDIENTS FROM API
+  // ==========================================
+  loadIngredients();
+
 });

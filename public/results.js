@@ -492,52 +492,82 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===================================================
   // 5. Interactive Finding Detail Slide-Over Drawer
   // ===================================================
-  const FINDINGS_DATABASE = {
-    'bha': {
-      title: 'BHA (Butylated Hydroxyanisole)',
-      category: 'Synthetic Phenolic Antioxidant / Fat Stabilizer',
-      badge: 'CAUTION',
-      badgeClass: 'bg-orange-100 text-[#b45309]',
-      mechanism: 'Synthetic lipid stabilizer designed to delay oxidative rancidity. Slowly metabolized and excreted, resulting in chronic bioaccumulation in adipose tissue and cumulative liver stress.',
-      canine: 'Long-term exposure has been associated with endocrine disruption, mast-cell degranulation, and cellular inflammation in canine models.',
-      feline: 'Cats clear phenolic compounds significantly slower due to liver glucuronidation deficiencies, heightening organ strain.',
-      alternative: 'Mixed natural tocopherols (Vitamin E), rosemary extract, and citric acid.',
-      wikiSearch: 'wiki.html?search=bha'
-    },
-    'pg': {
-      title: 'Propylene Glycol',
-      category: 'Humectant / Moisture Retaining Additive (E1520)',
-      badge: 'CAUTION / LETHAL',
-      badgeClass: 'bg-orange-100 text-[#b45309]',
-      mechanism: 'Synthetic chemical humectant used to maintain soft texture in semi-moist foods. Cats strictly lack glucuronidation metabolic pathways, causing toxic metabolites to damage red blood cell membranes.',
-      canine: 'Permitted in moderate regulated thresholds for canines; not considered acutely toxic to dogs.',
-      feline: 'Strictly lethal and prohibited for felines by FDA/FEDIAF. Triggers acute oxidative hemolysis, Heinz body formation, and severe hemolytic anemia.',
-      alternative: 'Vegetable glycerin or natural honey moisture binders.',
-      wikiSearch: 'wiki.html?search=propylene+glycol'
-    },
-    'beef': {
-      title: 'Deboned Beef & Organ Blend',
-      category: 'High-Bioavailability Animal Protein',
-      badge: 'SAFE',
-      badgeClass: 'bg-emerald-100 text-[#15803d]',
-      mechanism: 'Complete animal protein containing all 10 essential amino acids required by canines and felines for tissue repair, enzymatic synthesis, and immune competence.',
-      canine: 'Excellent amino acid profile supporting muscular integrity and healthy energy requirements for Golden Retrievers.',
-      feline: 'Highly palatable natural source of carnitine and taurine; safe and metabolically suitable.',
-      alternative: 'Deboned lamb, bison, pasture-raised dark poultry, or wild salmon.',
-      wikiSearch: 'wiki.html?search=beef'
-    },
-    'rice': {
-      title: 'Whole Grain Brown Rice',
-      category: 'Complex Carbohydrate & Soluble Fiber',
-      badge: 'SAFE',
-      badgeClass: 'bg-emerald-100 text-[#15803d]',
-      mechanism: 'Intact cereal grain supplying slow-release complex starches and soluble fibers that fuel colonocyte health via short-chain fatty acid (SCFA) production.',
-      canine: 'Provides sustained glycemic release and supports healthy gastrointestinal transit for active dogs.',
-      feline: 'Easily tolerated in low-to-moderate amounts as an extrusion binder; low biological requirement for felines.',
-      alternative: 'Quinoa, organic sweet potato, steel-cut oats, or pumpkin puree.',
-      wikiSearch: 'wiki.html?search=rice'
+  // ---- Ingredient database cache (populated from Supabase API) ----
+  const FINDINGS_DATABASE = {};
+  let _dbIngredientsLoaded = false;
+
+  // Fetch all ingredients from the wiki-ingredients API and build a lookup cache.
+  // Each entry is keyed by the lowercase primary_name so drawerEntry() can match scan results.
+  async function _loadIngredientDB() {
+    if (_dbIngredientsLoaded) return;
+    try {
+      const res = await fetch('/api/wiki-ingredients');
+      if (!res.ok) throw new Error('API ' + res.status);
+      const data = await res.json();
+      const dogList = data.dog || [];
+      const catList = data.cat || [];
+      const dogMap = {};
+      dogList.forEach(function (d) { dogMap[d.ingredient_id] = d; });
+      const catMap = {};
+      catList.forEach(function (c) { catMap[c.ingredient_id] = c; });
+      const allIds = new Set([...Object.keys(dogMap), ...Object.keys(catMap)]);
+      allIds.forEach(function (id) {
+        const dog = dogMap[id] || null;
+        const cat = catMap[id] || null;
+        const primary = dog || cat;
+        const severity = Math.max(dog ? dog.severity_score : 0, cat ? cat.severity_score : 0);
+        const dogRisk = dog ? dog.risk : 'safe';
+        const catRisk = cat ? cat.risk : 'safe';
+
+        function badgeCls(risk) {
+          var r = (risk || '').toLowerCase();
+          if (r === 'toxic' || r === 'highly toxic') return 'bg-red-100 text-red-700';
+          if (r === 'caution') return 'bg-orange-100 text-[#b45309]';
+          return 'bg-emerald-100 text-[#15803d]';
+        }
+        function badgeWord(risk) {
+          var r = (risk || '').toLowerCase();
+          if (r === 'toxic' || r === 'highly toxic') return 'TOXIC';
+          if (r === 'caution') return 'CAUTION';
+          return 'SAFE';
+        }
+
+        var overallBadge = severity >= 70 ? badgeCls('toxic') : (severity >= 30 ? badgeCls('caution') : badgeCls('safe'));
+        var overallWord = severity >= 70 ? 'TOXIC' : (severity >= 30 ? 'CAUTION' : 'SAFE');
+
+        var entry = {
+          title: primary.primary_name,
+          category: primary.category || 'Ingredient',
+          badge: overallWord,
+          badgeClass: overallBadge,
+          mechanism: (dog ? dog.notes : '') || (cat ? cat.notes : '') || 'No detailed notes available.',
+          canine: (dog ? dog.notes : '') || 'No canine-specific data available.',
+          feline: (cat ? cat.notes : '') || 'No feline-specific data available.',
+          alternative: (dog ? dog.emergency_action : '') || (cat ? cat.emergency_action : '') || 'No alternative suggested.',
+          wikiSearch: 'wiki.html?search=' + encodeURIComponent(primary.primary_name),
+          clinical_symptoms: (dog ? dog.clinical_symptoms : '') || (cat ? cat.clinical_symptoms : '') || '',
+          dosage: (dog ? dog.dosage : '') || (cat ? cat.dosage : '') || ''
+        };
+
+        // Key by ingredient_id
+        FINDINGS_DATABASE[id] = entry;
+        // Also key by lowercase primary_name for easy scan-result matching
+        FINDINGS_DATABASE[primary.primary_name.toLowerCase()] = entry;
+        // Also key by aliases
+        var aliases = primary.aliases || '';
+        aliases.split(',').forEach(function (a) {
+          var trimmed = a.trim().toLowerCase();
+          if (trimmed) FINDINGS_DATABASE[trimmed] = entry;
+        });
+      });
+      _dbIngredientsLoaded = true;
+    } catch (err) {
+      console.error('[results] Failed to load ingredient DB:', err.message);
     }
-  };
+  }
+
+  // Start loading immediately
+  _loadIngredientDB();
 
   const drawer = document.getElementById('findingDetailDrawer');
   const drawerBackdrop = document.getElementById('drawerBackdrop');
@@ -553,6 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const drawerWikiLink = document.getElementById('drawerWikiLink');
 
   function openFindingDrawer(tokenKey) {
+    // Try the DB cache (populated from API)
     const data = FINDINGS_DATABASE[tokenKey];
     if (!data || !drawer) return;
 
@@ -744,10 +775,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---------------------------------------------------------------------
     // 3. Findings: cards in the page's own design + the drill-down drawer
     // ---------------------------------------------------------------------
-    const KNOWN = [[/bha/i, 'bha'], [/propylene glycol/i, 'pg'], [/beef/i, 'beef'], [/\brice\b/i, 'rice']];
+    // Match ingredient name against the dynamic FINDINGS_DATABASE (loaded from Supabase)
     function drawerEntry(it, speciesName) {
-      const known = (typeof FINDINGS_DATABASE === 'object') ? KNOWN.filter(function (k) { return k[0].test(it.name || ''); })[0] : null;
-      const base = known && FINDINGS_DATABASE[known[1]] ? Object.assign({}, FINDINGS_DATABASE[known[1]]) : null;
+      // Try to find a match in the DB by lowercase name
+      var nameKey = (it.name || '').toLowerCase().trim();
+      var base = FINDINGS_DATABASE[nameKey] ? Object.assign({}, FINDINGS_DATABASE[nameKey]) : null;
+
+      // If no exact match, try partial matching against all DB keys
+      if (!base && nameKey) {
+        var keys = Object.keys(FINDINGS_DATABASE);
+        for (var ki = 0; ki < keys.length; ki++) {
+          if (nameKey.indexOf(keys[ki]) !== -1 || keys[ki].indexOf(nameKey) !== -1) {
+            base = Object.assign({}, FINDINGS_DATABASE[keys[ki]]);
+            break;
+          }
+        }
+      }
+
       const s = RATING[it.status] || RATING.Safe;
       const rated = 'Rated ' + (it.status || 'Safe') + ' for ' + (speciesName === 'Feline' ? 'cats' : 'dogs') + ' in the KibbleGuard database.';
       const entry = base || {
@@ -813,7 +857,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let listBound = null;
-    function renderScan(data, speciesName) {
+    async function renderScan(data, speciesName) {
+      // Ensure ingredient DB is loaded before rendering so drawer has full data
+      await _loadIngredientDB();
       const p = panel();
       const style = RATING[data.rating] || RATING.Caution;
       const items = Array.isArray(data.results) ? data.results.slice() : [];
