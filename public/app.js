@@ -872,10 +872,19 @@ document.addEventListener('DOMContentLoaded', () => {
       sel.innerHTML = opts.map(function(o){ return '<option value="' + o + '"' + (o === cur ? ' selected' : '') + '>' + o + '</option>'; }).join('');
     }
 
+    // Mobile only ever had Add + Delete for pets -- there was no way to fix a typo in a pet's
+    // name, update their weight, or change a medical condition without deleting and re-adding
+    // them from scratch. The backend already supports this (POST /api/pets upserts by id when
+    // the id already exists), so this just needed the missing Edit button + pre-filled form.
+    var petsById = {};
+    var editingPetId = null;
+
     function mRenderPets(pets) {
       var main = document.getElementById('mobilePetsMain');
       var countEl = document.getElementById('mobilePetCount');
       if (!main) return;
+      petsById = {};
+      pets.forEach(function (p) { petsById[p.id] = p; });
       if (countEl) countEl.textContent = pets.length + ' REGISTERED';
       main.innerHTML = '';
       if (!pets.length) {
@@ -899,7 +908,10 @@ document.addEventListener('DOMContentLoaded', () => {
           '<div class="flex items-center justify-between"><div class="flex items-center gap-3">' + pic +
             '<div><div class="flex items-center gap-1.5"><h3 class="text-sm font-black text-[#182811]">' + esc(p.name) + '</h3>' + badge + '</div>' +
             '<p class="text-[11px] text-[#788673] font-bold">' + esc((p.breed || 'Companion') + (p.weight ? ' • ' + p.weight + ' kg' : '')) + '</p></div></div>' +
-            '<button class="mobile-delete-pet text-[10px] text-red-400 font-bold" data-pet-id="' + esc(p.id) + '"><i class="fa-solid fa-trash-can"></i></button>' +
+            '<div class="flex items-center gap-3">' +
+              '<button class="mobile-edit-pet text-[10px] text-[#45671d] font-bold" data-pet-id="' + esc(p.id) + '"><i class="fa-solid fa-pen"></i></button>' +
+              '<button class="mobile-delete-pet text-[10px] text-red-400 font-bold" data-pet-id="' + esc(p.id) + '"><i class="fa-solid fa-trash-can"></i></button>' +
+            '</div>' +
           '</div>' +
           (medTags ? '<div class="flex flex-wrap gap-1">' + medTags + '</div>' : '') +
           '<div class="p-2.5 bg-[#fbf9f6] rounded-xl border border-[#ebdcd0] text-[11px] space-y-1"><strong class="text-[9px] uppercase font-bold text-[#788673] block">Active Watches:</strong><div class="flex flex-wrap gap-1">' + chips + '</div></div>' +
@@ -918,6 +930,43 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(function(err) { console.error('Delete failed', err); });
         });
       });
+
+      // edit listeners
+      Array.prototype.slice.call(main.querySelectorAll('.mobile-edit-pet')).forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          var petId = btn.getAttribute('data-pet-id');
+          var p = petsById[petId];
+          if (p) mOpenEditPet(p);
+        });
+      });
+    }
+
+    // Pre-fills the Add/Edit modal with an existing pet's data and flips it into "edit" mode,
+    // so Save updates that pet (same id, upserted by the backend) instead of creating a new one.
+    function mOpenEditPet(p) {
+      var modal = document.getElementById('mobileAddPetModal');
+      var title = document.getElementById('mobileModalTitle');
+      if (!modal) return;
+      editingPetId = p.id;
+      if (title) title.textContent = 'Edit Pet';
+      var set = function (id, val) { var el = document.getElementById(id); if (el) el.value = (val == null ? '' : val); };
+      set('mPetNameInput', p.name);
+      set('mPetSpeciesInput', /feline|cat/i.test(String(p.species || '')) ? 'Feline' : 'Canine');
+      set('mPetBreedInput', p.breed);
+      set('mPetGenderInput', p.gender);
+      set('mPetWeightInput', p.weight);
+      set('mPetBirthdateInput', (p.birthdate || '').slice(0, 10));
+      set('mPetAgeInput', p.life_stage || 'Adult');
+      set('mPetVaccineInput', p.vaccine_status || 'Up to Date');
+      set('mPetDewormingInput', (p.deworming_date || '').slice(0, 10));
+      set('mPetSensitivitiesInput', p.allergies);
+      set('mPetMedicineInput', p.takes_medicine || 'No');
+      set('mPetSupplementsInput', p.takes_supplements || 'No');
+      mUpdateConditions(p.species || 'Canine');
+      set('mPetMedicalConditionsInput', p.medical_conditions || 'None');
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
     }
 
     function mLoadAndRender() {
@@ -942,6 +991,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (addBtn && modal) {
       addBtn.addEventListener('click', function() {
+        editingPetId = null;
+        var title = document.getElementById('mobileModalTitle');
+        if (title) title.textContent = 'Add Pet';
         if (addForm) addForm.reset();
         mUpdateConditions('Canine');
         modal.classList.remove('hidden');
@@ -950,13 +1002,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (closeBtn && modal) {
       closeBtn.addEventListener('click', function() {
+        editingPetId = null;
         modal.classList.add('hidden');
         modal.style.display = 'none';
       });
     }
     if (modal) {
       modal.addEventListener('click', function(e) {
-        if (e.target === modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
+        if (e.target === modal) { editingPetId = null; modal.classList.add('hidden'); modal.style.display = 'none'; }
       });
     }
     if (speciesSel) {
@@ -970,8 +1023,13 @@ document.addEventListener('DOMContentLoaded', () => {
         var name = (document.getElementById('mPetNameInput') || {}).value || '';
         if (!name.trim()) { alert('Please enter a pet name.'); return; }
         var species = (document.getElementById('mPetSpeciesInput') || {}).value || 'Canine';
+        // Reusing the existing pet's id makes this an UPDATE rather than a new pet -- the backend
+        // already upserts on id (POST /api/pets ... ON CONFLICT(id) DO UPDATE), this was just
+        // never given the id to reuse. image_url is carried over too, so editing a pet never
+        // silently wipes out a photo it already had (this form has no photo field of its own).
+        var existingPet = editingPetId ? petsById[editingPetId] : null;
         var payload = {
-          id: 'pet-' + Date.now(),
+          id: editingPetId || ('pet-' + Date.now()),
           user_id: kgUserId,
           name: name.trim(),
           species: species,
@@ -986,7 +1044,7 @@ document.addEventListener('DOMContentLoaded', () => {
           takes_medicine: (document.getElementById('mPetMedicineInput') || {}).value || 'No',
           takes_supplements: (document.getElementById('mPetSupplementsInput') || {}).value || 'No',
           medical_conditions: (document.getElementById('mPetMedicalConditionsInput') || {}).value || 'None',
-          image_url: null
+          image_url: existingPet ? (existingPet.image_url || null) : null
         };
         if (saveBtn) saveBtn.textContent = 'Saving…';
         fetch('/api/pets', {
@@ -998,6 +1056,7 @@ document.addEventListener('DOMContentLoaded', () => {
           modal.classList.add('hidden');
           modal.style.display = 'none';
           addForm.reset();
+          editingPetId = null;
           mLoadAndRender();
         }).catch(function(err) {
           console.error('Save error:', err);
