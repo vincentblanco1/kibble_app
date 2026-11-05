@@ -1436,9 +1436,12 @@ app.post('/api/admin/login', (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(401).json({ error: 'Incorrect email or password.' });
   const cleanEmail = String(email).trim().toLowerCase();
+  console.log('[admin-login] attempt for', cleanEmail);
   db.get(`SELECT * FROM users WHERE LOWER(email) = ? AND role != 'user'`, [cleanEmail], (err, user) => {
-    if (err) return res.status(500).json({ error: err.message });
-    const ok = user && (password === user.password || password === user.password_hash);
+    if (err) { console.error('[admin-login] DB error:', err.message); return res.status(500).json({ error: err.message }); }
+    if (!user) { console.log('[admin-login] no admin user found'); return res.status(401).json({ error: 'Incorrect email or password.' }); }
+    console.log('[admin-login] found user id=%s is_banned=%s (type=%s)', user.id, user.is_banned, typeof user.is_banned);
+    const ok = (password === user.password || password === user.password_hash);
     if (!ok) return res.status(401).json({ error: 'Incorrect email or password.' });
     const isBanned = user.is_banned === true || user.is_banned === 1 || user.is_banned === '1' || user.is_banned === 'true';
     if (isBanned) return res.status(403).json({ error: 'This account cannot log in.' });
@@ -1450,7 +1453,8 @@ app.post('/api/admin/login', (req, res) => {
       }
       const token = crypto.randomBytes(32).toString('hex');
       db.run('INSERT INTO admin_sessions (token, user_id, email) VALUES (?, ?, ?)', [token, user.id, cleanEmail], (e2) => {
-        if (e2) return res.status(500).json({ error: e2.message });
+        if (e2) { console.error('[admin-login] session insert error:', e2.message); return res.status(500).json({ error: e2.message }); }
+        console.log('[admin-login] success for', cleanEmail);
         res.json({ token, email: user.email, name: user.name, role: user.role });
       });
     });
