@@ -29,8 +29,11 @@
   </main>
 
   <!-- Add Pet Modal -->
-  <div id="mobileAddPetModal" class="fixed inset-0 z-50 hidden flex items-end justify-center bg-black/40" style="display:none;">
-    <div class="bg-white w-full max-w-md rounded-t-3xl p-5 overflow-y-auto max-h-[90vh]" style="-webkit-overflow-scrolling:touch; overscroll-behavior:contain;">
+  <!-- z-[60]: the floating bottom nav is z-50 and comes later in the page, so without this the
+       nav sits visually on top of this modal -- its camera button was literally intercepting taps
+       aimed at "Save Pet" underneath it, even though the button looked reachable. -->
+  <div id="mobileAddPetModal" class="fixed inset-0 z-[60] hidden flex items-end justify-center bg-black/40" style="display:none;">
+    <div class="bg-white w-full max-w-md rounded-t-3xl p-5 pb-28 overflow-y-auto max-h-[90vh]" style="-webkit-overflow-scrolling:touch; overscroll-behavior:contain;">
       <div class="flex items-center justify-between mb-4">
         <h2 id="mobileModalTitle" class="text-sm font-black text-[#182811]">Add Pet</h2>
         <button id="mobileClosePetModal" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#182811]">
