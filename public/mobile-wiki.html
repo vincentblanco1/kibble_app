@@ -21,6 +21,31 @@
       <button type="button" id="toggleCompareModeBtn" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold border border-[#45671d] bg-white text-[#45671d] cursor-pointer">
         <span id="compareBtnLabel">Compare</span>
       </button>
+
+      <!-- Notification Bell Dropdown -- every other mobile page has this; Wiki was
+           missing it (and the notifications.js script tag below) entirely. -->
+      <div class="relative">
+        <button type="button" id="notificationBellBtn" class="relative w-7 h-7 rounded-full bg-white border border-[#ebdcd0] text-[#182811] flex items-center justify-center shadow-2xs" title="Notifications">
+          <i class="fa-regular fa-bell text-xs"></i>
+          <span id="notificationBadge" class="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center shadow-xs">2</span>
+        </button>
+        <div id="notificationDropdown" class="hidden absolute right-[-48px] mt-2.5 w-72 sm:w-80 bg-white rounded-2xl border border-[#ebdcd0] shadow-2xl z-50 p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between pb-2 border-b border-[#f5efe6]">
+            <span class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Notifications</span>
+            <button type="button" id="markAllReadBtn" class="text-[10.5px] font-bold text-[#45671d] hover:underline cursor-pointer">Mark read</button>
+          </div>
+          <div id="notificationListContainer" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+          <div class="pt-2 border-t border-[#f5efe6] text-center">
+            <a href="mobile-notifications.html" class="text-[11px] font-extrabold text-[#45671d] hover:underline block">See all notifications →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Public Portal Link -->
+      <a href="mobile-public-wiki.html" target="_blank" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#182811]" title="Public Portal">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+      </a>
+
       <a href="mobile-settings.html" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#182811]">
         <i class="fa-solid fa-gear"></i>
       </a>
@@ -205,6 +230,7 @@
   </nav>
 
   <script src="app.js"></script>
+  <script src="notifications.js"></script>
   <script src="wiki.js"></script>
 </body>
 </html>
