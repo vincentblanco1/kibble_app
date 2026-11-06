@@ -616,12 +616,17 @@ function computeAccuracyMetrics() {
     if (overrides[scanId]) overturned++;
   });
 
+  // every extracted ingredient lands in trace.substances, matched or not -- an
+  // unmatched one is just tagged level "Unrated" instead of dropped. So "matched"
+  // means the level is a real rating, not merely that an entry exists.
   var matchedTokens = 0;
   var totalTokens = 0;
   Object.keys(traces).forEach(function (id) {
     var trace = traces[id];
-    totalTokens += trace.substances.length + (trace.unresolvedTokens || 0);
-    matchedTokens += trace.substances.length;
+    (trace.substances || []).forEach(function (s) {
+      totalTokens++;
+      if (normalizeLevel(s.level) !== 'Unrated') matchedTokens++;
+    });
   });
 
   var extraction = scoredScans > 0 ? Math.round((aboveThreshold / scoredScans) * 100) : 0;
