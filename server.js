@@ -326,6 +326,11 @@ db.serialize(() => {
   db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_resolution TEXT`, () => {});
   db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_resolution_type TEXT`, () => {});
   db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_resolved_at TIMESTAMP`, () => {});
+  // How confident the Vision AI call was in its own OCR read for this scan (0-100, null for
+  // manual-text entries where there was no image to read). Safety Rules' "OCR Confidence
+  // Rules" (auto-approve threshold, critical hazard floor) and the OCR Scan Records KPIs are
+  // meant to be computed from this -- without it they had nothing real to measure against.
+  db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS ocr_confidence INTEGER`, () => {});
 
   // 5. Products Table
   db.run(`CREATE TABLE IF NOT EXISTS products (
@@ -1083,6 +1088,7 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
     const { user_id, pet_id, product_name, species, manual_text } = req.body;
     let ingredientTokens = [];
     let imageUrl = null;
+    let ocrConfidence = null; // only a real OCR read (an image) has a confidence; manual text never does
 
     if (req.file) {
       imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
@@ -1122,8 +1128,12 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
                 items: { type: Type.STRING },
                 description: 'Clean list of extracted ingredients (empty unless dog_or_cat_food)',
               },
+              confidence: {
+                type: Type.NUMBER,
+                description: 'Your own confidence (0-100) that the ingredients list above was read correctly from this photo, factoring in image sharpness, lighting, glare, and how certain you are of each word. 100 = perfectly legible label, 0 = unreadable guess.',
+              },
             },
-            required: ['product_type', 'reason', 'ingredients'],
+            required: ['product_type', 'reason', 'ingredients', 'confidence'],
           },
         },
       };
@@ -1152,6 +1162,7 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
       }
       if (!productType) console.warn('[VISION AI] The answer had no usable product_type; continuing without the pet-food check.');
       ingredientTokens = parsedData.ingredients || [];
+      ocrConfidence = Number.isFinite(parsedData.confidence) ? Math.max(0, Math.min(100, Math.round(parsedData.confidence))) : null;
     } else if (manual_text) {
       ingredientTokens = manual_text.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
     }
@@ -1176,8 +1187,8 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
       const { flagged, parsedResults, score, finalRating } = analysis;
 
       const insertQuery = `
-        INSERT INTO scans (user_id, pet_id, product_name, species, image_url, raw_text, summary, risk_score, rating, flagged_ingredients, results_json)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO scans (user_id, pet_id, product_name, species, image_url, raw_text, summary, risk_score, rating, flagged_ingredients, results_json, ocr_confidence)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       db.run(insertQuery, [
@@ -1191,7 +1202,8 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
         score,
         finalRating,
         JSON.stringify(flagged),
-        JSON.stringify(parsedResults)
+        JSON.stringify(parsedResults),
+        ocrConfidence
       ], function(saveErr) {
         if (saveErr) return res.status(500).json({ error: saveErr.message });
 
@@ -2137,7 +2149,7 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
-  db.all(`SELECT id, name, email, is_banned, ban_reason, barangay, created_at FROM users WHERE role = 'user' ORDER BY created_at DESC`, [], (e1, users) => {
+  db.all(`SELECT id, name, email, is_banned, ban_reason, barangay, city, region, country, caregiver_role, feeding_style, avatar, created_at FROM users WHERE role = 'user' ORDER BY created_at DESC`, [], (e1, users) => {
     if (e1) return res.status(500).json({ error: e1.message });
     db.all(`SELECT * FROM pets`, [], (e2, pets) => {
       if (e2) return res.status(500).json({ error: e2.message });
@@ -2145,7 +2157,7 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
         const scanQuery = `
           SELECT s.id, s.user_id, s.product_name, s.rating, s.risk_score, s.image_url, s.raw_text, s.results_json,
                  s.created_at, COALESCE(s.species, p.species) AS species,
-                 s.dispute_note, s.dispute_created_at, s.dispute_resolved,
+                 s.dispute_note, s.dispute_created_at, s.dispute_resolved, s.ocr_confidence,
                  u.name AS owner, u.email AS ownerEmail, p.name AS pet, p.breed AS petBreed
           FROM scans s
           LEFT JOIN users u ON u.id = s.user_id
@@ -2185,6 +2197,7 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
               timestamp: createdIso,
               hasImage: !!(r.image_url && /^data:image\//.test(r.image_url)),
               rawOcrText: r.raw_text || '',
+              confidence: (r.ocr_confidence === null || r.ocr_confidence === undefined) ? null : Number(r.ocr_confidence),
               substances,
               dispute
             };

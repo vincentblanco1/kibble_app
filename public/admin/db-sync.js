@@ -125,13 +125,20 @@
     var id = 'row-u' + u.id;
     var scanText = st.n + (st.n === 1 ? ' Scan' : ' Scans') + ' &middot; ' + st.warn + (st.warn === 1 ? ' Risk Warning' : ' Risk Warnings') + ' triggered';
     var search = [u.name, u.email, pets.map(function (p) { return p.name; }).join(' '), 'pet owner'].join(' ').toLowerCase();
+    // city/region/country/feeding_style/avatar are the real columns the pet owner's own
+    // Settings page writes to (see POST /api/users/:id) -- these used to be hardcoded blank
+    // here, which is why the admin's "View Profile" Location/Feeding Profile fields and
+    // avatar always looked empty/broken even for an account that had filled all of this in.
     return '<tr class="feed-row hover:bg-stone-50/50 group" id="' + id + '" data-name="' + esc(u.name) + '" data-email="' + esc(u.email) +
-      '" data-role="Pet Owner" data-country="" data-region="" data-city="" data-barangay="' + esc(u.barangay || '') + '" data-feeding-style="" data-owned-animals="' + pets.length +
+      '" data-role="Pet Owner" data-country="' + esc(u.country || '') + '" data-region="' + esc(u.region || '') + '" data-city="' + esc(u.city || '') +
+      '" data-barangay="' + esc(u.barangay || '') + '" data-feeding-style="' + esc(u.feeding_style || '') + '" data-avatar="' + esc(u.avatar || '') + '" data-owned-animals="' + pets.length +
       '" data-pets="' + esc(petData) + '" data-scans="' + scanText + '" data-status="' + (banned ? 'banned' : 'active') +
       '" data-joined="' + esc(isNaN(joined) ? '' : joined.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })) +
       '" data-joined-date="' + esc(isNaN(joined) ? '' : u.created_at.slice(0, 10)) + '" data-last-active="' + esc(st.last ? ago(st.last) : 'Never') + '"' +
       (banned ? ' data-ban-reason="' + esc(u.ban_reason || '') + '"' : '') + ' data-search="' + esc(search) + '">' +
-      '<td class="px-10 py-6"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-xl bg-brand-light text-brand flex items-center justify-center text-xs font-bold shrink-0">' + esc(initials(u.name)) + '</div>' +
+      '<td class="px-10 py-6"><div class="flex items-center gap-4">' + (u.avatar
+        ? '<img src="' + esc(u.avatar) + '" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="">'
+        : '<div class="w-10 h-10 rounded-xl bg-brand-light text-brand flex items-center justify-center text-xs font-bold shrink-0">' + esc(initials(u.name)) + '</div>') +
       '<div><p class="font-bold text-dark">' + esc(u.name) + '</p><p class="text-[11px] text-stone-500">' + esc(u.email) + '</p>' +
       '<p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mt-0.5">Pet Owner</p></div></div></td>' +
       '<td class="px-10 py-6"><div class="flex flex-col gap-1.5">' + petCell + '</div></td>' +
@@ -155,7 +162,7 @@
       ? '<span id="dispute-badge-' + s.id + '" class="ml-2 px-2 py-0.5 rounded-full bg-caution/10 text-caution text-[8px] font-bold uppercase tracking-widest not-italic" title="' + esc(s.dispute.note) + '">Disputed</span>'
       : '';
     return '<tr class="feed-row hover:bg-stone-50/50 group" id="row-' + s.id + '" data-date="' + esc(s.timestamp.slice(0, 10)) + '" data-verdict="' + verdict +
-      '" data-species="' + s.species + '" data-search="' + esc(search) + '"' + (s.dispute ? ' data-disputed="true"' : '') + '>' +
+      '" data-species="' + s.species + '" data-confidence="' + (s.confidence != null ? esc(s.confidence) : '') + '" data-search="' + esc(search) + '"' + (s.dispute ? ' data-disputed="true"' : '') + '>' +
       '<td class="px-10 py-6 font-mono text-xs text-stone-400 font-bold">#' + idTxt + '</td>' +
       '<td class="px-10 py-6"><div class="flex items-center gap-4"><div class="w-11 h-11 rounded-xl bg-stone-100 text-stone-400 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-image"></i></div>' +
       '<div><p class="font-bold text-dark italic">' + esc(s.product) + disputeBadge + '</p></div></div></td>' +
@@ -332,7 +339,9 @@
     var builtScans = (data.scans || []).map(function (s) {
       KGDB.recordTraces['KB-' + s.id] = {
         user_id: String(s.user_id), owner: s.owner, ownerEmail: s.ownerEmail, species: s.species, timestamp: s.timestamp,
-        confidence: 'Not measured', clarity: 'Unknown', rawOcrText: s.rawOcrText,
+        // real confidence from the Vision AI call for an actual photo scan; manual-text
+        // scans never had an image to read, so there's honestly nothing to measure there
+        confidence: (s.confidence != null ? s.confidence + '%' : 'Not measured'), clarity: 'Unknown', rawOcrText: s.rawOcrText,
         imageUrl: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : '',
         substances: (s.substances || []).map(function (x) { return { name: x.name, category: x.category, level: x.unrated ? 'Unrated' : x.level, note: x.note }; }),
         dispute: s.dispute || null

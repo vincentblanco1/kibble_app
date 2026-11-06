@@ -32,31 +32,11 @@ function verdictBadgeHtml(level) {
 }
 
 /* ---------- Safety Rules-specific interactions ---------- */
-var ADVICE_CONTENT = {
-  canine: {
-    level3: 'IMMEDIATE ACTION REQUIRED. This ingredient is known to be highly toxic or fatal to dogs. Do not feed. Contact your veterinarian immediately if ingested.',
-    level2: 'Exercise caution. This ingredient may cause mild digestive upset or sensitivity in some dogs. Monitor your pet closely if fed.',
-    level1: 'This ingredient is generally recognized as safe (GRAS) for consumption by healthy dogs in appropriate amounts.'
-  },
-  feline: {
-    level3: 'IMMEDIATE ACTION REQUIRED. This ingredient is known to be highly toxic or fatal to cats. Do not feed. Contact your veterinarian immediately if ingested.',
-    level2: 'Exercise caution. This ingredient may cause mild digestive upset or sensitivity in some cats. Monitor your pet closely if fed.',
-    level1: 'This ingredient is generally recognized as safe (GRAS) for consumption by healthy cats in appropriate amounts.'
-  }
-};
 
 (function restoreSafetyRulesState() {
   var saved = null;
   try { saved = JSON.parse(localStorage.getItem('kibbleguard-safety-rules')); } catch (e) { saved = null; }
   if (!saved) return;
-  if (saved.adviceContent) {
-    ADVICE_CONTENT.canine = saved.adviceContent.canine || ADVICE_CONTENT.canine;
-    ADVICE_CONTENT.feline = saved.adviceContent.feline || ADVICE_CONTENT.feline;
-    var l1 = document.getElementById('level1-textarea'), l2 = document.getElementById('level2-textarea'), l3 = document.getElementById('level3-textarea');
-    if (l1) l1.value = ADVICE_CONTENT.canine.level1;
-    if (l2) l2.value = ADVICE_CONTENT.canine.level2;
-    if (l3) l3.value = ADVICE_CONTENT.canine.level3;
-  }
   if (saved.autoApprove !== undefined) {
     var autoSlider = document.getElementById('auto-approve-slider');
     if (autoSlider) {
@@ -130,30 +110,8 @@ function refreshTaxonomyNodeCounts() {
 }
 refreshTaxonomyNodeCounts();
 
-var currentSpecies = 'canine';
-var ACTIVE_TAB_CANINE = 'press px-5 py-1.5 rounded-lg bg-[#03C4C9] text-[#06343A] text-[10px] font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed';
-var ACTIVE_TAB_FELINE = 'press px-5 py-1.5 rounded-lg bg-[#B57EDC] text-[#2B1240] text-[10px] font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed';
-var INACTIVE_TAB = 'press px-5 py-1.5 rounded-lg text-stone-400 hover:text-dark text-[10px] font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed';
-
-// switches the advice-text textareas between canine/feline - saves
-// whatever's currently in the boxes back to ADVICE_CONTENT first, so
-// flipping species and back doesn't lose an in-progress edit
-function switchSpecies(species) {
-  if (species === currentSpecies) return;
-  ADVICE_CONTENT[currentSpecies].level1 = document.getElementById('level1-textarea').value;
-  ADVICE_CONTENT[currentSpecies].level2 = document.getElementById('level2-textarea').value;
-  ADVICE_CONTENT[currentSpecies].level3 = document.getElementById('level3-textarea').value;
-  currentSpecies = species;
-  document.getElementById('level3-textarea').value = ADVICE_CONTENT[species].level3;
-  document.getElementById('level2-textarea').value = ADVICE_CONTENT[species].level2;
-  document.getElementById('level1-textarea').value = ADVICE_CONTENT[species].level1;
-  document.getElementById('species-canine-btn').className = species === 'canine' ? ACTIVE_TAB_CANINE : INACTIVE_TAB;
-  document.getElementById('species-feline-btn').className = species === 'feline' ? ACTIVE_TAB_FELINE : INACTIVE_TAB;
-  showToast((species === 'canine' ? 'Canine' : 'Feline') + ' advice profile loaded', 'info');
-}
-
 /* ---------- View / Edit mode ---------- */
-var EDITABLE_FIELD_IDS = ['auto-approve-slider', 'hazard-floor-slider', 'level1-textarea', 'level2-textarea', 'level3-textarea'];
+var EDITABLE_FIELD_IDS = ['auto-approve-slider', 'hazard-floor-slider'];
 var editModeSnapshot = null;
 
 // locks/unlocks the sliders and textareas.
@@ -191,21 +149,16 @@ function restoreEditableFields(snap) {
   updateSliderFill(document.getElementById('hazard-floor-slider'), '#B91C1C');
 }
 
-// the two banners telling you whether the page is locked or editable
+// the banner telling you whether the page is locked or editable
 function setLockBanners(locked) {
   var lockedHtml = '<i class="fa-solid fa-lock text-stone-400"></i> Read-only. Click "Edit Safety Rules" above to make changes.';
   var editingHtml = '<i class="fa-solid fa-pen text-brand"></i> Editing now. Click "Save Logic Profile" or "Cancel" above when done.';
   var banner1 = document.getElementById('rules-lock-banner-1');
-  var banner2 = document.getElementById('rules-lock-banner-2');
-  [banner1, banner2].forEach(function (banner) {
-    if (!banner) return;
-    banner.innerHTML = locked ? lockedHtml : editingHtml;
-    banner.className = locked
-      ? 'mb-6 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-100 border border-stone-200 text-[11px] font-bold text-stone-500'
-      : 'mb-6 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-light border border-brand/20 text-[11px] font-bold text-brand';
-  });
-  // banner2 doesn't use the mb-6 spacing (its parent already spaces via space-y-12)
-  if (banner2) banner2.classList.remove('mb-6');
+  if (!banner1) return;
+  banner1.innerHTML = locked ? lockedHtml : editingHtml;
+  banner1.className = locked
+    ? 'mb-6 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-100 border border-stone-200 text-[11px] font-bold text-stone-500'
+    : 'mb-6 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-light border border-brand/20 text-[11px] font-bold text-brand';
 }
 
 // this button itself is permission-gated (manageSafetyRules) - the whole
@@ -214,8 +167,6 @@ function enterEditMode() {
   editModeSnapshot = snapshotEditableFields();
   setEditableFieldsEnabled(true);
   setLockBanners(false);
-  document.getElementById('species-canine-btn').disabled = true;
-  document.getElementById('species-feline-btn').disabled = true;
   document.getElementById('edit-mode-btn').classList.add('hidden');
   document.getElementById('cancel-edit-btn').classList.remove('hidden');
   document.getElementById('save-logic-btn').classList.remove('hidden');
@@ -226,8 +177,6 @@ function enterEditMode() {
 function exitEditMode() {
   setEditableFieldsEnabled(false);
   setLockBanners(true);
-  document.getElementById('species-canine-btn').disabled = false;
-  document.getElementById('species-feline-btn').disabled = false;
   document.getElementById('edit-mode-btn').classList.remove('hidden');
   document.getElementById('cancel-edit-btn').classList.add('hidden');
   document.getElementById('save-logic-btn').classList.add('hidden');
@@ -244,24 +193,15 @@ function cancelEditMode() {
 function saveLogicProfile() {
   var autoApprove = document.getElementById('auto-approve-label').textContent;
   var hazardFloor = document.getElementById('hazard-floor-label').textContent;
-  var species = currentSpecies === 'canine' ? 'Canine' : 'Feline';
-
-  // commits whatever's currently typed into ADVICE_CONTENT first.
-  // switching species reloads the textareas straight from there, so without this,
-  // an in-progress edit would get overwritten and lost
-  ADVICE_CONTENT[currentSpecies].level1 = document.getElementById('level1-textarea').value;
-  ADVICE_CONTENT[currentSpecies].level2 = document.getElementById('level2-textarea').value;
-  ADVICE_CONTENT[currentSpecies].level3 = document.getElementById('level3-textarea').value;
 
   var btn = document.getElementById('save-logic-btn');
   withSavingState(btn, 'Saving...', function () {
     localStorage.setItem('kibbleguard-safety-rules', JSON.stringify({
       autoApprove: document.getElementById('auto-approve-slider').value,
-      hazardFloor: document.getElementById('hazard-floor-slider').value,
-      adviceContent: ADVICE_CONTENT
+      hazardFloor: document.getElementById('hazard-floor-slider').value
     }));
 
-    showToast('Logic profile saved: ' + species + ' advice, auto-approve ' + autoApprove + ', hazard floor ' + hazardFloor, 'success');
+    showToast('Logic profile saved: auto-approve ' + autoApprove + ', hazard floor ' + hazardFloor, 'success');
     logAdminAction('Updated safety rules: auto-approve ' + autoApprove + ', hazard floor ' + hazardFloor, 'settings');
     exitEditMode();
   });

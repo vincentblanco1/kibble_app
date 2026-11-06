@@ -245,7 +245,14 @@ function viewUserProfile(rowId) {
   closeAllMenus();
   var row = document.getElementById(rowId);
   var d = row.dataset;
-  var avatarSrc = row.querySelector('img') ? row.querySelector('img').src : '';
+  // the row only has a real <img> when this account has an avatar on file (see userRow() in
+  // db-sync.js) -- otherwise fall back to the same initials badge the table row itself shows,
+  // instead of rendering a broken <img src="">
+  var avatarImg = row.querySelector('img');
+  var nameInitials = String(d.name || '?').split(/\s+/).map(function (p) { return p.charAt(0); }).join('').slice(0, 2).toUpperCase();
+  var avatarHtml = avatarImg
+    ? '<img src="' + escapeHTML(avatarImg.src) + '" class="w-16 h-16 rounded-2xl object-cover shadow-sm shrink-0" alt="">'
+    : '<div class="w-16 h-16 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-lg font-bold shadow-sm shrink-0">' + escapeHTML(nameInitials) + '</div>';
   var statusPill = d.status === 'flagged'
     ? '<span class="px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border text-danger bg-danger/10 border-danger/10">Flagged</span>'
     : d.status === 'banned'
@@ -296,7 +303,7 @@ function viewUserProfile(rowId) {
     wide: true,
     bodyHtml:
       '<div class="flex items-center gap-4 mb-6 pb-6 border-b border-stone-50">' +
-        '<img src="' + escapeHTML(avatarSrc) + '" class="w-16 h-16 rounded-2xl object-cover shadow-sm shrink-0">' +
+        avatarHtml +
         '<div class="flex-1 min-w-0">' +
           '<div class="flex items-center gap-2 flex-wrap">' + statusPill + rolePill + '</div>' +
           '<p class="text-[11px] text-stone-400 font-medium mt-2">Member since ' + escapeHTML(d.joined) + ' &middot; Last active ' + escapeHTML(d.lastActive) + '</p>' +
@@ -323,12 +330,12 @@ function viewUserProfile(rowId) {
       '<div class="grid grid-cols-2 gap-4 mb-6">' +
         '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200">' +
           '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5"><i class="fa-solid fa-location-dot mr-1"></i>Location</p>' +
-          '<p class="text-xs font-bold text-dark">Brgy. ' + escapeHTML(d.barangay || '?') + ', ' + escapeHTML(d.city) + '</p>' +
-          '<p class="text-[10px] text-stone-400 mt-0.5">' + escapeHTML(d.region) + ', ' + escapeHTML(d.country) + '</p>' +
+          '<p class="text-xs font-bold text-dark">' + (d.barangay || d.city ? 'Brgy. ' + escapeHTML(d.barangay || '?') + ', ' + escapeHTML(d.city || '?') : 'Not provided yet') + '</p>' +
+          '<p class="text-[10px] text-stone-400 mt-0.5">' + (d.region || d.country ? escapeHTML(d.region || '?') + ', ' + escapeHTML(d.country || '?') : '&nbsp;') + '</p>' +
         '</div>' +
         '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200">' +
           '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5"><i class="fa-solid fa-bowl-food mr-1"></i>Household Feeding Profile</p>' +
-          '<p class="text-xs font-bold text-dark">' + escapeHTML(d.feedingStyle) + '</p>' +
+          '<p class="text-xs font-bold text-dark">' + escapeHTML(d.feedingStyle || 'Not set yet') + '</p>' +
           '<p class="text-[10px] text-stone-400 mt-0.5">' + d.ownedAnimals + ' owned animal' + (d.ownedAnimals === '1' ? '' : 's') + '</p>' +
         '</div>' +
       '</div>' +

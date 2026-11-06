@@ -115,10 +115,8 @@
 
   <div class="p-10 max-w-[1600px] w-full mx-auto space-y-10">
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
 
-      <!-- Left: Engine Thresholds & Categories -->
-      <div class="lg:col-span-4 space-y-10">
         <div class="stagger-in bg-white p-8 rounded-[2.5rem] border border-stone-100 card-shadow">
           <h3 class="text-xs font-bold text-stone-500 uppercase tracking-widest mb-6 flex items-center justify-between">
             OCR Confidence Rules
@@ -198,74 +196,6 @@
           </div>
           <button onclick="openTaxonomyForm()" data-perm="manageSafetyRules" class="press w-full mt-4 py-3 text-xs font-bold text-brand hover:bg-brand-light rounded-xl transition-all border border-dashed border-brand/30">Add Category</button>
         </div>
-      </div>
-
-      <!-- Right: Species-Specific Advice -->
-      <div class="lg:col-span-8 space-y-10">
-        <div class="stagger-in bg-dark rounded-[2.5rem] p-6 sm:p-8 flex items-start gap-4 sm:gap-5">
-          <div class="w-11 h-11 rounded-2xl bg-white/10 text-brand flex items-center justify-center text-lg shrink-0"><i class="fa-solid fa-circle-info"></i></div>
-          <div>
-            <h3 class="text-sm font-bold text-white mb-1">Why species matter</h3>
-            <p class="text-xs text-stone-400 leading-relaxed">Dogs and cats metabolize ingredients differently. A substance that's fine for a dog can be dangerous for a cat, and vice versa. That's why every ingredient carries two separate classifications, and why the advice below is configured per species rather than once for the whole system.</p>
-          </div>
-        </div>
-
-        <div class="stagger-in bg-white border border-stone-100 rounded-[2.5rem] card-shadow overflow-hidden flex flex-col">
-          <div class="p-5 sm:p-8 border-b border-stone-50 bg-stone-50/20 flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h2 class="font-display font-bold text-lg text-dark">Species-Specific Classification Advice</h2>
-              <p class="text-xs text-stone-400 font-medium">Shown to pet owners on the Label Analysis and Risk Library screens</p>
-            </div>
-            <div class="flex items-center gap-2 bg-white p-1 rounded-xl border border-stone-100 shadow-sm">
-              <button id="species-canine-btn" onclick="switchSpecies('canine')" class="press px-5 py-1.5 rounded-lg bg-[#03C4C9] text-[#06343A] text-[10px] font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed">Canine</button>
-              <button id="species-feline-btn" onclick="switchSpecies('feline')" class="press px-5 py-1.5 rounded-lg text-stone-400 hover:text-dark text-[10px] font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">Feline</button>
-            </div>
-          </div>
-          <div class="p-5 sm:p-10 space-y-8 sm:space-y-12">
-            <div id="rules-lock-banner-2" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-100 border border-stone-200 text-[11px] font-bold text-stone-500">
-              <i class="fa-solid fa-lock text-stone-400"></i> Read-only. Click "Edit Safety Rules" above to make changes.
-            </div>
-            <div class="flex gap-4 sm:gap-8">
-              <div class="w-10 sm:w-16 flex flex-col items-center gap-4">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-danger/10 text-danger flex items-center justify-center text-xl shadow-sm"><i class="fa-solid fa-skull"></i></div>
-                <div class="h-full w-px bg-stone-100"></div>
-              </div>
-              <div class="flex-1 space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <h4 class="text-xs font-bold text-dark uppercase tracking-widest">Toxic - Immediate Danger</h4>
-                  <span class="text-[10px] font-bold text-danger italic">Automated Action Triggered</span>
-                </div>
-                <textarea id="level3-textarea" readonly class="w-full p-5 bg-stone-100 border border-stone-200 rounded-2xl text-sm text-dark h-28 focus:outline-none focus:border-brand transition-all resize-none read-only:bg-stone-100/60 read-only:text-stone-500">IMMEDIATE ACTION REQUIRED. This ingredient is known to be highly toxic or fatal to dogs. Do not feed. Contact your veterinarian immediately if ingested.</textarea>
-              </div>
-            </div>
-            <div class="flex gap-4 sm:gap-8">
-              <div class="w-10 sm:w-16 flex flex-col items-center gap-4">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-caution/10 text-caution flex items-center justify-center text-xl shadow-sm"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                <div class="h-full w-px bg-stone-100"></div>
-              </div>
-              <div class="flex-1 space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <h4 class="text-xs font-bold text-dark uppercase tracking-widest">Caution - Monitor Closely</h4>
-                  <span class="text-[10px] font-bold text-caution italic">Precautionary Alert</span>
-                </div>
-                <textarea id="level2-textarea" readonly class="w-full p-5 bg-stone-100 border border-stone-200 rounded-2xl text-sm text-dark h-28 focus:outline-none focus:border-brand transition-all resize-none read-only:bg-stone-100/60 read-only:text-stone-500">Exercise caution. This ingredient may cause mild digestive upset or sensitivity in some dogs. Monitor your pet closely if fed.</textarea>
-              </div>
-            </div>
-            <div class="flex gap-4 sm:gap-8">
-              <div class="w-10 sm:w-16 flex flex-col items-center">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-safe/10 text-safe flex items-center justify-center text-xl shadow-sm"><i class="fa-solid fa-circle-check"></i></div>
-              </div>
-              <div class="flex-1 space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <h4 class="text-xs font-bold text-dark uppercase tracking-widest">Safe - No Action Needed</h4>
-                  <span class="text-[10px] font-bold text-safe italic">Default Safe State</span>
-                </div>
-                <textarea id="level1-textarea" readonly class="w-full p-5 bg-stone-100 border border-stone-200 rounded-2xl text-sm text-dark h-28 focus:outline-none focus:border-brand transition-all resize-none read-only:bg-stone-100/60 read-only:text-stone-500">This ingredient is generally recognized as safe (GRAS) for consumption by healthy dogs in appropriate amounts.</textarea>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
     </div>
 
