@@ -1080,7 +1080,12 @@ function refreshActiveAlertsFromSafetyFeed() {
   if (!container) return;
   var saved = null;
   try { saved = JSON.parse(localStorage.getItem('kibbleguard-alerts-rows')); } catch (e) { saved = null; }
-  if (!saved || !saved.length) return;
+  if (!saved || !saved.length) {
+    // No Safety Feed rows saved yet (fresh admin session) -- show the real
+    // empty state instead of leaving stale/fake alert markup in the DOM.
+    container.innerHTML = '<div class="p-8 text-center text-xs text-stone-400 font-bold">No active alerts right now</div>';
+    return;
+  }
 
   var liveAlerts = [];
   saved.forEach(function (rowHtml) {
