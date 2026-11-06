@@ -979,17 +979,51 @@ document.addEventListener('DOMContentLoaded', () => {
       petImageFileInput.addEventListener('change', function (e) {
         var file = e.target.files && e.target.files[0];
         if (!file) return;
-        if (file.size > 2 * 1024 * 1024) {
-          alert('Selected image exceeds 2MB limit. Please select a smaller photo.');
-          return;
-        }
-        var reader = new FileReader();
-        reader.onload = function (evt) {
-          mCurrentUploadedPhoto = evt.target.result;
+        // Photos taken directly with a phone camera are routinely 3-12MB -- the old
+        // code flatly rejected anything over 2MB with an alert, so taking a photo
+        // (rather than picking a pre-shrunk one from the gallery) almost always
+        // failed. Instead of rejecting it, shrink it down client-side (resize to a
+        // sane max dimension and re-encode as JPEG) so any photo just works, while
+        // what actually gets stored stays small.
+        compressPetPhoto(file, function (dataUrl) {
+          mCurrentUploadedPhoto = dataUrl;
           mShowPhotoInPreview(mCurrentUploadedPhoto);
-        };
-        reader.readAsDataURL(file);
+        }, function () {
+          alert('Could not read that photo. Please try a different one.');
+        });
       });
+    }
+
+    // Resizes to at most 900px on the longest side and re-encodes as JPEG, which
+    // brings a typical multi-MB camera photo down to well under 300KB -- small
+    // enough for both the database column and the localStorage pets cache.
+    function compressPetPhoto(file, onDone, onError, maxDim, quality) {
+      maxDim = maxDim || 900;
+      quality = quality || 0.82;
+      var reader = new FileReader();
+      reader.onload = function (evt) {
+        var img = new Image();
+        img.onload = function () {
+          var w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w >= h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+            else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          var dataUrl = canvas.toDataURL('image/jpeg', quality);
+          if (dataUrl.length > 1.5 * 1024 * 1024) dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+          onDone(dataUrl);
+        };
+        img.onerror = function () { onError(new Error('Could not decode image')); };
+        img.src = evt.target.result;
+      };
+      reader.onerror = function () { onError(new Error('Could not read file')); };
+      reader.readAsDataURL(file);
     }
     if (removePhotoBtn) {
       removePhotoBtn.addEventListener('click', function () {

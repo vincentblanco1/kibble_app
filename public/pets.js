@@ -143,22 +143,51 @@ document.addEventListener('DOMContentLoaded', () => {
   const removePhotoBtn = document.getElementById('removePhotoBtn');
 
   // --- Photo Upload Reader ---
+  // Photos taken directly with a phone camera are routinely 3-12MB -- flatly
+  // rejecting anything over 2MB meant taking a photo (rather than picking a
+  // pre-shrunk one) almost always failed. Instead, shrink it down client-side
+  // (resize to a sane max dimension and re-encode as JPEG) so any photo just
+  // works, while what actually gets stored (in the database and the
+  // localStorage pets cache) stays small.
+  function compressPetPhoto(file, onDone, onError, maxDim, quality) {
+    maxDim = maxDim || 900;
+    quality = quality || 0.82;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const img = new Image();
+      img.onload = function() {
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w >= h) { h = Math.round(h * (maxDim / w)); w = maxDim; }
+          else { w = Math.round(w * (maxDim / h)); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+        if (dataUrl.length > 1.5 * 1024 * 1024) dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        onDone(dataUrl);
+      };
+      img.onerror = function() { onError(new Error('Could not decode image')); };
+      img.src = evt.target.result;
+    };
+    reader.onerror = function() { onError(new Error('Could not read file')); };
+    reader.readAsDataURL(file);
+  }
+
   petImageFileInput?.addEventListener('change', function(e) {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
-    // Check size limit (max 2MB for localStorage safety)
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Selected image exceeds 2MB limit. Please select a smaller photo.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      currentUploadedPhotoBase64 = evt.target.result;
+    compressPetPhoto(file, function(dataUrl) {
+      currentUploadedPhotoBase64 = dataUrl;
       showPhotoInPreview(currentUploadedPhotoBase64);
-    };
-    reader.readAsDataURL(file);
+    }, function() {
+      alert('Could not read that photo. Please try a different one.');
+    });
   });
 
   function showPhotoInPreview(dataUrl) {
