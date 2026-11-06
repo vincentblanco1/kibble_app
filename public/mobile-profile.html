@@ -88,15 +88,50 @@
       </div>
       <div>
         <label class="font-bold text-[#788673] block mb-1">Country</label>
-        <input type="text" id="countryInput" disabled placeholder="e.g. Philippines" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+        <select id="countryInput" disabled class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+          <option value="">Select Country</option>
+          <option value="Philippines">Philippines</option>
+        </select>
       </div>
       <div>
         <label class="font-bold text-[#788673] block mb-1">Region / Province</label>
-        <input type="text" id="regionInput" disabled placeholder="e.g. NCR" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+        <select id="regionInput" disabled class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+          <option value="">Select Region</option>
+          <option value="Metro Manila">Metro Manila (NCR)</option>
+        </select>
       </div>
       <div>
         <label class="font-bold text-[#788673] block mb-1">City / Municipality</label>
-        <input type="text" id="cityInput" disabled class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+        <select id="cityInput" disabled class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+          <option value="">Select City</option>
+          <option value="Las Piñas">Las Piñas</option>
+        </select>
+      </div>
+      <div>
+        <label class="font-bold text-[#788673] block mb-1">Barangay</label>
+        <select id="barangayInput" disabled class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+          <option value="">Select Barangay</option>
+          <option value="Almanza Dos">Almanza Dos</option>
+          <option value="Almanza Uno">Almanza Uno</option>
+          <option value="B.F. International Village">B.F. International Village</option>
+          <option value="Daniel Fajardo">Daniel Fajardo</option>
+          <option value="Elias Aldana">Elias Aldana</option>
+          <option value="Ilaya">Ilaya</option>
+          <option value="Manuyo Dos">Manuyo Dos</option>
+          <option value="Manuyo Uno">Manuyo Uno</option>
+          <option value="Pamplona Dos">Pamplona Dos</option>
+          <option value="Pamplona Tres">Pamplona Tres</option>
+          <option value="Pamplona Uno">Pamplona Uno</option>
+          <option value="Pilar">Pilar</option>
+          <option value="Pulang Lupa Dos">Pulang Lupa Dos</option>
+          <option value="Pulang Lupa Uno">Pulang Lupa Uno</option>
+          <option value="Talon Dos">Talon Dos</option>
+          <option value="Talon Kuatro">Talon Kuatro</option>
+          <option value="Talon Singko">Talon Singko</option>
+          <option value="Talon Tres">Talon Tres</option>
+          <option value="Talon Uno">Talon Uno</option>
+          <option value="Zapote">Zapote</option>
+        </select>
       </div>
 
       <h3 class="font-extrabold text-xs text-[#182811] uppercase tracking-wider pb-1 border-b border-[#f5efe6] pt-2">Pet Caregiver Details</h3>
@@ -111,8 +146,17 @@
         </select>
       </div>
       <div>
-        <label class="font-bold text-[#788673] block mb-1">Pet Count</label>
-        <input type="number" id="petCountInput" disabled min="0" placeholder="e.g. 2" class="w-full bg-[#fbf9f6] border border-[#ebdcd0] rounded-xl px-3 py-2 font-semibold">
+        <div class="flex items-center justify-between mb-1">
+          <label class="font-bold text-[#788673]">Pet Count</label>
+          <a href="mobile-pets.html" class="text-[10px] font-bold text-[#45671d]">Manage in Pets →</a>
+        </div>
+        <div class="relative">
+          <input type="text" id="petCountInput" value="" readonly class="w-full bg-slate-100 border border-[#ebdcd0] rounded-xl px-3 py-2 font-bold text-[#182811] cursor-not-allowed">
+          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" title="Synced from Pet Profiles database">
+            <i class="fa-solid fa-lock"></i>
+          </span>
+        </div>
+        <p class="text-[10px] text-[#788673] mt-1">Automatically computed from your verified Pet Profiles.</p>
       </div>
       <div>
         <label class="font-bold text-[#788673] block mb-1">Primary Feeding Method</label>
@@ -130,6 +174,20 @@
         <button type="submit" class="px-4 py-1.5 rounded-xl bg-[#45671d] font-bold text-xs text-white shadow-xs">Save Changes</button>
       </div>
     </form>
+
+    <!-- Session & Account Security -->
+    <div class="tactile-card p-5 bg-white space-y-3">
+      <h3 class="font-extrabold text-xs text-[#182811] uppercase tracking-wider pb-1 border-b border-[#f5efe6]">Session &amp; Security</h3>
+      <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-red-50/50 border border-red-100 text-xs">
+        <div>
+          <p class="font-bold text-red-700">Log Out of Account</p>
+          <p class="text-[10.5px] text-[#788673]">Ends your local session on this device.</p>
+        </div>
+        <button type="button" id="accountLogoutBtn" class="px-3.5 py-2 rounded-xl bg-red-100 text-red-700 font-extrabold text-[10.5px] uppercase tracking-wider shrink-0 flex items-center gap-1.5 shadow-2xs">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out
+        </button>
+      </div>
+    </div>
   </main>
 
   <!-- Mobile Floating Bottom Navigation Bar -->
