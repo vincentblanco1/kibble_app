@@ -627,6 +627,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const drawerAlternative = document.getElementById('drawerAlternative');
   const drawerWikiLink = document.getElementById('drawerWikiLink');
 
+  // Emergency Triage: a poison-control-style quick-action that appears only when a scan
+  // comes back with a fatal/toxic finding. The button + modal markup existed on mobile
+  // already but nothing ever wired it up (no listeners anywhere), so it was dead on both
+  // platforms; wiring it here fixes it everywhere this script runs, desktop included.
+  const emergencyTriageBtn = document.getElementById('emergencyTriageBtn');
+  const emergencyTriageModal = document.getElementById('emergencyTriageModal');
+  const emergencyBackdrop = document.getElementById('emergencyBackdrop');
+  const closeEmergencyModalBtn = document.getElementById('closeEmergencyModalBtn');
+  function openEmergencyModal() {
+    emergencyTriageModal?.classList.remove('hidden');
+    emergencyBackdrop?.classList.remove('hidden');
+  }
+  function closeEmergencyModal() {
+    emergencyTriageModal?.classList.add('hidden');
+    emergencyBackdrop?.classList.add('hidden');
+  }
+  emergencyTriageBtn?.addEventListener('click', openEmergencyModal);
+  closeEmergencyModalBtn?.addEventListener('click', closeEmergencyModal);
+  emergencyBackdrop?.addEventListener('click', closeEmergencyModal);
+
   // Shared renderer: populates every field of the drawer from a FINDINGS_DATABASE-shaped entry
   function populateDrawer(data) {
     if (!data || !drawer) return;
@@ -1049,6 +1069,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (p.score) p.score.textContent = String(score);
       if (p.label) { p.label.textContent = style.label; p.label.style.color = style.color; }
       if (p.pill) { p.pill.className = PILL_BASE + style.pillCls; p.pill.textContent = allergyItems.length ? '🚨 Allergy Alert' : style.pill; }
+      if (emergencyTriageBtn) {
+        const isFatal = tally.Toxic > 0 || data.rating === 'Toxic' || allergyItems.some(function (it) { return it.allergy && it.allergy.match === 'direct'; });
+        emergencyTriageBtn.classList.toggle('hidden', !isFatal);
+      }
 
       if (p.headline) {
         const names = unique(otherFlagged.map(function (f) { return f.name; }));

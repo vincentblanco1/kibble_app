@@ -289,7 +289,30 @@
           <span class="text-[10.5px] font-extrabold uppercase text-[#788673] tracking-wider block mb-3">Evaluating metabolic risk for</span>
           
           <div class="flex flex-col gap-3" id="petEvalSwitcher">
-            <!-- Dynamically populated from localStorage pets -->
+            <!-- Placeholder cards; results.js's liveScan() replaces this with the user's
+                 real pets fetched from /api/pets as soon as the page loads (it finds this
+                 box via the #targetBusterOption id below, same anchor mobile-results.html
+                 uses, so both pages share the exact same wiring). -->
+            <div id="targetBusterOption" class="w-full p-3.5 rounded-2xl border-2 border-[#ff9800] bg-[#fff8ed] flex items-center justify-between cursor-pointer transition-all">
+              <div class="flex items-center gap-3.5 flex-1 min-w-0">
+                <span class="text-2xl shrink-0">🐶</span>
+                <div class="flex flex-col min-w-0 flex-1">
+                  <h4 class="font-extrabold text-sm text-[#182811] leading-tight">Buster (Canine)</h4>
+                  <p class="text-[11px] text-[#788673] font-semibold truncate mt-0.5">Loading your pets…</p>
+                </div>
+              </div>
+              <div id="busterIndicator" class="w-4 h-4 rounded-full border-4 border-[#ff9800] bg-white shrink-0 ml-3"></div>
+            </div>
+            <div id="targetMiloOption" class="w-full p-3.5 rounded-2xl border border-[#ebdcd0] bg-white opacity-75 hover:opacity-100 flex items-center justify-between cursor-pointer transition-all">
+              <div class="flex items-center gap-3.5 flex-1 min-w-0">
+                <span class="text-2xl shrink-0">🐱</span>
+                <div class="flex flex-col min-w-0 flex-1">
+                  <h4 class="font-extrabold text-sm text-[#182811] leading-tight">Milo (Feline)</h4>
+                  <p class="text-[11px] text-[#788673] font-semibold truncate mt-0.5">Loading your pets…</p>
+                </div>
+              </div>
+              <div id="miloIndicator" class="w-4 h-4 rounded-full border-2 border-slate-300 shrink-0 ml-3"></div>
+            </div>
           </div>
 
           <div class="mt-4 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[10.5px] text-[#788673] leading-relaxed">
@@ -346,6 +369,9 @@
             <span id="cautionPillBadge" class="px-3 py-1 rounded-full bg-white text-[#b45309] font-extrabold text-[10px] uppercase border border-amber-300 inline-block shadow-2xs">
               Caution flag
             </span>
+            <button type="button" id="emergencyTriageBtn" class="hidden ml-2 px-3 py-1 rounded-full bg-red-600 text-white font-black text-[10px] uppercase shadow-xs items-center gap-1.5 inline-flex">
+              <i class="fa-solid fa-triangle-exclamation"></i> Emergency Triage
+            </button>
             <h2 id="verdictHeadline" class="font-extrabold text-base sm:text-lg text-[#182811] leading-snug">
               Contains flagged synthetic antioxidants &amp; <span class="bg-white px-2 py-0.5 rounded-lg border border-amber-200/60 shadow-2xs inline-block">preservatives</span>
             </h2>
@@ -528,53 +554,26 @@
       </div>
     </aside>
 
+    <!-- Emergency Triage Modal -->
+    <div id="emergencyBackdrop" class="hidden fixed inset-0 bg-black/60 z-50"></div>
+    <div id="emergencyTriageModal" class="hidden fixed inset-x-0 top-1/2 -translate-y-1/2 mx-auto max-w-sm z-50 bg-white rounded-3xl p-5 border-2 border-red-500 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-black text-sm text-red-600">🚨 EMERGENCY TRIAGE PROTOCOL</h3>
+        <button type="button" id="closeEmergencyModalBtn" class="w-6 h-6 rounded-full bg-slate-100 text-xs cursor-pointer">✕</button>
+      </div>
+      <div class="p-3 bg-red-50 rounded-xl text-red-800 text-xs space-y-1 font-bold">
+        <p>DO NOT INDUCE VOMITING</p>
+        <p class="text-[11px] font-normal leading-relaxed">Never force salt or hydrogen peroxide without direct veterinary guidance.</p>
+      </div>
+      <button onclick="alert('Calling emergency vet clinic...')" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all">
+        <i class="fa-solid fa-phone mr-1"></i> Call Nearest Vet
+      </button>
+    </div>
+
   </main>
 
   <script src="app.js"></script>
   <script src="notifications.js"></script>
   <script src="results.js"></script>
-  <script>
-    // Populate pet evaluation switcher dynamically
-    document.addEventListener('DOMContentLoaded', () => {
-      const container = document.getElementById('petEvalSwitcher');
-      if (!container) return;
-      const pets = JSON.parse(localStorage.getItem('kibbleguard_pets') || '[]');
-      if (pets.length === 0) {
-        container.innerHTML = '<p class="text-xs text-[#788673] py-2">No pets registered. <a href="pets.html" class="text-[#45671d] font-extrabold hover:underline">Add a pet</a> to evaluate.</p>';
-        return;
-      }
-      container.innerHTML = '';
-      pets.forEach((pet, i) => {
-        const emoji = pet.species === 'Canine' ? String.fromCodePoint(0x1F436) : (pet.species === 'Feline' ? String.fromCodePoint(0x1F431) : String.fromCodePoint(0x1F43E));
-        const speciesLabel = pet.species || 'Pet';
-        const details = [pet.breed, pet.weight ? pet.weight + ' kg' : ''].filter(Boolean).join(' • ');
-        const isSelected = i === 0;
-        const div = document.createElement('div');
-        div.className = `w-full p-3.5 rounded-2xl ${isSelected ? 'border-2 border-[#45671d] bg-emerald-50/40' : 'border border-[#ebdcd0] bg-white opacity-75 hover:opacity-100'} flex items-center justify-between cursor-pointer transition-all`;
-        div.setAttribute('data-pet-index', i);
-        div.innerHTML = `
-          <div class="flex items-center gap-3.5 flex-1 min-w-0">
-            <span class="text-2xl shrink-0">${emoji}</span>
-            <div class="flex flex-col min-w-0 flex-1">
-              <h4 class="font-extrabold text-sm text-[#182811] leading-tight">${pet.name || 'Unnamed'} (${speciesLabel})</h4>
-              <p class="text-[11px] text-[#788673] font-semibold truncate mt-0.5">${details || 'No details'}</p>
-            </div>
-          </div>
-          <div class="${isSelected ? 'w-5 h-5 rounded-full bg-[#45671d] text-white flex items-center justify-center text-[10px]' : 'w-4 h-4 rounded-full border-2 border-slate-300'} shrink-0 ml-3">${isSelected ? '<i class="fa-solid fa-check"></i>' : ''}</div>`;
-        div.addEventListener('click', () => {
-          container.querySelectorAll('[data-pet-index]').forEach((el, j) => {
-            const sel = j === i;
-            el.className = `w-full p-3.5 rounded-2xl ${sel ? 'border-2 border-[#45671d] bg-emerald-50/40' : 'border border-[#ebdcd0] bg-white opacity-75 hover:opacity-100'} flex items-center justify-between cursor-pointer transition-all`;
-            const indicator = el.querySelector('.shrink-0.ml-3');
-            if (indicator) {
-              indicator.className = `${sel ? 'w-5 h-5 rounded-full bg-[#45671d] text-white flex items-center justify-center text-[10px]' : 'w-4 h-4 rounded-full border-2 border-slate-300'} shrink-0 ml-3`;
-              indicator.innerHTML = sel ? '<i class="fa-solid fa-check"></i>' : '';
-            }
-          });
-        });
-        container.appendChild(div);
-      });
-    });
-  </script>
 </body>
 </html>
