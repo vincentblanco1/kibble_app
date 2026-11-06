@@ -189,30 +189,92 @@
     //       index.html (previously this page just hardcoded demo numbers/scans/pets
     //       regardless of what the signed-in user actually had). =====
     document.addEventListener('DOMContentLoaded', () => {
-      const pets = JSON.parse(localStorage.getItem('kibbleguard_pets') || '[]');
       const scans = JSON.parse(localStorage.getItem('kibbleguard_scans') || '[]');
+      const kgUserId = (function () {
+        try { return (JSON.parse(localStorage.getItem('kibbleguard_user')) || {}).id || 1; }
+        catch (e) { return 1; }
+      })();
 
-      // --- Pet Count Card ---
+      // --- Pet Count Card + Household Companions -----------------------------
+      // Previously this read ONLY localStorage's 'kibbleguard_pets' cache, which is
+      // never written for an account until something on THIS browser (signup or the
+      // Pets page) happens to populate it -- so a pet created elsewhere (or just not
+      // yet synced to this device) made the card wrongly claim "No pets" even while
+      // showing that same pet's name a line above, pulled from a stale leftover
+      // cache value. Now it fetches the real, live list from the server (same
+      // /api/pets endpoint the Pets and Scan pages already use) so this card always
+      // reflects what's actually registered to the account, and keeps the local
+      // cache refreshed as a side effect.
       const petCountEl = document.getElementById('overviewPetCount');
       const petNamesEl = document.getElementById('overviewPetNames');
       const petStatusEl = document.getElementById('overviewPetStatus');
-      if (petCountEl) petCountEl.textContent = `${pets.length} Active`;
-      if (petNamesEl) {
-        if (pets.length === 0) {
-          petNamesEl.textContent = 'No pets registered';
-        } else {
-          const names = pets.map(p => {
-            const species = p.species === 'Canine' ? 'Dog' : (p.species === 'Feline' ? 'Cat' : (p.species || ''));
-            return `${p.name}${species ? ' (' + species + ')' : ''}`;
-          });
-          petNamesEl.textContent = names.length <= 2 ? names.join(' & ') : names.slice(0, 2).join(', ') + ` +${names.length - 2} more`;
+      const petGrid = document.getElementById('overviewPetCardsGrid');
+
+      function renderPets(pets) {
+        if (petCountEl) petCountEl.textContent = `${pets.length} Active`;
+        if (petNamesEl) {
+          if (pets.length === 0) {
+            petNamesEl.textContent = 'No pets registered';
+          } else {
+            const names = pets.map(p => {
+              const species = p.species === 'Canine' ? 'Dog' : (p.species === 'Feline' ? 'Cat' : (p.species || ''));
+              return `${p.name}${species ? ' (' + species + ')' : ''}`;
+            });
+            petNamesEl.textContent = names.length <= 2 ? names.join(' & ') : names.slice(0, 2).join(', ') + ` +${names.length - 2} more`;
+          }
+        }
+        if (petStatusEl) {
+          if (pets.length === 0) petStatusEl.textContent = '● No pets';
+          else if (pets.length === 1) petStatusEl.textContent = '● Guarded';
+          else petStatusEl.textContent = `● All ${pets.length} Guarded`;
+        }
+        if (petGrid) {
+          if (pets.length === 0) {
+            petGrid.innerHTML = '<div class="tactile-card p-4 bg-white text-center text-xs text-[#788673]">' +
+              '<i class="fa-solid fa-paw text-xl text-[#ebdcd0] mb-1.5"></i>' +
+              '<p class="font-semibold">No pets registered yet.</p>' +
+              '<a href="mobile-pets.html" class="text-[#45671d] font-extrabold hover:underline mt-1 inline-block">Add a pet →</a></div>';
+          } else {
+            petGrid.innerHTML = '';
+            pets.slice(0, 4).forEach((pet) => {
+              const initial = (pet.name || 'P').charAt(0).toUpperCase();
+              const species = pet.species === 'Canine' ? 'Dog' : (pet.species === 'Feline' ? 'Cat' : (pet.species || ''));
+              const breed = pet.breed || '';
+              const subtitle = [breed, species].filter(Boolean).join(' • ');
+              const card = document.createElement('div');
+              card.className = 'tactile-card p-3 bg-white flex items-center justify-between gap-2';
+              card.innerHTML = `
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-9 h-9 rounded-full border-2 border-emerald-400 bg-[#45671d] flex items-center justify-center shrink-0 shadow-2xs">
+                    <span class="text-white font-extrabold text-sm">${initial}</span>
+                  </div>
+                  <div class="min-w-0">
+                    <h4 class="font-extrabold text-xs text-[#182811] truncate">${pet.name || 'Unnamed'}</h4>
+                    <span class="text-[10px] text-[#788673] block truncate">${subtitle || 'No details'}</span>
+                  </div>
+                </div>
+                <a href="mobile-results.html?pet=${encodeURIComponent(pet.name || '')}" class="text-[#45671d] font-extrabold text-[11px] shrink-0">Scan →</a>`;
+              petGrid.appendChild(card);
+            });
+          }
         }
       }
-      if (petStatusEl) {
-        if (pets.length === 0) petStatusEl.textContent = '● No pets';
-        else if (pets.length === 1) petStatusEl.textContent = '● Guarded';
-        else petStatusEl.textContent = `● All ${pets.length} Guarded`;
-      }
+
+      // Paint immediately from whatever's cached locally so the page isn't blank
+      // while the network request is in flight, then replace it with the live
+      // server list once that arrives (and refresh the cache for next time).
+      let cachedPets = [];
+      try { cachedPets = JSON.parse(localStorage.getItem('kibbleguard_pets') || '[]'); } catch (e) { cachedPets = []; }
+      renderPets(cachedPets);
+
+      fetch('/api/pets?user_id=' + encodeURIComponent(kgUserId))
+        .then(r => r.ok ? r.json() : Promise.reject(new Error('Server returned ' + r.status)))
+        .then(rows => {
+          const pets = rows || [];
+          renderPets(pets);
+          try { localStorage.setItem('kibbleguard_pets', JSON.stringify(pets)); } catch (e) { /* storage full: cache is best-effort, UI already updated */ }
+        })
+        .catch(err => console.warn('Could not refresh pets from the server, showing the cached list:', err));
 
       // --- Scan Stats Card ---
       const scanCountEl = document.getElementById('overviewScanCount');
@@ -233,32 +295,6 @@
       const totalFlagged = scans.reduce((sum, s) => sum + (s.flagged_count || 0), 0);
       if (cautionCountEl) cautionCountEl.textContent = `${totalFlagged} Flag${totalFlagged === 1 ? '' : 's'}`;
       if (cautionDetailEl) cautionDetailEl.textContent = totalFlagged > 0 ? `${totalFlagged} ingredient${totalFlagged === 1 ? '' : 's'} flagged` : 'No caution flags';
-
-      // --- Dynamic Pet Cards (Household companions) ---
-      const petGrid = document.getElementById('overviewPetCardsGrid');
-      if (petGrid && pets.length > 0) {
-        petGrid.innerHTML = '';
-        pets.slice(0, 4).forEach((pet) => {
-          const initial = (pet.name || 'P').charAt(0).toUpperCase();
-          const species = pet.species === 'Canine' ? 'Dog' : (pet.species === 'Feline' ? 'Cat' : (pet.species || ''));
-          const breed = pet.breed || '';
-          const subtitle = [breed, species].filter(Boolean).join(' • ');
-          const card = document.createElement('div');
-          card.className = 'tactile-card p-3 bg-white flex items-center justify-between gap-2';
-          card.innerHTML = `
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-9 h-9 rounded-full border-2 border-emerald-400 bg-[#45671d] flex items-center justify-center shrink-0 shadow-2xs">
-                <span class="text-white font-extrabold text-sm">${initial}</span>
-              </div>
-              <div class="min-w-0">
-                <h4 class="font-extrabold text-xs text-[#182811] truncate">${pet.name || 'Unnamed'}</h4>
-                <span class="text-[10px] text-[#788673] block truncate">${subtitle || 'No details'}</span>
-              </div>
-            </div>
-            <a href="mobile-results.html?pet=${encodeURIComponent(pet.name || '')}" class="text-[#45671d] font-extrabold text-[11px] shrink-0">Scan →</a>`;
-          petGrid.appendChild(card);
-        });
-      }
 
       // --- Dynamic Recent Scans (Recent Inspections) ---
       const scansContainer = document.getElementById('overviewRecentScans');
