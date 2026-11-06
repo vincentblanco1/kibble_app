@@ -1361,7 +1361,12 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
             flagged,
             parsedIngredients: ingredientTokens,
             allergy: allergy || undefined,
-            confidenceTooWeak
+            confidenceTooWeak,
+            // Real self-reported OCR confidence (0-100) and token count for this scan --
+            // the client used to show a permanently hardcoded "98.4%" here regardless of
+            // the actual photo; now it reflects this specific scan.
+            confidence: ocrConfidence,
+            tokenCount: ingredientTokens.length
           });
           createScanAlert({ userId: user_id || 1, scanId: this.lastID, rating: finalRating, flagged, allergy, species });
         });
@@ -1644,7 +1649,12 @@ app.get('/api/history/:id', (req, res) => {
       image,
       dispute,
       confidenceTooWeak: isFlagTrue(row.confidence_too_weak),
-      date: toSafeDate(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      date: toSafeDate(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      // Same real OCR confidence + token count now sent by /api/assess, so the
+      // Extraction Telemetry box still shows real numbers when a saved scan is
+      // reopened from history/a notification instead of just-scanned.
+      confidence: (row.ocr_confidence === null || row.ocr_confidence === undefined) ? null : Number(row.ocr_confidence),
+      parsedIngredients: Array.isArray(results) ? results.map(r => r.name).filter(Boolean) : []
     });
 
     // Scans saved after this update keep their exact results

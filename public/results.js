@@ -1054,6 +1054,25 @@ document.addEventListener('DOMContentLoaded', () => {
       renderDisputeStatus(data.dispute || null);
       var lowConfidenceBanner = $('lowConfidenceBanner');
       if (lowConfidenceBanner) lowConfidenceBanner.classList.toggle('hidden', !data.confidenceTooWeak);
+      // Extraction Telemetry (desktop only) -- used to be a permanently hardcoded
+      // "98.4% (Optimal)" regardless of the actual photo; now reflects this scan's
+      // real self-reported OCR confidence and extracted token count from the server.
+      var telemetryConfidence = $('telemetryConfidence');
+      var telemetryTokenCount = $('telemetryTokenCount');
+      if (telemetryConfidence) {
+        if (typeof data.confidence === 'number') {
+          var confColor = data.confidence >= 85 ? '#4caf50' : (data.confidence >= 60 ? '#ff9800' : '#dc2626');
+          telemetryConfidence.textContent = data.confidence + '%';
+          telemetryConfidence.style.color = confColor;
+        } else {
+          telemetryConfidence.textContent = 'Not reported for this scan';
+          telemetryConfidence.style.color = '#788673';
+        }
+      }
+      if (telemetryTokenCount) {
+        var tc = Array.isArray(data.parsedIngredients) ? data.parsedIngredients.length : (typeof data.tokenCount === 'number' ? data.tokenCount : null);
+        telemetryTokenCount.textContent = tc == null ? '—' : (tc + (tc === 1 ? ' token' : ' tokens'));
+      }
       const p = panel();
       const style = RATING[data.rating] || RATING.Caution;
       const items = Array.isArray(data.results) ? data.results.slice() : [];
