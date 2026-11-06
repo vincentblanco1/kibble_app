@@ -519,6 +519,42 @@ body.dark-theme .border-t {
   border-color: #262a33 !important;
 }
 
+/* The sticky top header bar (mobile pages, and the mobile floating bottom nav dock) use their
+   own plain white styling -- a raw "bg-white/95" utility class and mobile-style.css -- instead
+   of .tactile-card, so none of the rules above ever touched them. Without this, toggling dark
+   mode still left a bright white header and nav dock floating over an otherwise dark page. */
+body.dark-theme .bg-white\/95 {
+  background-color: rgba(28, 32, 38, 0.95) !important;
+  border-color: #2d333f !important;
+}
+
+/* The header's own title/subtitle text and small circular icon buttons (gear, export, etc.)
+   use the app's plain near-black "ink" utility class and a light-gray background, which both
+   need to flip once the header itself goes dark -- otherwise the title/icons disappear into
+   the new dark header background. Scoped to inside <header> only, since this same ink class
+   and bg-slate-100 are also used elsewhere (chips, pills) that intentionally stay light. */
+body.dark-theme header .text-\[\#182811\] {
+  color: #f1f5f9 !important;
+}
+body.dark-theme header .bg-slate-100 {
+  background-color: #262a33 !important;
+}
+
+body.dark-theme .mobile-bottom-nav {
+  background: rgba(28, 32, 38, 0.92) !important;
+  border-color: #2d333f !important;
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.dark-theme .mobile-nav-item {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .mobile-nav-item.active,
+body.dark-theme .mobile-nav-item.active i {
+  color: #7fae46 !important;
+}
+
 /* ==================== LANDING LIVING ANIMATIONS ==================== */
 
 /* Telemetry Ticker Ribbon Marquee */
