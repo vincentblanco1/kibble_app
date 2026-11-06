@@ -565,6 +565,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 9. SPECIES VIEW BUTTON TOGGLES
   // ==========================================
+  // Same bug class as the filter pills above: these were hardcoded to desktop's
+  // px-3.5 py-1.5 text-xs sizing, which permanently overwrote mobile's smaller
+  // px-3 py-1.5 text-[11px] buttons the first time one was tapped. Branch on
+  // IS_MOBILE (already defined above) like renderFilterPills() does.
+  const speciesBase = IS_MOBILE
+    ? 'species-view-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] shrink-0'
+    : 'species-view-btn px-3.5 py-1.5 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] cursor-pointer transition-all';
+  const speciesActive = IS_MOBILE
+    ? 'species-view-btn px-3 py-1.5 rounded-full text-[11px] font-extrabold text-white shrink-0 shadow-xs'
+    : 'species-view-btn px-3.5 py-1.5 rounded-full text-xs font-extrabold text-white shadow-xs cursor-pointer transition-all';
+
   speciesViewButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -572,15 +583,15 @@ document.addEventListener('DOMContentLoaded', () => {
       activeSpecies = button.getAttribute('data-species') || 'dual';
 
       speciesViewButtons.forEach(b => {
-        b.className = 'species-view-btn px-3.5 py-1.5 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] cursor-pointer transition-all';
+        b.className = speciesBase;
       });
 
       if (activeSpecies === 'canine') {
-        button.className = 'species-view-btn px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-[#ff9800] text-white shadow-xs cursor-pointer transition-all';
+        button.className = speciesActive + ' bg-[#ff9800]';
       } else if (activeSpecies === 'feline') {
-        button.className = 'species-view-btn px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-purple-600 text-white shadow-xs cursor-pointer transition-all';
+        button.className = speciesActive + ' bg-purple-600';
       } else {
-        button.className = 'species-view-btn px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-[#45671d] text-white shadow-xs cursor-pointer transition-all';
+        button.className = speciesActive + ' bg-[#45671d]';
       }
 
       applySpeciesPerspective();
