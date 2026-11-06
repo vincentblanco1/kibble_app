@@ -868,7 +868,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const RATING = {
       Safe:    { color: '#16a34a', label: 'Low Risk',      pill: '✅ Safe',         pillCls: 'bg-[#ecfdf5] text-[#15803d] border border-[#4caf50]', word: 'SAFE',    border: 'border-l-[#4caf50]', iconBg: 'bg-[#f0fdf4]', iconFg: 'text-emerald-600', icon: 'fa-check',                  emoji: '🌿', badge: 'bg-emerald-100 text-[#15803d]', cat: 'text-[#16a34a]' },
       Caution: { color: '#ff9800', label: 'Moderate Risk', pill: '⚠️ Caution Flag', pillCls: 'bg-[#fff3e0] text-[#b45309] border border-[#f59e0b]', word: 'CAUTION', border: 'border-l-[#ff9800]', iconBg: 'bg-[#fff8ed]', iconFg: 'text-[#ff9800]',  icon: 'fa-triangle-exclamation',   emoji: '🧪', badge: 'bg-orange-100 text-[#b45309]',  cat: 'text-[#8c633a]' },
-      Toxic:   { color: '#dc2626', label: 'High Risk',     pill: '⛔ Toxic Flag',   pillCls: 'bg-[#fef2f2] text-[#b91c1c] border border-[#dc2626]', word: 'TOXIC',   border: 'border-l-[#dc2626]', iconBg: 'bg-[#fef2f2]', iconFg: 'text-[#dc2626]',  icon: 'fa-skull-crossbones',       emoji: '☠️', badge: 'bg-red-100 text-[#b91c1c]',     cat: 'text-[#b91c1c]' }
+      Toxic:   { color: '#dc2626', label: 'High Risk',     pill: '⛔ Toxic Flag',   pillCls: 'bg-[#fef2f2] text-[#b91c1c] border border-[#dc2626]', word: 'TOXIC',   border: 'border-l-[#dc2626]', iconBg: 'bg-[#fef2f2]', iconFg: 'text-[#dc2626]',  icon: 'fa-skull-crossbones',       emoji: '☠️', badge: 'bg-red-100 text-[#b91c1c]',     cat: 'text-[#b91c1c]' },
+      'Not Rated': { color: '#9e9e9e', label: 'Not Rated', pill: '❔ Not Rated',   pillCls: 'bg-gray-100 text-gray-600 border border-gray-300',     word: 'NOT RATED', border: 'border-l-gray-400', iconBg: 'bg-gray-50',  iconFg: 'text-gray-500',   icon: 'fa-circle-question',        emoji: '❔', badge: 'bg-gray-100 text-gray-600',     cat: 'text-gray-500' }
     };
     const PILL_BASE = 'px-2.5 py-1 rounded font-extrabold text-[10.5px] uppercase inline-block ';
 
@@ -1033,7 +1034,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const items = Array.isArray(data.results) ? data.results.slice() : [];
       const flagged = Array.isArray(data.flagged) ? data.flagged : [];
       const score = Math.max(0, Math.min(100, Number(data.score) || 0));
-      const tally = { Safe: 0, Caution: 0, Toxic: 0 };
+      const tally = { Safe: 0, Caution: 0, Toxic: 0, 'Not Rated': 0 };
       items.forEach(function (it) { if (tally[it.status] !== undefined) tally[it.status] += 1; });
       const allergyItems = items.filter(function (it) { return it && it.allergy; });
       const otherFlagged = flagged.filter(function (f) { return f && f.rating !== 'Allergen'; });
@@ -1070,11 +1071,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const parts = IS_MOBILE
         ? [{ color: '#16a34a', text: tally.Safe + ' Safe' }, { color: '#ff9800', text: tally.Caution + ' Caution' }, { color: '#dc2626', text: tally.Toxic + ' Fatal' }]
         : [{ color: '#16a34a', text: tally.Safe + ' Safe Tokens' }, { color: '#ff9800', text: tally.Caution + ' Caution Tokens' }, { color: '#dc2626', text: tally.Toxic + ' Lethal Toxins' }];
+      if (tally['Not Rated']) parts.push({ color: '#9e9e9e', text: tally['Not Rated'] + (IS_MOBILE ? ' Not Rated' : ' Not Rated Tokens') });
       if (allergyItems.length) parts.push({ color: '#7e22ce', text: allergyItems.length + (IS_MOBILE ? ' Allergy' : (allergyItems.length === 1 ? ' Allergen Match' : ' Allergen Matches')) });
       setCounts(p, parts);
 
       if (p.list) {
-        const order = { Toxic: 0, Caution: 1, Safe: 2 };
+        const order = { Toxic: 0, Caution: 1, Safe: 2, 'Not Rated': 3 };
         const rank = function (it) { return it.allergy ? (it.allergy.match === 'direct' ? -2 : -1) : (order[it.status] === undefined ? 3 : order[it.status]); };
         items.sort(function (a, b) { return rank(a) - rank(b); });
         items.forEach(function (it, i) { liveFindings['live-' + i] = drawerEntry(it, speciesName); });

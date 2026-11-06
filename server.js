@@ -928,11 +928,16 @@ function analyzeIngredients(tokens, mergedIngredients, speciesKey) {
         });
       }
     } else {
+      // Not a typo of something known and not a recognized synonym -- genuinely absent
+      // from the database, for either species. Rated "Not Rated" rather than "Safe" so
+      // the pet owner can tell the difference between "checked, found fine" and "we don't
+      // have data on this one yet," with a small score ding per unrated ingredient.
+      score -= 1;
       parsedResults.push({
         name: token,
         category: 'Ingredient',
-        status: 'Safe',
-        notes: 'No specific restrictions recorded.'
+        status: 'Not Rated',
+        notes: 'This ingredient was not found in the KibbleGuard database and has not been rated yet.'
       });
     }
   });
