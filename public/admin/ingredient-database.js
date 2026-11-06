@@ -1030,21 +1030,59 @@ function openAddAsAliasForm(index) {
   if (!item) return;
   var rows = Array.prototype.slice.call(document.querySelectorAll('#ingredient-table-body tr[data-search]'));
   if (!rows.length) { showToast('There are no ingredients yet to add this as an alias of', 'info'); return; }
+  // alphabetical so the list is scannable even before anyone types a search --
+  // the table itself has no guaranteed order
+  rows.sort(function (a, b) {
+    var an = a.querySelector('[data-field="name"]').textContent.toLowerCase();
+    var bn = b.querySelector('[data-field="name"]').textContent.toLowerCase();
+    return an < bn ? -1 : an > bn ? 1 : 0;
+  });
   var options = rows.map(function (r) {
     var n = r.querySelector('[data-field="name"]').textContent;
-    return '<option value="' + r.id + '">' + escapeHTML(n) + '</option>';
+    return '<option value="' + r.id + '" data-name="' + escapeHTML(n.toLowerCase()) + '">' + escapeHTML(n) + '</option>';
   }).join('');
   openModal({
     title: 'Add as Alias',
     subtitle: '"' + item.name + '" will be recognized as another name for an existing ingredient',
     bodyHtml:
       '<label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Which existing ingredient is this?</label>' +
-      '<select id="f-alias-target" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand">' + options + '</select>' +
+      '<div class="relative mt-1.5 mb-2">' +
+        '<i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 text-xs"></i>' +
+        '<input type="text" id="f-alias-search" oninput="filterAliasTargetOptions()" placeholder="Search ' + rows.length + ' ingredients..." class="w-full pl-9 pr-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand">' +
+      '</div>' +
+      '<select id="f-alias-target" size="8" class="w-full px-4 py-2 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand">' + options + '</select>' +
+      '<p id="f-alias-no-match" class="hidden text-[11px] text-stone-400 mt-2">No ingredients match your search.</p>' +
       '<p class="text-[11px] text-stone-500 mt-4 leading-relaxed">Future scans that read &ldquo;' + escapeHTML(item.name) + '&rdquo; will be matched to whichever ingredient you choose here instead of landing back on this list.</p>',
     footerHtml:
       '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
       '<button id="confirm-alias-btn" onclick="performAddAsAlias(' + index + ')" data-perm="manageIngredients" class="press px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Add Alias</button>'
   });
+  // typing is the point of this modal, so put the cursor straight in the search box
+  setTimeout(function () { var s = document.getElementById('f-alias-search'); if (s) s.focus(); }, 50);
+}
+
+// live-filters the "Add as Alias" ingredient list as the admin types. Uses a
+// sized (listbox-style) <select> rather than a normal dropdown so the filtered
+// results are visible while typing, instead of hidden behind a closed dropdown
+function filterAliasTargetOptions() {
+  var searchEl = document.getElementById('f-alias-search');
+  var select = document.getElementById('f-alias-target');
+  if (!searchEl || !select) return;
+  var q = searchEl.value.toLowerCase().trim();
+  var anyVisible = false;
+  var firstVisible = null;
+  Array.prototype.forEach.call(select.options, function (opt) {
+    var match = !q || (opt.dataset.name || '').indexOf(q) !== -1;
+    opt.hidden = !match;
+    if (match) { anyVisible = true; if (!firstVisible) firstVisible = opt; }
+  });
+  var noMatch = document.getElementById('f-alias-no-match');
+  if (noMatch) noMatch.classList.toggle('hidden', anyVisible);
+  // if the currently selected option just got filtered out, move the selection to
+  // the first visible match so "Add Alias" never silently submits a hidden option
+  if (select.selectedOptions.length && select.selectedOptions[0].hidden && firstVisible) {
+    select.value = firstVisible.value;
+  }
 }
 
 function performAddAsAlias(index) {
