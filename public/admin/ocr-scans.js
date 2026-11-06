@@ -454,15 +454,18 @@ function computeOcrKpis() {
   var rows = document.querySelectorAll('#records-table-body tr[data-verdict]');
   var total = rows.length;
   var confidenceSum = 0;
+  var confidenceCount = 0; // only scans that actually have a confidence number -- not every scan
   var flagged = 0;
   var disputed = 0;
   rows.forEach(function (row) {
     var c = parseInt(row.dataset.confidence, 10);
-    if (!isNaN(c)) confidenceSum += c;
+    if (!isNaN(c)) { confidenceSum += c; confidenceCount++; }
     if (row.dataset.verdict === 'caution' || row.dataset.verdict === 'toxic') flagged++;
     if (row.dataset.disputed === 'true') disputed++;
   });
-  var avgConfidence = total > 0 ? Math.round(confidenceSum / total) : 0;
+  // average only over scans with a real confidence number, so scans with none on
+  // record don't silently count as 0% and drag the average down
+  var avgConfidence = confidenceCount > 0 ? Math.round(confidenceSum / confidenceCount) : 0;
 
   document.getElementById('ocr-kpi-total').textContent = total.toLocaleString();
   document.getElementById('ocr-kpi-confidence').textContent = avgConfidence + '%';
