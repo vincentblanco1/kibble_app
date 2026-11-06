@@ -2315,7 +2315,7 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
         const scanQuery = `
           SELECT s.id, s.user_id, s.product_name, s.rating, s.risk_score, s.image_url, s.raw_text, s.results_json,
                  s.created_at, COALESCE(s.species, p.species) AS species,
-                 s.dispute_note, s.dispute_created_at, s.dispute_resolved, s.ocr_confidence,
+                 s.dispute_note, s.dispute_created_at, s.dispute_resolved, s.dispute_resolution_type, s.ocr_confidence,
                  s.needs_triage, s.triage_reason, s.confidence_too_weak,
                  u.name AS owner, u.email AS ownerEmail, p.name AS pet, p.breed AS petBreed
           FROM scans s
@@ -2367,6 +2367,12 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
               needsTriage: isFlagTrue(r.needs_triage),
               triageReason: r.triage_reason || null,
               confidenceTooWeak: isFlagTrue(r.confidence_too_weak),
+              // 'upheld' or 'overturned', set once an admin has actually resolved the
+              // dispute (see POST /resolve-dispute) -- the real, server-side record of
+              // which disputes were overturned, as opposed to the admin UI's local
+              // kibbleguard-scan-overrides cache, which only exists in the browser that
+              // clicked Overturn and goes blank for every other admin/device/session.
+              disputeResolutionType: resolved ? (r.dispute_resolution_type || null) : null,
               substances,
               dispute
             };

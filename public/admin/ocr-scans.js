@@ -602,6 +602,10 @@ function computeAccuracyMetrics() {
   var scoredScans = 0; // only scans that actually have a confidence number -- see Avg. OCR Confidence fix
   var disputedOpen = 0;
   var overturned = 0;
+  // kibbleguard-scan-overrides is a per-browser cache written only by whichever admin
+  // clicked Overturn -- it goes blank on any other device/browser/session. row.dataset.overturned
+  // (set from the server's real dispute_resolution_type column, see db-sync.js) is the
+  // authoritative signal; the local cache is only a same-session fallback before the next resync.
   var overrides = getScanOverrides();
 
   rows.forEach(function (row) {
@@ -613,7 +617,7 @@ function computeAccuracyMetrics() {
     if (row.dataset.disputed === 'true') disputedOpen++;
 
     var scanId = 'KB-' + row.id.replace('row-', '');
-    if (overrides[scanId]) overturned++;
+    if (row.dataset.overturned === 'true' || overrides[scanId]) overturned++;
   });
 
   // every extracted ingredient lands in trace.substances, matched or not -- an
@@ -1141,6 +1145,7 @@ function overturnDispute(scanId) {
       if (row) {
         row.dataset.verdict = after.verdict.toLowerCase();
         row.dataset.disputed = 'false';
+        row.dataset.overturned = 'true';
         var badge = document.getElementById('dispute-badge-' + scanId.replace('KB-', ''));
         if (badge) badge.remove();
         var color = after.verdict === 'Safe' ? 'text-safe' : after.verdict === 'Caution' ? 'text-caution' : 'text-danger';

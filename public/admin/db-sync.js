@@ -176,6 +176,7 @@
       : '';
     return '<tr class="feed-row hover:bg-stone-50/50 group" id="row-' + s.id + '" data-date="' + esc(s.timestamp.slice(0, 10)) + '" data-verdict="' + verdict +
       '" data-species="' + s.species + '" data-confidence="' + (s.confidence != null ? esc(s.confidence) : '') + '" data-needs-review="' + ((s.needsTriage || s.confidenceTooWeak) ? 'true' : 'false') +
+      '" data-overturned="' + (s.disputeResolutionType === 'overturned' ? 'true' : 'false') +
       '" data-search="' + esc(search) + '"' + (s.dispute ? ' data-disputed="true"' : '') + '>' +
       '<td class="px-10 py-6 font-mono text-xs text-stone-400 font-bold">#' + idTxt + '</td>' +
       '<td class="px-10 py-6"><div class="flex items-center gap-4"><div class="w-11 h-11 rounded-xl bg-stone-100 text-stone-400 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-image"></i></div>' +
