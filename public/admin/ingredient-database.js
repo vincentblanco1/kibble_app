@@ -128,7 +128,9 @@ function clinicalStarter(level, species) {
       metabolic: 'Known to be harmful to ' + word + ' even in small amounts.',
       symptoms: 'Vomiting, Lethargy, Loss of appetite',
       guidance: 'Do not feed. Ask your veterinarian for a safe replacement.',
-      emergency: 'Stop feeding immediately and contact your veterinarian or an animal poison control service right away. Do not wait for symptoms to appear.'
+      emergency: 'Stop feeding immediately and contact your veterinarian or an animal poison control service right away. Do not wait for symptoms to appear.',
+      breed: 'No breed-specific variation documented yet -- treat as harmful across all breeds until reviewed.',
+      weight: 'No weight-specific threshold documented yet -- smaller ' + word + ' are generally at greater risk from the same amount.'
     };
   }
   if (level === 'Caution') {
@@ -136,14 +138,18 @@ function clinicalStarter(level, species) {
       metabolic: 'May cause mild digestive upset or sensitivity in some ' + word + ', so it is best given in moderation.',
       symptoms: 'Mild digestive upset, Loose stools, Reduced appetite',
       guidance: 'Offer only in small amounts and monitor your pet. Ask your veterinarian before regular use.',
-      emergency: ''
+      emergency: '',
+      breed: 'No breed-specific variation documented yet.',
+      weight: 'No weight-specific guidance documented yet -- scale any serving to your pet\'s size.'
     };
   }
   return {
     metabolic: 'Generally well tolerated by ' + word + ' in appropriate amounts.',
     symptoms: 'Common ingredient with no known concerns for ' + word + ' at normal serving sizes',
     guidance: "Safe to include in a balanced diet. Follow the product's feeding guidelines.",
-    emergency: ''
+    emergency: '',
+    breed: 'No breed-specific concerns documented.',
+    weight: 'No weight-specific concerns documented.'
   };
 }
 
@@ -155,7 +161,9 @@ function getClinicalFromRow(row) {
       metabolic: d[sp + 'Metabolic'] || '',
       symptoms: d[sp + 'Symptoms'] || '',
       guidance: d[sp + 'Guidance'] || '',
-      emergency: d[sp + 'Emergency'] || ''
+      emergency: d[sp + 'Emergency'] || '',
+      breed: d[sp + 'Breed'] || '',
+      weight: d[sp + 'Weight'] || ''
     };
   }
   return { canine: one('canine'), feline: one('feline') };
@@ -171,7 +179,9 @@ function applyClinicalToDataset(ds, clinical, canineLevel, felineLevel) {
     ds[sp + 'Symptoms'] = c.symptoms;
     ds[sp + 'Guidance'] = c.guidance;
     ds[sp + 'Emergency'] = level === 'Toxic' ? c.emergency : '';
-    if (level === 'Unrated') { ds[sp + 'Metabolic'] = ''; ds[sp + 'Symptoms'] = ''; ds[sp + 'Guidance'] = ''; }
+    ds[sp + 'Breed'] = c.breed || '';
+    ds[sp + 'Weight'] = c.weight || '';
+    if (level === 'Unrated') { ds[sp + 'Metabolic'] = ''; ds[sp + 'Symptoms'] = ''; ds[sp + 'Guidance'] = ''; ds[sp + 'Breed'] = ''; ds[sp + 'Weight'] = ''; }
     delete ds[sp + 'Draft'];   // older builds flagged starter text as a draft; verification now covers that
   });
   delete ds.metabolic;
@@ -181,7 +191,7 @@ function applyClinicalToDataset(ds, clinical, canineLevel, felineLevel) {
 }
 
 function clinicalPanelHtml(sp, vals, level) {
-  vals = vals || { metabolic: '', symptoms: '', guidance: '', emergency: '' };
+  vals = vals || { metabolic: '', symptoms: '', guidance: '', emergency: '', breed: '', weight: '' };
   var inputCls = 'w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all';
   var labelCls = 'text-[10px] font-bold text-stone-500 uppercase tracking-widest';
   return '<div id="clin-panel-' + sp + '" class="hidden">' +
@@ -197,6 +207,10 @@ function clinicalPanelHtml(sp, vals, level) {
         '<input id="f-' + sp + '-symptoms" value="' + escapeHTML(vals.symptoms) + '" class="' + inputCls + '"></div>' +
       '<div class="col-span-2"><label id="lbl-' + sp + '-guidance" class="' + labelCls + '"></label>' +
         '<textarea id="f-' + sp + '-guidance" class="' + inputCls + ' h-16 resize-none">' + escapeHTML(vals.guidance) + '</textarea></div>' +
+      '<div><label class="' + labelCls + '">Breed-Specific Risk</label>' +
+        '<textarea id="f-' + sp + '-breed" class="' + inputCls + ' h-16 resize-none" placeholder="e.g. Brachycephalic breeds are more sensitive...">' + escapeHTML(vals.breed) + '</textarea></div>' +
+      '<div><label class="' + labelCls + '">Weight-Specific Risk</label>' +
+        '<textarea id="f-' + sp + '-weight" class="' + inputCls + ' h-16 resize-none" placeholder="e.g. Toy/small breeds are at higher risk per kg...">' + escapeHTML(vals.weight) + '</textarea></div>' +
       '<div class="col-span-2 hidden" id="wrap-' + sp + '-emergency"><label id="lbl-' + sp + '-emergency" class="' + labelCls + '"></label>' +
         '<textarea id="f-' + sp + '-emergency" class="' + inputCls + ' h-16 resize-none">' + escapeHTML(vals.emergency) + '</textarea></div>' +
     '</div>' +
@@ -269,21 +283,28 @@ function switchClinicalTab(sp) {
   });
 }
 
-// fills ONLY the empty fields for this species with generic starter wording
-function fillClinicalStarters(sp) {
+// fills ONLY the empty fields for this species with generic starter wording.
+// `silent` skips the toast -- used when this runs automatically (template auto-fill
+// on a new ingredient) rather than from the admin clicking the button themselves.
+function fillClinicalStarters(sp, silent) {
   var level = document.getElementById('f-' + sp).value;
   if (level !== 'Safe' && level !== 'Caution' && level !== 'Toxic') return;
   var s = clinicalStarter(level, sp);
-  ['metabolic', 'symptoms', 'guidance'].concat(level === 'Toxic' ? ['emergency'] : []).forEach(function (key) {
+  var filledAny = false;
+  ['metabolic', 'symptoms', 'guidance', 'breed', 'weight'].concat(level === 'Toxic' ? ['emergency'] : []).forEach(function (key) {
     var el = document.getElementById('f-' + sp + '-' + key);
-    if (el && !el.value.trim()) el.value = s[key];
+    if (el && !el.value.trim()) { el.value = s[key]; filledAny = true; }
   });
-  showToast('Starter text added for ' + (sp === 'canine' ? 'dogs' : 'cats') + '. Edit it to match your sources before saving', 'info');
+  if (!silent) {
+    showToast('Starter text added for ' + (sp === 'canine' ? 'dogs' : 'cats') + '. Edit it to match your sources before saving', 'info');
+  } else if (filledAny) {
+    showToast('Template details filled in for ' + (sp === 'canine' ? 'dogs' : 'cats') + ' -- review and edit before saving', 'info');
+  }
 }
 
 function readClinicalForm(sp) {
   var get = function (key) { var el = document.getElementById('f-' + sp + '-' + key); return el ? el.value.trim() : ''; };
-  return { metabolic: get('metabolic'), symptoms: get('symptoms'), guidance: get('guidance'), emergency: get('emergency') };
+  return { metabolic: get('metabolic'), symptoms: get('symptoms'), guidance: get('guidance'), emergency: get('emergency'), breed: get('breed'), weight: get('weight') };
 }
 
 // every species needs real text in every field that applies to its
@@ -353,9 +374,17 @@ function readSpeciesRiskIndex(sp, level) {
 
 // called whenever a species' classification dropdown changes: relabels its
 // clinical fields, and enables / fills / clears its risk index to match
+// Template auto-fill: once Risk Level is picked for a brand-new ingredient (not when
+// editing an existing one -- that would stomp real data with placeholder text), the
+// Breed/Weight-Specific Risk, Emergency Action and other clinical fields fill themselves
+// in from the same starter templates "Fill empty fields with starter text" already uses.
+// Only empty fields are touched, so anything the admin already typed is left alone, and
+// everything stays editable afterward. Applies the same way whether this form was opened
+// from a label scan or from the regular manual Add Ingredient button.
 function onSpeciesLevelChange(sp) {
   updateClinicalLabels(sp);
   syncSpeciesRiskField(sp, false);
+  if (ingredientFormMode === 'add') fillClinicalStarters(sp, true);
 }
 
 function syncSpeciesRiskField(sp, preserveExisting) {
@@ -394,7 +423,11 @@ function validateSpeciesClassification(canine, feline) {
 
 // builds and opens the add/edit modal - mode is 'add' or 'edit', rowId
 // only matters for edit (pulls the row's current values to pre-fill the form)
-function openIngredientForm(mode, rowId) {
+var ingredientFormMode = null;   // 'add' | 'edit' -- gates the template auto-fill above
+// prefillName: used by the Scan Results screen to carry the OCR'd label text straight
+// into Primary Name, so the admin isn't retyping what the scan already read.
+function openIngredientForm(mode, rowId, prefillName) {
+  ingredientFormMode = mode;
   var existing = null;
   if (mode === 'edit') {
     var row = document.getElementById(rowId);
@@ -424,7 +457,7 @@ function openIngredientForm(mode, rowId) {
           '<p class="text-xs font-bold text-brand uppercase tracking-widest mb-4 flex items-center gap-2"><span class="w-6 h-6 rounded-lg bg-brand text-white flex items-center justify-center text-[10px]"><i class="fa-solid fa-tag"></i></span> Identification</p>' +
           '<div class="grid grid-cols-2 gap-4">' +
             '<div class="col-span-2"><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Ingredient Name <span class="text-danger">*</span></label>' +
-              '<input id="f-name" value="' + escapeHTML(existing ? existing.name : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="e.g. Ethoxyquin"></div>' +
+              '<input id="f-name" value="' + escapeHTML(existing ? existing.name : (prefillName || '')) + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="e.g. Ethoxyquin"></div>' +
             '<div class="col-span-2"><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Subtitle / Common Name</label>' +
               '<input id="f-subtitle" value="' + escapeHTML(existing ? existing.subtitle : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="e.g. Synthetic antioxidant">' +
               '<p class="text-[10px] text-stone-400 mt-1.5 leading-relaxed"><i class="fa-solid fa-circle-info mr-1"></i>Shown under the name in the table. Not used for OCR matching, use Also Known As below for that.</p></div>' +
@@ -602,8 +635,13 @@ function saveIngredient(mode, rowId) {
     tr.dataset.regVerified = regVerified ? 'true' : 'false';
     tr.dataset.regBody = regBody;
     tr.dataset.search = searchStr;
+    // New ingredients always start Pending Verification (see server.js upsertSpeciesIngredient)
+    // -- shown here immediately rather than waiting for the next background sync/refresh. No
+    // Approve button yet, since this row has no real database id until that sync completes.
+    tr.dataset.vetStatus = 'pending';
+    var newVetBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-caution/10 text-caution text-[9px] font-bold uppercase tracking-widest mt-1" data-field="vet-badge"><i class="fa-solid fa-clock-rotate-left"></i> Pending Vet Review</span>';
     tr.innerHTML =
-      '<td class="px-10 py-6"><div><p class="font-bold text-dark text-base" data-field="name">' + escapeHTML(name) + '</p><p class="text-[11px] text-stone-400 font-medium italic" data-field="subtitle">' + escapeHTML(subtitle) + '</p>' + akaHtml + '</div></td>' +
+      '<td class="px-10 py-6"><div><p class="font-bold text-dark text-base" data-field="name">' + escapeHTML(name) + '</p><p class="text-[11px] text-stone-400 font-medium italic" data-field="subtitle">' + escapeHTML(subtitle) + '</p>' + akaHtml + newVetBadge + '</div></td>' +
       '<td class="px-10 py-6"><span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">' + escapeHTML(category) + '</span>' + regBadgeHtml.replace('<span class=', '<span data-field="reg-badge" class=') + '</td>' +
       '<td class="px-10 py-6" data-field="canine">' + riskBadgeHtml(canine) + '</td>' +
       '<td class="px-10 py-6" data-field="feline">' + riskBadgeHtml(feline) + '</td>' +
@@ -631,9 +669,10 @@ function saveIngredient(mode, rowId) {
     if (typeof applyPermissionGating === 'function') applyPermissionGating();
     closeModal();
     filterIngredients();
-    showToast('New ingredient added, now live in the Risk Library', 'success');
+    showToast('New ingredient added as Pending Verification -- a vet needs to approve it before pet owners see it', 'success');
     logAdminAction('Added new ingredient: ' + name, 'add');
     recordIngredientChange(name, null, { canine: canine, feline: feline, canineRisk: canineRisk, felineRisk: felineRisk });
+    if (typeof onIngredientAddedFromScan === 'function') onIngredientAddedFromScan(name);
     finalizeScanIfPending(name, canine, feline);
     tr.classList.add('flash-highlight');
     setTimeout(function () { tr.classList.remove('flash-highlight'); }, 800);
@@ -714,6 +753,9 @@ var currentIngredientClassFilter = 'all';
 var currentIngredientSpeciesFilter = 'all';
 var currentIngredientVerificationFilter = 'all';
 var currentIngredientAgeFilter = 'all';   // 'all' | 'stale6' | 'stale12' -- by the Modified date
+// Separate from currentIngredientVerificationFilter above, which is the existing Regulatory
+// Compliance citation toggle. This is whether a vet has actually reviewed the entry.
+var currentIngredientVetFilter = 'all';   // 'all' | 'pending' | 'approved'
 
 // keeps the three dropdowns, their "this one is active" outline, the Clear filters
 // button and the Registry Health tile highlight all in step with the filter state,
@@ -723,6 +765,7 @@ function syncIngredientFilterUI() {
     ['ingredient-filter-species', currentIngredientSpeciesFilter],
     ['ingredient-filter-class', currentIngredientClassFilter],
     ['ingredient-filter-verification', currentIngredientVerificationFilter],
+    ['ingredient-filter-vet', currentIngredientVetFilter],
     ['ingredient-filter-age', currentIngredientAgeFilter]
   ];
   var anyActive = false;
@@ -777,6 +820,14 @@ function setIngredientVerificationFilter(mode, scrollToTable) {
   }
 }
 
+// Vet Review dropdown: all / pending / approved -- distinct from the Regulatory
+// Compliance "Verification" dropdown above
+function setIngredientVetFilter(mode) {
+  currentIngredientVetFilter = mode;
+  syncIngredientFilterUI();
+  filterIngredients();
+}
+
 // Last updated dropdown: finds entries nobody has touched for a while, so old safety
 // data gets a second look. Uses the Modified column that every row already has
 function setIngredientAgeFilter(mode) {
@@ -802,6 +853,7 @@ function clearIngredientFilters() {
   currentIngredientSpeciesFilter = 'all';
   currentIngredientClassFilter = 'all';
   currentIngredientVerificationFilter = 'all';
+  currentIngredientVetFilter = 'all';
   currentIngredientAgeFilter = 'all';
   syncIngredientFilterUI();
   filterIngredients();
@@ -827,9 +879,10 @@ function filterIngredients() {
     var isVerified = row.dataset.regVerified === 'true';
     var matchesVerification = currentIngredientVerificationFilter === 'all' ||
       (currentIngredientVerificationFilter === 'verified' ? isVerified : !isVerified);
+    var matchesVet = currentIngredientVetFilter === 'all' || row.dataset.vetStatus === currentIngredientVetFilter;
     var matchesAge = currentIngredientAgeFilter === 'all' ||
       isIngredientStale(row, currentIngredientAgeFilter === 'stale6' ? 6 : 12);
-    row.dataset.filterMatch = (matchesSearch && matchesClass && matchesVerification && matchesAge) ? 'true' : 'false';
+    row.dataset.filterMatch = (matchesSearch && matchesClass && matchesVerification && matchesVet && matchesAge) ? 'true' : 'false';
   });
   updateIngredientCountLabel();
   applyTablePagination('ingredient-table-body', 'ingredient-pagination-controls', 10, true);
@@ -1056,6 +1109,37 @@ function openMergeForm(rowId) {
 
 // the confirmation step before actually deleting.
 // warns specifically if the ingredient has aliases, since those would stop being recognized too
+// Marks a Pending Verification ingredient as vet-approved. Calls straight through to
+// the server (not the usual localStorage-then-sync pattern the rest of this file uses)
+// so the status change is immediate and doesn't wait for the next background sync --
+// this is the action that makes an ingredient visible to pet owners, so it shouldn't
+// be left in limbo if the tab closes before the next sync tick.
+function approveIngredient(rowId) {
+  var row = document.getElementById(rowId);
+  if (!row) return;
+  var ingredientId = row.dataset.ingredientId;
+  var name = row.querySelector('[data-field="name"]').textContent;
+  if (!ingredientId) {
+    showToast('Could not approve ' + name + ' -- missing database id. Try refreshing the page.', 'danger');
+    return;
+  }
+  fetch('/api/admin/ingredients/' + encodeURIComponent(ingredientId) + '/approve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  }).then(function (r) { return r.ok; }).then(function (ok) {
+    if (!ok) { showToast('Could not approve ' + name + '. Try again.', 'danger'); return; }
+    row.dataset.vetStatus = 'approved';
+    var badge = row.querySelector('[data-field="vet-badge"]');
+    if (badge) badge.remove();
+    var btn = row.querySelector('[data-field="approve-btn"]');
+    if (btn) btn.remove();
+    filterIngredients();
+    showToast(name + ' approved -- now visible to pet owners', 'success');
+  }).catch(function () {
+    showToast('Could not approve ' + name + '. Check your connection and try again.', 'danger');
+  });
+}
+
 function confirmDeleteIngredient(rowId) {
   var row = document.getElementById(rowId);
   if (!row) return;
@@ -1560,6 +1644,201 @@ renderNavBadges();
 applyRoleState();
 renderIngredientScanCounts();
 filterIngredients();   // also refreshes the "Showing all N ingredients" label, which otherwise stays at the static number in the HTML
+
+/* ---------- Scan Label: OCR a dog or cat food label straight into the Ingredient
+   Database instead of typing everything in by hand. Works the same way for either
+   species. Three steps: upload -> OCR extracts ingredient names -> each name is
+   checked against the database (exact / possible / new) on the Scan Results screen. ---------- */
+var scanLabelState = null; // { results: [...], activeIndex } while a scan session is open
+
+function openScanLabelModal() {
+  openModal({
+    title: 'Scan Label',
+    subtitle: 'Upload a photo of a dog or cat food ingredients label',
+    bodyHtml:
+      '<div class="space-y-4">' +
+        '<label class="flex flex-col items-center justify-center gap-3 p-10 rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50 cursor-pointer hover:border-brand transition-all" for="scan-label-file">' +
+          '<i class="fa-solid fa-camera text-2xl text-stone-400"></i>' +
+          '<span class="text-xs font-bold text-dark">Click to choose a label photo</span>' +
+          '<span class="text-[10px] text-stone-400">Works for dog or cat food, treats or supplements</span>' +
+          '<input type="file" id="scan-label-file" accept="image/*" class="hidden" onchange="onScanLabelFileChosen(this)">' +
+        '</label>' +
+        '<div id="scan-label-preview" class="hidden flex items-center gap-3 p-3 rounded-xl bg-stone-100 border border-stone-200">' +
+          '<img id="scan-label-preview-img" class="w-14 h-14 rounded-lg object-cover border border-stone-200" alt="">' +
+          '<span id="scan-label-filename" class="text-xs font-bold text-dark flex-1 truncate"></span>' +
+        '</div>' +
+        '<div id="scan-label-status" class="hidden p-3 rounded-xl bg-brand-light border border-brand/10 text-xs font-bold text-brand flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin"></i> <span id="scan-label-status-text">Reading label...</span></div>' +
+      '</div>',
+    footerHtml:
+      '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
+      '<button id="scan-label-submit-btn" onclick="submitLabelScan()" data-perm="manageIngredients" class="press px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all" disabled>Scan Label</button>'
+  });
+}
+
+function onScanLabelFileChosen(input) {
+  var file = input.files && input.files[0];
+  var btn = document.getElementById('scan-label-submit-btn');
+  if (!file) { if (btn) btn.disabled = true; return; }
+  var preview = document.getElementById('scan-label-preview');
+  var img = document.getElementById('scan-label-preview-img');
+  var nameEl = document.getElementById('scan-label-filename');
+  if (preview && img && nameEl) {
+    img.src = URL.createObjectURL(file);
+    nameEl.textContent = file.name;
+    preview.classList.remove('hidden');
+  }
+  if (btn) btn.disabled = false;
+}
+
+function submitLabelScan() {
+  var input = document.getElementById('scan-label-file');
+  var file = input && input.files && input.files[0];
+  if (!file) return;
+  var btn = document.getElementById('scan-label-submit-btn');
+  var statusWrap = document.getElementById('scan-label-status');
+  var statusText = document.getElementById('scan-label-status-text');
+  if (btn) btn.disabled = true;
+  if (statusWrap) statusWrap.classList.remove('hidden');
+  if (statusText) statusText.textContent = 'Reading label...';
+
+  var form = new FormData();
+  form.append('labelImage', file);
+  fetch('/api/admin/ingredients/ocr-label', { method: 'POST', body: form })
+    .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
+    .then(function (res) {
+      if (!res.ok) {
+        var msg = (res.data && res.data.error) || 'Could not read that label. Try a clearer photo.';
+        showToast(msg, 'danger');
+        if (btn) btn.disabled = false;
+        if (statusWrap) statusWrap.classList.add('hidden');
+        return;
+      }
+      var ingredients = res.data.ingredients || [];
+      if (statusText) statusText.textContent = 'Checking ' + ingredients.length + ' ingredient' + (ingredients.length === 1 ? '' : 's') + ' against the database...';
+      return fetch('/api/admin/ingredients/match', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: ingredients })
+      }).then(function (r2) { return r2.json(); }).then(function (matchData) {
+        openScanResultsScreen(matchData.results || []);
+      });
+    })
+    .catch(function () {
+      showToast('Something went wrong reading that label. Check your connection and try again.', 'danger');
+      if (btn) btn.disabled = false;
+      if (statusWrap) statusWrap.classList.add('hidden');
+    });
+}
+
+function openScanResultsScreen(results) {
+  scanLabelState = { results: results, activeIndex: null };
+  renderScanResultsScreen();
+}
+
+function scanResultRowHtml(r, idx) {
+  var wrap = 'p-4 rounded-2xl border flex items-start justify-between gap-4 flex-wrap';
+  if (r.status === 'exact') {
+    var statusWord = r.reviewStatus === 'pending' ? 'Pending Vet Review' : 'Approved';
+    var statusCls = r.reviewStatus === 'pending' ? 'text-caution' : 'text-safe';
+    return '<div class="' + wrap + ' bg-safe/5 border-safe/10">' +
+      '<div><p class="text-sm font-bold text-dark">' + escapeHTML(r.name) + '</p>' +
+      '<p class="text-[11px] text-stone-500 mt-0.5">Already in database &rarr; <span class="font-mono">' + escapeHTML(r.ingredientId) + '</span> ' + escapeHTML(r.primaryName) + ' <span class="font-bold ' + statusCls + '">(' + statusWord + ')</span></p></div>' +
+      '<button onclick="viewScanMatchedIngredient(\'' + r.ingredientId + '\')" class="press shrink-0 px-4 py-2 text-[11px] font-bold text-dark bg-white border border-stone-200 rounded-xl hover:bg-stone-50">View</button>' +
+    '</div>';
+  }
+  if (r.status === 'possible') {
+    return '<div class="' + wrap + ' bg-caution/5 border-caution/10">' +
+      '<div class="flex-1 min-w-[220px]"><p class="text-sm font-bold text-dark">' + escapeHTML(r.name) + '</p>' +
+      '<p class="text-[11px] text-stone-500 mt-0.5">Did you mean <span class="font-bold text-dark">' + escapeHTML(r.primaryName) + '</span>? (' + r.matchScore + '% match)</p>' +
+      '<div class="flex flex-wrap gap-2 mt-2">' +
+        '<button onclick="confirmScanMatch(' + idx + ')" class="press px-3 py-1.5 text-[10px] font-bold text-white bg-brand rounded-lg hover:bg-brand-hover">Confirm match</button>' +
+        '<button onclick="addScanAlias(' + idx + ')" class="press px-3 py-1.5 text-[10px] font-bold text-dark bg-white border border-stone-200 rounded-lg hover:bg-stone-50">Add as alias</button>' +
+        '<button onclick="createNewFromScan(' + idx + ')" data-perm="manageIngredients" class="press px-3 py-1.5 text-[10px] font-bold text-dark bg-white border border-stone-200 rounded-lg hover:bg-stone-50">Create new instead</button>' +
+      '</div></div>' +
+    '</div>';
+  }
+  if (r.status === 'added') {
+    return '<div class="' + wrap + ' bg-caution/5 border-caution/10">' +
+      '<div><p class="text-sm font-bold text-dark">' + escapeHTML(r.name) + '</p>' +
+      '<p class="text-[11px] text-caution font-bold mt-0.5"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Added -- Pending Verification</p></div>' +
+    '</div>';
+  }
+  if (r.status === 'aliased') {
+    return '<div class="' + wrap + ' bg-safe/5 border-safe/10">' +
+      '<div><p class="text-sm font-bold text-dark">' + escapeHTML(r.name) + '</p>' +
+      '<p class="text-[11px] text-safe font-bold mt-0.5"><i class="fa-solid fa-circle-check mr-1"></i>Saved as an alias of ' + escapeHTML(r.primaryName) + '</p></div>' +
+    '</div>';
+  }
+  // 'new'
+  return '<div class="' + wrap + ' bg-stone-100 border-stone-200">' +
+    '<div><p class="text-sm font-bold text-dark">' + escapeHTML(r.name) + '</p>' +
+    '<p class="text-[11px] text-stone-500 mt-0.5">Not in the database yet</p></div>' +
+    '<button onclick="createNewFromScan(' + idx + ')" data-perm="manageIngredients" class="press shrink-0 px-4 py-2 text-[11px] font-bold text-white bg-brand rounded-xl hover:bg-brand-hover">Add Ingredient</button>' +
+  '</div>';
+}
+
+function renderScanResultsScreen() {
+  var results = scanLabelState.results;
+  var doneCount = results.filter(function (r) { return r.status === 'exact' || r.status === 'added' || r.status === 'aliased'; }).length;
+  openModal({
+    title: 'Scan Results',
+    subtitle: doneCount + ' of ' + results.length + ' resolved',
+    wide: true,
+    bodyHtml: results.length
+      ? '<div class="space-y-3">' + results.map(scanResultRowHtml).join('') + '</div>'
+      : '<p class="text-sm text-stone-500">No ingredients detected.</p>',
+    footerHtml: '<button onclick="closeModal()" class="press px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Done</button>'
+  });
+}
+
+// "View" on an exact match -- finds that ingredient's real row in the table (by its
+// database id, not the name-based slug) and reuses the normal Risk Library preview
+function viewScanMatchedIngredient(ingredientId) {
+  var row = document.querySelector('[data-ingredient-id="' + ingredientId + '"]');
+  if (!row) { showToast('Could not find that ingredient in the table -- try refreshing the page.', 'danger'); return; }
+  previewIngredient(row.id);
+}
+
+// "Confirm match" -- the admin agrees this was just an OCR misread of an ingredient
+// already in the database, nothing to save, just mark it resolved
+function confirmScanMatch(idx) {
+  var r = scanLabelState.results[idx];
+  r.status = 'exact';
+  renderScanResultsScreen();
+  showToast('"' + r.name + '" confirmed as ' + r.primaryName, 'success');
+}
+
+// "Add as alias" -- same ingredient, the label just uses different wording, so that
+// wording gets saved onto the existing entry instead of creating a duplicate
+function addScanAlias(idx) {
+  var r = scanLabelState.results[idx];
+  fetch('/api/admin/ingredients/' + encodeURIComponent(r.ingredientId) + '/alias', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ alias: r.name })
+  }).then(function (res) { return res.ok; }).then(function (ok) {
+    if (!ok) { showToast('Could not save that alias. Try again.', 'danger'); return; }
+    r.status = 'aliased';
+    renderScanResultsScreen();
+    showToast('"' + r.name + '" saved as an alias of ' + r.primaryName, 'success');
+  }).catch(function () { showToast('Could not save that alias. Check your connection.', 'danger'); });
+}
+
+// "Create new instead" (possible match) / "Add Ingredient" (new) -- opens the normal
+// Add Ingredient form, pre-filled with the scanned name. activeIndex remembers which
+// scan result to update once it's saved (see onIngredientAddedFromScan below).
+function createNewFromScan(idx) {
+  var r = scanLabelState.results[idx];
+  scanLabelState.activeIndex = idx;
+  openIngredientForm('add', null, r.name);
+}
+
+// Hook called from saveIngredient()'s "add" branch. A no-op outside an active scan
+// session (scanLabelState is null for the regular manual Add Ingredient flow).
+function onIngredientAddedFromScan(name) {
+  if (!scanLabelState) return;
+  var idx = scanLabelState.activeIndex;
+  if (idx == null || !scanLabelState.results[idx]) return;
+  scanLabelState.results[idx].status = 'added';
+  scanLabelState.activeIndex = null;
+  renderScanResultsScreen();
+}
 
 /* ---------- Export Ingredient Database ---------- */
 // every category actually in use right now, in the order they first

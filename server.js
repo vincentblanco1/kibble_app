@@ -210,6 +210,17 @@ db.serialize(() => {
   db.run(`ALTER TABLE users ADD COLUMN pet_count INTEGER`, () => {});
   db.run(`ALTER TABLE users ADD COLUMN avatar TEXT`, () => {});
 
+  // Vet sign-off status for ingredients, separate from the existing "Regulatory
+  // Compliance Verified" citation toggle in the admin editor -- this is about
+  // whether a vet has reviewed the entry at all, not whether it cites a standard.
+  // DEFAULT 'approved' means every ingredient that already exists today is
+  // grandfathered in as approved the moment this column is added, so nothing
+  // currently visible to pet owners disappears. New ingredients added from here
+  // on (manually or via a label scan) are inserted with 'pending' explicitly,
+  // overriding this default -- see upsertSpeciesIngredient below.
+  db.run(`ALTER TABLE dog_ingredients ADD COLUMN IF NOT EXISTS review_status TEXT DEFAULT 'approved'`, () => {});
+  db.run(`ALTER TABLE cat_ingredients ADD COLUMN IF NOT EXISTS review_status TEXT DEFAULT 'approved'`, () => {});
+
   // Admin panel: generic key-value store for admin UI state that the admin
   // pages already treat as a synced "kibbleguard-..." localStorage key --
   // safety rules, the admin roster + invites, activity log, team chat,
@@ -730,8 +741,8 @@ function mapRiskToRating(risk) {
 // the ingredient is *recognized* at all.
 async function fetchMergedIngredients() {
   const [dogResult, catResult] = await Promise.all([
-    pool.query(`SELECT ingredient_id, primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, emergency_action FROM dog_ingredients`),
-    pool.query(`SELECT ingredient_id, primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, emergency_action FROM cat_ingredients`)
+    pool.query(`SELECT ingredient_id, primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, emergency_action, breed_specific_data, weight_specific_data, review_status FROM dog_ingredients`),
+    pool.query(`SELECT ingredient_id, primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, emergency_action, breed_specific_data, weight_specific_data, review_status FROM cat_ingredients`)
   ]);
 
   const dogMap = new Map(dogResult.rows.map(r => [r.ingredient_id, r]));
@@ -746,7 +757,9 @@ async function fetchMergedIngredients() {
       notes: row.notes || '',
       clinical_symptoms: row.clinical_symptoms || '',
       dosage: row.dosage || '',
-      emergency_action: row.emergency_action || ''
+      emergency_action: row.emergency_action || '',
+      breed_specific_data: row.breed_specific_data || '',
+      weight_specific_data: row.weight_specific_data || ''
     };
   }
 
@@ -755,11 +768,16 @@ async function fetchMergedIngredients() {
     const dogRow = dogMap.get(id) || null;
     const catRow = catMap.get(id) || null;
     const primary = dogRow || catRow;
+    // If either species row is still pending a vet's sign-off, treat the whole
+    // ingredient as pending -- a pet owner shouldn't see one species' real data
+    // just because the other species happened to get approved first.
+    const reviewStatus = [dogRow, catRow].some(r => r && r.review_status === 'pending') ? 'pending' : 'approved';
     merged.push({
       id,
       name: primary.primary_name,
       aliases: primary.aliases || '',
       category: primary.category || 'Ingredient',
+      reviewStatus,
       dog: shapeSpeciesRow(dogRow),
       cat: shapeSpeciesRow(catRow)
     });
@@ -848,27 +866,51 @@ function analyzeIngredients(tokens, mergedIngredients, speciesKey) {
         const itemRating = speciesData.rating || 'Safe';
         const severity = speciesData.severity_score || 0;
 
+        // Same pending-vs-approved split as the notes below -- the short "risks" line
+        // attached to a flagged ingredient is still specific clinical guidance, so it
+        // gets the same generic placeholder until a vet has actually signed off on it.
+        const risksText = matchedItem.reviewStatus === 'pending'
+          ? 'This ingredient is not yet verified. Consult a veterinarian.'
+          : speciesData.notes;
+
         if (itemRating === 'Toxic') {
           const deduction = Math.max(15, Math.round(severity * 0.45));
           score -= deduction;
-          flagged.push({ name: token, rating: 'Toxic', risks: speciesData.notes });
+          flagged.push({ name: token, rating: 'Toxic', risks: risksText });
         } else if (itemRating === 'Caution') {
           const deduction = Math.max(5, Math.round(severity * 0.3));
           score -= deduction;
-          flagged.push({ name: token, rating: 'Caution', risks: speciesData.notes });
+          flagged.push({ name: token, rating: 'Caution', risks: risksText });
         }
 
-        const baseNotes = speciesData.notes || 'Evaluated compound';
-        parsedResults.push({
-          name: token,
-          category: matchedItem.category,
-          status: itemRating,
-          notes: alsoKnownAs ? `${baseNotes} ${alsoKnownAs}` : baseNotes,
-          severity_score: severity,
-          clinical_symptoms: speciesData.clinical_symptoms || '',
-          dosage: speciesData.dosage || '',
-          emergency_action: speciesData.emergency_action || ''
-        });
+        // A vet hasn't signed off on this ingredient yet -- don't hand the pet owner
+        // specific clinical guidance (notes, symptoms, emergency steps) that no one has
+        // actually verified. Show the same safe generic message used everywhere else
+        // this applies (the Risk Library), not the real data.
+        if (matchedItem.reviewStatus === 'pending') {
+          parsedResults.push({
+            name: token,
+            category: matchedItem.category,
+            status: itemRating,
+            notes: 'This ingredient is not yet verified. Consult a veterinarian.',
+            severity_score: severity,
+            clinical_symptoms: '',
+            dosage: '',
+            emergency_action: ''
+          });
+        } else {
+          const baseNotes = speciesData.notes || 'Evaluated compound';
+          parsedResults.push({
+            name: token,
+            category: matchedItem.category,
+            status: itemRating,
+            notes: alsoKnownAs ? `${baseNotes} ${alsoKnownAs}` : baseNotes,
+            severity_score: severity,
+            clinical_symptoms: speciesData.clinical_symptoms || '',
+            dosage: speciesData.dosage || '',
+            emergency_action: speciesData.emergency_action || ''
+          });
+        }
       } else {
         // Recognized ingredient, but no row for THIS species yet. Don't silently claim
         // "no restrictions recorded" — say plainly it hasn't been independently evaluated
@@ -1297,7 +1339,22 @@ app.get('/api/wiki-ingredients', async (req, res) => {
       pool.query(catSql + ` ORDER BY category ASC, primary_name ASC`, params)
     ]);
 
-    res.json({ dog: dogResult.rows, cat: catResult.rows });
+    // A row still pending vet sign-off keeps its name/category/risk tier (so it's not
+    // hidden from the list entirely) but has its specific clinical guidance replaced --
+    // nobody's verified that notes/symptoms/emergency text yet, so it shouldn't reach a
+    // pet owner as if it had been. Done here, at the source, rather than trusting every
+    // page that reads this endpoint to remember to check review_status itself.
+    const maskPending = (row) => {
+      if (row.review_status !== 'pending') return row;
+      return Object.assign({}, row, {
+        notes: 'This ingredient is not yet verified. Consult a veterinarian.',
+        clinical_symptoms: '',
+        dosage: '',
+        emergency_action: ''
+      });
+    };
+
+    res.json({ dog: dogResult.rows.map(maskPending), cat: catResult.rows.map(maskPending) });
   } catch (err) {
     console.error('[wiki-ingredients]', err.message);
     res.status(500).json({ error: err.message });
@@ -2091,12 +2148,22 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
               users: users || [],
               pets: pets || [],
               ingredients: mergedIngredients.map(i => ({
+                id: i.id,
                 name: i.name,
                 category: i.category,
+                aliases: i.aliases || '',
                 canine: i.dog ? i.dog.rating : 'Unrated',
                 feline: i.cat ? i.cat.rating : 'Unrated',
-                description: (i.dog && i.dog.notes) || (i.cat && i.cat.notes) || '',
-                risks: (i.dog && i.dog.clinical_symptoms) || (i.cat && i.cat.clinical_symptoms) || ''
+                reviewStatus: i.reviewStatus,
+                // Full per-species Clinical Details, so the table (and the edit form it feeds)
+                // is populated correctly straight after a page load/refresh, not just after an
+                // edit-and-save round trip in the same tab.
+                canineNotes: (i.dog && i.dog.notes) || '', canineSymptoms: (i.dog && i.dog.clinical_symptoms) || '',
+                canineDosage: (i.dog && i.dog.dosage) || '', canineEmergency: (i.dog && i.dog.emergency_action) || '',
+                canineBreed: (i.dog && i.dog.breed_specific_data) || '', canineWeight: (i.dog && i.dog.weight_specific_data) || '',
+                felineNotes: (i.cat && i.cat.notes) || '', felineSymptoms: (i.cat && i.cat.clinical_symptoms) || '',
+                felineDosage: (i.cat && i.cat.dosage) || '', felineEmergency: (i.cat && i.cat.emergency_action) || '',
+                felineBreed: (i.cat && i.cat.breed_specific_data) || '', felineWeight: (i.cat && i.cat.weight_specific_data) || ''
               })),
               scans,
               tickets: (tickets || []).map(t => ({
@@ -2150,23 +2217,222 @@ async function findIngredientId(name) {
 // Creates or updates one species' row for an ingredient. If the admin left that species
 // "Unrated", no row is created/touched for it -- an ingredient can legitimately be documented
 // for only one species, and writing a blank "Unrated" row would just be noise.
-async function upsertSpeciesIngredient(table, ingredientId, name, category, rating, notes, clinicalSymptoms) {
+// `fields` carries everything the per-species Clinical Details panel now captures: notes,
+// clinicalSymptoms, dosage (the "guidance" field), emergencyAction, breedSpecific, weightSpecific.
+async function upsertSpeciesIngredient(table, ingredientId, name, category, rating, fields) {
   if (!rating || rating === 'Unrated') return;
+  fields = fields || {};
+  const notes = fields.notes || '', clinicalSymptoms = fields.clinicalSymptoms || '', dosage = fields.dosage || '',
+    emergencyAction = fields.emergencyAction || '', breedSpecific = fields.breedSpecific || '', weightSpecific = fields.weightSpecific || '';
   const existing = await pool.query(`SELECT ingredient_id FROM ${table} WHERE ingredient_id = $1`, [ingredientId]);
   if (existing.rows.length) {
     await pool.query(
-      `UPDATE ${table} SET category = $2, primary_name = $3, risk = $4, notes = $5, clinical_symptoms = $6, updated_at = NOW() WHERE ingredient_id = $1`,
-      [ingredientId, category || 'Ingredient', name, rating, notes || '', clinicalSymptoms || '']
+      `UPDATE ${table} SET category = $2, primary_name = $3, risk = $4, notes = $5, clinical_symptoms = $6,
+         dosage = $7, emergency_action = $8, breed_specific_data = $9, weight_specific_data = $10, updated_at = NOW()
+       WHERE ingredient_id = $1`,
+      [ingredientId, category || 'Ingredient', name, rating, notes, clinicalSymptoms, dosage, emergencyAction, breedSpecific, weightSpecific]
     );
   } else {
+    // Explicitly 'pending' rather than relying on the column default -- every
+    // brand-new ingredient added from here on (manual or scanned) needs a vet's
+    // sign-off before pet owners see its real data.
     await pool.query(
       `INSERT INTO ${table}
-         (ingredient_id, category, primary_name, aliases, risk, severity_score, notes, dosage, weight_specific_data, age_specific_data, breed_specific_data, clinical_symptoms, emergency_action, updated_at)
-       VALUES ($1, $2, $3, '{}', $4, '0', $5, '', '', '', '', $6, '', NOW())`,
-      [ingredientId, category || 'Ingredient', name, rating, notes || '', clinicalSymptoms || '']
+         (ingredient_id, category, primary_name, aliases, risk, severity_score, notes, dosage, weight_specific_data, age_specific_data, breed_specific_data, clinical_symptoms, emergency_action, review_status, updated_at)
+       VALUES ($1, $2, $3, '{}', $4, '0', $5, $6, $7, '', $8, $9, $10, 'pending', NOW())`,
+      [ingredientId, category || 'Ingredient', name, rating, notes, dosage, weightSpecific, breedSpecific, clinicalSymptoms, emergencyAction]
     );
   }
 }
+
+// Marks an ingredient's rows (whichever species it has) as vet-approved. Called
+// by the Ingredient Reviewer role after checking a Pending Verification entry --
+// there's no separate "Needs Revision" status, since a reviewer with edit access
+// just fixes the entry directly and then approves it in the same visit.
+app.post('/api/admin/ingredients/:id/approve', requireAdminAuth, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const [dogRes, catRes] = await Promise.all([
+      pool.query(`UPDATE dog_ingredients SET review_status = 'approved' WHERE ingredient_id = $1`, [id]),
+      pool.query(`UPDATE cat_ingredients SET review_status = 'approved' WHERE ingredient_id = $1`, [id])
+    ]);
+    if (!dogRes.rowCount && !catRes.rowCount) return res.status(404).json({ error: 'Ingredient not found.' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------- Admin "Scan Label" feature: OCR a dog or cat food label straight into the
+// Ingredient Database, instead of only typing ingredients in by hand. Reuses the same
+// Gemini vision call /api/assess already uses for pet-owner scans, but this one doesn't
+// score anything or save a scan row -- it just reads the label and hands back a plain
+// list of ingredient names for the Scan Results screen to match against the database. ----------
+app.post('/api/admin/ingredients/ocr-label', requireAdminAuth, upload.single('labelImage'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No label image provided.' });
+  try {
+    const requestPayload = {
+      model: 'gemini-3.5-flash-lite',
+      contents: [
+        {
+          inlineData: {
+            mimeType: req.file.mimetype,
+            data: req.file.buffer.toString('base64'),
+          },
+        },
+        {
+          text: `You are an expert OCR parser for pet food packages (dog or cat food, treats or supplements). Look at the photo and first decide what it shows. Set product_type to exactly one of: "dog_or_cat_food" (the packaging or ingredient label of food, treats or supplements made for dogs or cats), "other_animal_food" (food made for another animal), "not_pet_food" (anything else), or "unclear" (a label that could be pet food but has nothing that shows what it is for). Write one short sentence in reason saying what the photo shows. Only when product_type is dog_or_cat_food, extract ONLY the ingredients list, normalizing each item into its clear ingredient name (e.g., "Beef", "Rice", "Sunflower Lecithin") and leaving out percentages, guaranteed analysis values, feeding instructions, and manufacturer details. For every other product_type return an empty ingredients list.`,
+        },
+      ],
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            product_type: { type: Type.STRING, description: 'One of: dog_or_cat_food, other_animal_food, not_pet_food, unclear' },
+            reason: { type: Type.STRING, description: 'One short sentence saying what the photo shows' },
+            ingredients: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Clean list of extracted ingredients (empty unless dog_or_cat_food)' },
+          },
+          required: ['product_type', 'reason', 'ingredients'],
+        },
+      },
+    };
+
+    let aiResponse;
+    const maxRetries = 3;
+    let delayMs = 1500;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        aiResponse = await ai.models.generateContent(requestPayload);
+        break;
+      } catch (err) {
+        const isRetryable = err.status === 503 || err.status === 429 || err.code === 503;
+        if (isRetryable && attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, delayMs));
+          delayMs *= 2;
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    const parsedData = JSON.parse(aiResponse.text);
+    const productType = normalizeProductType(parsedData.product_type);
+    if (productType && productType !== 'dog_or_cat_food') {
+      return res.status(422).json(notPetFoodResponse(productType, parsedData.reason));
+    }
+    const ingredients = parsedData.ingredients || [];
+    if (ingredients.length === 0) {
+      return res.status(400).json({ error: 'No ingredients detected. Try a clearer photo of the ingredients list.' });
+    }
+    res.json({ ingredients });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Basic Levenshtein edit distance, used by the match endpoint below for "Did you mean X?"
+// suggestions on likely OCR typos -- small, deliberately dependency-free (no npm install
+// available in this environment), good enough for short ingredient names.
+function levenshtein(a, b) {
+  a = String(a); b = String(b);
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const prev = new Array(n + 1);
+  const curr = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+    }
+    for (let j = 0; j <= n; j++) prev[j] = curr[j];
+  }
+  return prev[n];
+}
+// 0..1, 1 = identical. Used to decide "possible match" vs "not close enough to suggest at all".
+function similarity(a, b) {
+  const an = String(a || '').toLowerCase().trim();
+  const bn = String(b || '').toLowerCase().trim();
+  if (!an || !bn) return 0;
+  const dist = levenshtein(an, bn);
+  return 1 - dist / Math.max(an.length, bn.length);
+}
+
+// For each OCR-detected ingredient name, checks it against every existing ingredient's
+// Primary Name and Aliases (both species tables) and classifies it:
+//   'exact'    - matches a primary name or alias exactly (case-insensitive) -> already in the database
+//   'possible' - close but not exact (likely an OCR misread) -> "Did you mean X?"
+//   'new'      - nothing close enough -> genuinely new, offer Add Ingredient
+app.post('/api/admin/ingredients/match', requireAdminAuth, async (req, res) => {
+  const names = (req.body && req.body.names) || [];
+  if (!Array.isArray(names) || !names.length) return res.status(400).json({ error: 'No names provided.' });
+  try {
+    const [dogRows, catRows] = await Promise.all([
+      pool.query(`SELECT ingredient_id, primary_name, aliases, review_status FROM dog_ingredients`),
+      pool.query(`SELECT ingredient_id, primary_name, aliases, review_status FROM cat_ingredients`)
+    ]);
+    // Merge into one lookup list of {ingredientId, label, reviewStatus} -- primary names and
+    // every alias, from both species tables, each entry remembering which real name it's for.
+    const lookup = [];
+    [...dogRows.rows, ...catRows.rows].forEach(r => {
+      lookup.push({ ingredientId: r.ingredient_id, label: r.primary_name, reviewStatus: r.review_status });
+      (r.aliases || []).forEach(a => lookup.push({ ingredientId: r.ingredient_id, label: a, reviewStatus: r.review_status }));
+    });
+    // One entry per ingredient_id for the "which primary name do I show" step
+    const primaryById = {};
+    [...dogRows.rows, ...catRows.rows].forEach(r => { if (!primaryById[r.ingredient_id]) primaryById[r.ingredient_id] = r.primary_name; });
+
+    const POSSIBLE_THRESHOLD = 0.72; // below this, not close enough to even suggest
+
+    const results = names.map(name => {
+      const exact = lookup.find(e => String(e.label || '').toLowerCase().trim() === String(name || '').toLowerCase().trim());
+      if (exact) {
+        return { name, status: 'exact', ingredientId: exact.ingredientId, primaryName: primaryById[exact.ingredientId], reviewStatus: exact.reviewStatus };
+      }
+      let best = null, bestScore = 0;
+      lookup.forEach(e => {
+        const s = similarity(name, e.label);
+        if (s > bestScore) { bestScore = s; best = e; }
+      });
+      if (best && bestScore >= POSSIBLE_THRESHOLD) {
+        return { name, status: 'possible', ingredientId: best.ingredientId, primaryName: primaryById[best.ingredientId], reviewStatus: best.reviewStatus, matchScore: Math.round(bestScore * 100) };
+      }
+      return { name, status: 'new' };
+    });
+
+    res.json({ results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// "Add as alias" action from the Scan Results screen -- the OCR'd label name wasn't an
+// exact match, but the admin confirmed it's the same ingredient under a different label
+// wording, so it gets saved onto that ingredient's existing Aliases instead of creating
+// a duplicate. Applied to whichever species rows that ingredient_id actually has.
+app.post('/api/admin/ingredients/:id/alias', requireAdminAuth, async (req, res) => {
+  const alias = String((req.body && req.body.alias) || '').trim();
+  if (!alias) return res.status(400).json({ error: 'No alias provided.' });
+  try {
+    const id = req.params.id;
+    const [dogRes, catRes] = await Promise.all([
+      pool.query(`UPDATE dog_ingredients SET aliases = array_append(aliases, $2), updated_at = NOW() WHERE ingredient_id = $1 AND NOT ($2 = ANY(aliases))`, [id, alias]),
+      pool.query(`UPDATE cat_ingredients SET aliases = array_append(aliases, $2), updated_at = NOW() WHERE ingredient_id = $1 AND NOT ($2 = ANY(aliases))`, [id, alias])
+    ]);
+    if (!dogRes.rowCount && !catRes.rowCount) {
+      // either the ingredient doesn't exist, or it already had this alias -- both are fine,
+      // the end state (alias present) is what the caller actually cares about
+      const check = await findIngredientId(alias);
+      if (!check) return res.status(404).json({ error: 'Ingredient not found.' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.post('/api/admin/ingredients/sync', requireAdminAuth, async (req, res) => {
   const { upsert, remove } = req.body || {};
@@ -2178,8 +2444,14 @@ app.post('/api/admin/ingredients/sync', requireAdminAuth, async (req, res) => {
         // New ingredient the admin typed in that doesn't match anything in either table yet.
         ingredientId = 'ADM' + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 1000);
       }
-      await upsertSpeciesIngredient('dog_ingredients', ingredientId, i.name, i.category, i.canine, i.description, i.risks);
-      await upsertSpeciesIngredient('cat_ingredients', ingredientId, i.name, i.category, i.feline, i.description, i.risks);
+      await upsertSpeciesIngredient('dog_ingredients', ingredientId, i.name, i.category, i.canine, {
+        notes: i.canineNotes, clinicalSymptoms: i.canineSymptoms, dosage: i.canineDosage,
+        emergencyAction: i.canineEmergency, breedSpecific: i.canineBreed, weightSpecific: i.canineWeight
+      });
+      await upsertSpeciesIngredient('cat_ingredients', ingredientId, i.name, i.category, i.feline, {
+        notes: i.felineNotes, clinicalSymptoms: i.felineSymptoms, dosage: i.felineDosage,
+        emergencyAction: i.felineEmergency, breedSpecific: i.felineBreed, weightSpecific: i.felineWeight
+      });
     }
     for (const name of (remove || [])) {
       const ingredientId = await findIngredientId(name);

@@ -175,11 +175,35 @@
     var id = 'row-' + slug(i.name);
     var search = [i.name, i.category].join(' ').toLowerCase();
     var btn = 'press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-brand transition-all';
+    // Vet review status is a separate concept from the existing "Regulatory Compliance
+    // Verified" citation toggle (data-reg-verified below) -- this is about whether a vet
+    // has signed off on the entry at all. data-ingredient-id carries the REAL database id
+    // (the row's own "id" attribute is a name-based slug, which the approve endpoint can't
+    // use), so the Approve button and the future scan-matching flow both have something to call.
+    var vetStatus = i.reviewStatus === 'pending' ? 'pending' : 'approved';
+    var vetBadge = vetStatus === 'pending'
+      ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-caution/10 text-caution text-[9px] font-bold uppercase tracking-widest mt-1" data-field="vet-badge"><i class="fa-solid fa-clock-rotate-left"></i> Pending Vet Review</span>'
+      : '';
+    var approveBtn = vetStatus === 'pending'
+      ? '<button onclick="approveIngredient(\'' + id + '\')" data-perm="manageIngredients" class="press w-8 h-8 rounded-lg hover:bg-white hover:card-shadow flex items-center justify-center text-stone-400 hover:text-safe transition-all" title="Approve (vet-reviewed)" data-field="approve-btn"><i class="fa-solid fa-stamp text-xs"></i></button>'
+      : '';
+    // Per-species Clinical Details, hydrated straight from the real database so the row
+    // (and the edit form it feeds) is correct right after a page load, not only after an
+    // edit-and-save round trip. clinicalV2 marks this row as already in the new per-species
+    // shape, matching what applyClinicalToDataset (ingredient-database.js) writes on save.
+    var clinicalAttrs =
+      ' data-canine-metabolic="' + esc(i.canineNotes || '') + '" data-canine-symptoms="' + esc(i.canineSymptoms || '') +
+      '" data-canine-guidance="' + esc(i.canineDosage || '') + '" data-canine-emergency="' + esc(i.canineEmergency || '') +
+      '" data-canine-breed="' + esc(i.canineBreed || '') + '" data-canine-weight="' + esc(i.canineWeight || '') +
+      '" data-feline-metabolic="' + esc(i.felineNotes || '') + '" data-feline-symptoms="' + esc(i.felineSymptoms || '') +
+      '" data-feline-guidance="' + esc(i.felineDosage || '') + '" data-feline-emergency="' + esc(i.felineEmergency || '') +
+      '" data-feline-breed="' + esc(i.felineBreed || '') + '" data-feline-weight="' + esc(i.felineWeight || '') + '" data-clinical-v2="2"';
     return '<tr class="feed-row hover:bg-stone-50/50 group" id="' + id + '" data-canine="' + canine + '" data-feline="' + feline + '" data-risk-index="' + idx +
-      '" data-metabolic="' + esc(i.description || '') + '" data-symptoms="' + esc(i.risks || '') + '" data-alternatives="" data-source="" data-reg-verified="false" data-reg-body="" data-aliases="" data-search="' + esc(search) + '">' +
+      '" data-alternatives="" data-source="" data-reg-verified="false" data-reg-body="" data-aliases="' + esc(i.aliases || '') + '" data-vet-status="' + vetStatus +
+      '" data-ingredient-id="' + esc(i.id || '') + '"' + clinicalAttrs + ' data-search="' + esc(search) + '">' +
       '<td class="px-10 py-6"><div><p class="font-bold text-dark text-base" data-field="name">' + esc(i.name) + '</p>' +
       '<p class="text-[11px] text-stone-400 font-medium italic" data-field="subtitle"></p>' +
-      '<p class="text-[10px] text-stone-400 mt-1 hidden" data-field="aliases-line"></p></div></td>' +
+      '<p class="text-[10px] text-stone-400 mt-1 hidden" data-field="aliases-line"></p>' + vetBadge + '</div></td>' +
       '<td class="px-10 py-6"><span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">' + esc(i.category || 'Uncategorized') + '</span></td>' +
       '<td class="px-10 py-6" data-field="canine">' + badge(canine) + '</td>' +
       '<td class="px-10 py-6" data-field="feline">' + badge(feline) + '</td>' +
@@ -187,6 +211,7 @@
       '<td class="px-10 py-6 text-stone-500 text-xs tabular-nums" data-field="scan-count">-</td>' +
       '<td class="px-10 py-6 text-right text-stone-400 font-mono text-xs" data-field="modified">&mdash;</td>' +
       '<td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180"><div class="flex items-center justify-end gap-1">' +
+      approveBtn +
       '<button onclick="previewIngredient(\'' + id + '\')" class="' + btn + '" title="Preview in Risk Library"><i class="fa-solid fa-eye text-xs"></i></button>' +
       '<button onclick="openMergeForm(\'' + id + '\')" data-perm="manageIngredients" class="' + btn + '" title="Merge with another ingredient"><i class="fa-solid fa-code-merge text-xs"></i></button>' +
       '<button onclick="editIngredient(\'' + id + '\')" data-perm="manageIngredients" class="' + btn + '" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>' +
@@ -219,12 +244,31 @@
     t.innerHTML = '<tbody>' + list.join('') + '</tbody>';
     return [].slice.call(t.querySelectorAll('tr[data-search]'));
   }
+  // ds.metabolic / ds.symptoms (the old shared, not-per-species fields) get deleted by
+  // applyClinicalToDataset the moment the ingredient form is saved -- they were replaced with
+  // canineMetabolic/felineMetabolic etc. so each species keeps its own text. Reading the old
+  // deleted keys here meant every save synced EMPTY notes/symptoms to the real database, and
+  // both species always got the exact same text even when they differed. This reads the real,
+  // current, per-species fields instead -- including the Breed/Weight-Specific Risk and
+  // Emergency Action fields, which were captured in the form but never sent to the server at all.
   function ingFromRow(tr) {
     var ds = tr.dataset;
     var f = function (n) { var e = tr.querySelector('[data-field="' + n + '"]'); return e ? e.textContent.trim() : ''; };
-    return { name: f('name'), category: f('category'), canine: ds.canine || 'Unrated', feline: ds.feline || 'Unrated', description: ds.metabolic || '', risks: ds.symptoms || '' };
+    return {
+      name: f('name'), category: f('category'), canine: ds.canine || 'Unrated', feline: ds.feline || 'Unrated',
+      canineNotes: ds.canineMetabolic || '', canineSymptoms: ds.canineSymptoms || '', canineDosage: ds.canineGuidance || '',
+      canineEmergency: ds.canineEmergency || '', canineBreed: ds.canineBreed || '', canineWeight: ds.canineWeight || '',
+      felineNotes: ds.felineMetabolic || '', felineSymptoms: ds.felineSymptoms || '', felineDosage: ds.felineGuidance || '',
+      felineEmergency: ds.felineEmergency || '', felineBreed: ds.felineBreed || '', felineWeight: ds.felineWeight || ''
+    };
   }
-  function ingSig(i) { return [i.canine || 'Unrated', i.feline || 'Unrated', i.category || '', i.description || '', i.risks || ''].join('|'); }
+  function ingSig(i) {
+    return [
+      i.canine || 'Unrated', i.feline || 'Unrated', i.category || '',
+      i.canineNotes || '', i.canineSymptoms || '', i.canineDosage || '', i.canineEmergency || '', i.canineBreed || '', i.canineWeight || '',
+      i.felineNotes || '', i.felineSymptoms || '', i.felineDosage || '', i.felineEmergency || '', i.felineBreed || '', i.felineWeight || ''
+    ].join('|');
+  }
   function alertFromRow(tr) {
     var ds = tr.dataset;
     var f = function (n) { var e = tr.querySelector('[data-field="' + n + '"]'); return e ? e.textContent.trim() : ''; };
