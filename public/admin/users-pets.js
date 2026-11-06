@@ -265,6 +265,7 @@ function viewUserProfile(rowId) {
   var warningsMatch = d.scans.match(/(\d+)\s*(Risk Warnings?|Warnings?|Dispute)/);
   var warningsLabel = d.scans.indexOf('Dispute') !== -1 ? 'Disputes' : 'Warnings';
   var warningsCount = warningsMatch ? warningsMatch[1] : '0';
+  var disputedCount = parseInt(d.disputedCount, 10) || 0;
 
   var pets = d.pets.split(';').map(function (p) {
     var parts = p.split('|');
@@ -313,7 +314,7 @@ function viewUserProfile(rowId) {
         '<div class="p-4 rounded-2xl bg-caution/5 border border-caution/10 mb-6"><p class="text-[10px] font-bold text-caution uppercase tracking-widest mb-1">Reason Flagged</p><p class="text-sm text-dark leading-relaxed">' + escapeHTML(d.flagReason) + '</p></div>' : '') +
       (d.status === 'banned' && d.banReason ?
         '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 mb-6"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Reason Banned</p><p class="text-sm text-dark leading-relaxed">' + escapeHTML(d.banReason) + '</p></div>' : '') +
-      '<div class="grid grid-cols-3 gap-4 mb-6">' +
+      '<div class="grid grid-cols-4 gap-4 mb-6">' +
         '<button onclick="window.location.href=\'ocr-scans.html?ownerSearch=' + encodeURIComponent(d.name).replace(/'/g, '%27') + '\'" class="press p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center hover:border-brand/30 transition-all cursor-pointer" title="View this owner\'s scans on OCR Scan Records">' +
           '<p class="text-xl font-display font-bold text-dark tabular-nums">' + totalScans + '</p>' +
           '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mt-1">Total Scans</p>' +
@@ -321,6 +322,10 @@ function viewUserProfile(rowId) {
         '<button onclick="window.location.href=\'ocr-scans.html?ownerSearch=' + encodeURIComponent(d.name).replace(/'/g, '%27') + '&verdict=risk\'" class="press p-4 rounded-2xl ' + (parseInt(warningsCount) > 0 ? 'bg-danger/5 border border-danger/10' : 'bg-stone-100 border border-stone-200') + ' text-center hover:border-brand/30 transition-all cursor-pointer" title="View just this owner\'s Toxic/Caution scans on OCR Scan Records">' +
           '<p class="text-xl font-display font-bold ' + (parseInt(warningsCount) > 0 ? 'text-danger' : 'text-dark') + ' tabular-nums">' + warningsCount + '</p>' +
           '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mt-1">' + warningsLabel + '</p>' +
+        '</button>' +
+        '<button onclick="window.location.href=\'ocr-scans.html?ownerSearch=' + encodeURIComponent(d.name).replace(/'/g, '%27') + '&flag=disputed\'" class="press p-4 rounded-2xl ' + (disputedCount > 0 ? 'bg-caution/5 border border-caution/10' : 'bg-stone-100 border border-stone-200') + ' text-center hover:border-brand/30 transition-all cursor-pointer" title="View just this owner\'s open disputes on OCR Scan Records">' +
+          '<p class="text-xl font-display font-bold ' + (disputedCount > 0 ? 'text-caution' : 'text-dark') + ' tabular-nums">' + disputedCount + '</p>' +
+          '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mt-1">Disputed</p>' +
         '</button>' +
         '<button onclick="document.getElementById(\'profile-pets-section\').scrollIntoView({behavior:\'smooth\',block:\'start\'})" class="press p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center hover:border-brand/30 transition-all cursor-pointer" title="Jump to Pet Profiles &amp; Medical Records below">' +
           '<p class="text-xl font-display font-bold text-dark tabular-nums">' + pets.length + '</p>' +

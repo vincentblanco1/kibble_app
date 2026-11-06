@@ -123,7 +123,11 @@
     }).join('') : '<span class="text-[11px] text-stone-400">No pets added</span>';
     var statusCls = banned ? 'bg-danger/10 text-danger border-danger/10' : 'bg-safe/10 text-safe border-safe/10';
     var id = 'row-u' + u.id;
+    var disputedCount = st.disputed || 0;
     var scanText = st.n + (st.n === 1 ? ' Scan' : ' Scans') + ' &middot; ' + st.warn + (st.warn === 1 ? ' Risk Warning' : ' Risk Warnings') + ' triggered';
+    var disputeBadge = disputedCount
+      ? '<span class="ml-2 px-2 py-0.5 rounded-full bg-caution/10 text-caution text-[8px] font-bold uppercase tracking-widest not-italic" title="' + disputedCount + ' open scan dispute' + (disputedCount === 1 ? '' : 's') + ' awaiting review">' + disputedCount + ' Disputed</span>'
+      : '';
     var search = [u.name, u.email, pets.map(function (p) { return p.name; }).join(' '), 'pet owner'].join(' ').toLowerCase();
     // city/region/country/feeding_style/avatar are the real columns the pet owner's own
     // Settings page writes to (see POST /api/users/:id) -- these used to be hardcoded blank
@@ -132,18 +136,18 @@
     return '<tr class="feed-row hover:bg-stone-50/50 group" id="' + id + '" data-name="' + esc(u.name) + '" data-email="' + esc(u.email) +
       '" data-role="Pet Owner" data-country="' + esc(u.country || '') + '" data-region="' + esc(u.region || '') + '" data-city="' + esc(u.city || '') +
       '" data-barangay="' + esc(u.barangay || '') + '" data-feeding-style="' + esc(u.feeding_style || '') + '" data-avatar="' + esc(u.avatar || '') + '" data-owned-animals="' + pets.length +
-      '" data-pets="' + esc(petData) + '" data-scans="' + scanText + '" data-status="' + (banned ? 'banned' : 'active') +
+      '" data-disputed-count="' + disputedCount + '" data-pets="' + esc(petData) + '" data-scans="' + scanText + '" data-status="' + (banned ? 'banned' : 'active') +
       '" data-joined="' + esc(isNaN(joined) ? '' : joined.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })) +
       '" data-joined-date="' + esc(isNaN(joined) ? '' : u.created_at.slice(0, 10)) + '" data-last-active="' + esc(st.last ? ago(st.last) : 'Never') + '"' +
       (banned ? ' data-ban-reason="' + esc(u.ban_reason || '') + '"' : '') + ' data-search="' + esc(search) + '">' +
       '<td class="px-10 py-6"><div class="flex items-center gap-4">' + (u.avatar
         ? '<img src="' + esc(u.avatar) + '" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="">'
         : '<div class="w-10 h-10 rounded-xl bg-brand-light text-brand flex items-center justify-center text-xs font-bold shrink-0">' + esc(initials(u.name)) + '</div>') +
-      '<div><p class="font-bold text-dark">' + esc(u.name) + '</p><p class="text-[11px] text-stone-500">' + esc(u.email) + '</p>' +
+      '<div><p class="font-bold text-dark">' + esc(u.name) + disputeBadge + '</p><p class="text-[11px] text-stone-500">' + esc(u.email) + '</p>' +
       '<p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mt-0.5">Pet Owner</p></div></div></td>' +
       '<td class="px-10 py-6"><div class="flex flex-col gap-1.5">' + petCell + '</div></td>' +
       '<td class="px-10 py-6"><div><p class="text-xs font-bold text-dark">' + st.n + (st.n === 1 ? ' Scan' : ' Scans') + '</p><p class="text-[10px] text-stone-400 font-medium">' +
-        st.warn + (st.warn === 1 ? ' Risk Warning' : ' Risk Warnings') + ' triggered</p></div></td>' +
+        st.warn + (st.warn === 1 ? ' Risk Warning' : ' Risk Warnings') + ' triggered' + (disputedCount ? ' &middot; ' + disputedCount + ' disputed' : '') + '</p></div></td>' +
       '<td class="px-10 py-6"><span class="status-badge px-3 py-1 rounded-full ' + statusCls + ' text-[9px] font-bold uppercase tracking-widest border">' + (banned ? 'Banned' : 'Active') + '</span></td>' +
       '<td class="px-10 py-6 text-right text-stone-500 font-mono text-xs">' + esc(st.last ? ago(st.last) : 'Never') + '</td>' +
       '<td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">' +
@@ -320,19 +324,27 @@
     var petsByUser = {}, stats = {};
     (data.pets || []).forEach(function (p) { (petsByUser[p.user_id] = petsByUser[p.user_id] || []).push(p); });
     (data.scans || []).forEach(function (s) {
-      var x = stats[s.user_id] = stats[s.user_id] || { n: 0, warn: 0, last: null };
+      var x = stats[s.user_id] = stats[s.user_id] || { n: 0, warn: 0, last: null, disputed: 0 };
       x.n++; if (s.rating && s.rating !== 'Safe') x.warn++;
+      if (s.dispute) x.disputed++;   // s.dispute is only set server-side for an open (unresolved) dispute
       if (!x.last || s.timestamp > x.last) x.last = s.timestamp;
     });
     var builtUsers = (data.users || []).slice().reverse().map(function (u) {
       baseline.users[u.id] = { banned: isFlagTrue(u.is_banned), reason: u.ban_reason || '' };
-      return { id: 'row-u' + u.id, banned: isFlagTrue(u.is_banned), html: userRow(u, petsByUser[u.id] || [], stats[u.id] || { n: 0, warn: 0, last: null }) };
+      return { id: 'row-u' + u.id, banned: isFlagTrue(u.is_banned), html: userRow(u, petsByUser[u.id] || [], stats[u.id] || { n: 0, warn: 0, last: null, disputed: 0 }) };
     });
     var savedUsers = {};
     parse(state[K_USERS], []).forEach(function (h) { var id = rowId(h); if (id) savedUsers[id] = h; });
+    var disputedCountOf = function (html) { var m = /data-disputed-count="(\d+)"/.exec(html || ''); return m ? m[1] : '0'; };
     origSet.call(localStorage, K_USERS, JSON.stringify(builtUsers.map(function (b) {
       var s = savedUsers[b.id];
-      return s && (/data-status="banned"/.test(s) === b.banned) ? s : b.html;     // keep the admin's flag/notes unless the database disagrees about a ban
+      // keep the admin's flag/notes unless the database disagrees about a ban or a dispute
+      // was opened/resolved since this row was last cached -- otherwise a brand-new dispute
+      // (or one an admin just closed) could sit invisible on this page until something else
+      // happened to force a rebuild
+      var sameBan = s && /data-status="banned"/.test(s) === b.banned;
+      var sameDisputeCount = s && disputedCountOf(s) === disputedCountOf(b.html);
+      return s && sameBan && sameDisputeCount ? s : b.html;
     })));
 
     // ---- OCR Scans (+ the per-scan breakdown the Inspect window shows) ----

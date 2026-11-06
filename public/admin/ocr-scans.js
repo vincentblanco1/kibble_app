@@ -885,16 +885,19 @@ if (deepLinkScanId && document.getElementById('row-' + deepLinkScanId.replace('K
   inspectRecord(deepLinkScanId);
 }
 
-// arriving from Users & Pets' "Total Scans" / "Warnings" stat on a profile --
+// arriving from Users & Pets' "Total Scans" / "Warnings" / "Disputed" stat on a profile --
 // pre-fills the search box with that owner's name so their scans show up.
-// "Warnings" additionally passes ?verdict=risk, narrowing to just that
-// owner's Toxic/Caution scans (via setScanFilter's 'risk' mode above)
-// instead of showing the exact same list "Total Scans" already does
+// "Warnings" additionally passes ?verdict=risk, narrowing to just that owner's
+// Toxic/Caution scans (via setScanFilter's 'risk' mode above); "Disputed" passes
+// ?flag=disputed, narrowing to just that owner's open disputes (via setFlagFilter) --
+// either way, instead of showing the exact same list "Total Scans" already does
 var deepLinkOwnerSearch = deepLinkParams.get('ownerSearch');
 if (deepLinkOwnerSearch) {
   document.getElementById('records-search').value = deepLinkOwnerSearch;
   if (deepLinkParams.get('verdict') === 'risk') {
     setScanFilter('risk'); // also calls filterRecords()
+  } else if (deepLinkParams.get('flag') === 'disputed') {
+    setFlagFilter('disputed'); // also calls filterRecords()
   } else {
     filterRecords();
   }
