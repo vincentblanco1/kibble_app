@@ -45,27 +45,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const sidebarUserRole = document.getElementById('sidebarUserRole');
   const sidebarUserLoc = document.getElementById('sidebarUserLoc');
   const sidebarAvatarCircle = document.getElementById('sidebarAvatarCircle');
+  // The mobile top header has its own small avatar button (separate element from the
+  // desktop sidebar's), which used to just hardcode "VB" regardless of who was logged in.
+  const mobileHeaderAvatar = document.getElementById('mobileHeaderAvatar');
 
-  if (sidebarUserName) {
+  if (sidebarUserName || mobileHeaderAvatar) {
     const fName = savedProfile.firstName || '';
     const mName = savedProfile.middleName || '';
     const lName = savedProfile.lastName || '';
     const middleInitial = mName ? ` ${mName.charAt(0)}.` : '';
     const displayName = fName && lName ? `${fName}${middleInitial} ${lName}` : (fName || lName || kgUserRaw.name || 'User');
-    sidebarUserName.textContent = displayName;
-    if (sidebarAvatarCircle) {
-      const hasAvatar = savedProfile.avatar && !savedProfile.avatar.includes('uxpilot-auth.appspot.com');
+    if (sidebarUserName) sidebarUserName.textContent = displayName;
+    const hasAvatar = savedProfile.avatar && !savedProfile.avatar.includes('uxpilot-auth.appspot.com');
+    const initials = `${(fName || displayName).charAt(0)}${lName ? lName.charAt(0) : ''}`.toUpperCase() || 'U';
+    [sidebarAvatarCircle, mobileHeaderAvatar].forEach((el) => {
+      if (!el) return;
       if (hasAvatar) {
-        // Show uploaded profile photo in sidebar
-        sidebarAvatarCircle.textContent = '';
-        sidebarAvatarCircle.style.backgroundImage = `url(${savedProfile.avatar})`;
-        sidebarAvatarCircle.style.backgroundSize = 'cover';
-        sidebarAvatarCircle.style.backgroundPosition = 'center';
+        // Show uploaded profile photo instead of initials
+        el.textContent = '';
+        el.style.backgroundImage = `url(${savedProfile.avatar})`;
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
       } else {
-        const initials = `${(fName || displayName).charAt(0)}${lName ? lName.charAt(0) : ''}`.toUpperCase();
-        sidebarAvatarCircle.textContent = initials || 'U';
+        el.style.backgroundImage = '';
+        el.textContent = initials;
       }
-    }
+    });
   }
 
   if (sidebarUserRole) {
