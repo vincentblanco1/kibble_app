@@ -1032,6 +1032,8 @@ document.addEventListener('DOMContentLoaded', () => {
       await _loadIngredientDB();
       currentScanId = data.scanId || null;
       renderDisputeStatus(data.dispute || null);
+      var lowConfidenceBanner = $('lowConfidenceBanner');
+      if (lowConfidenceBanner) lowConfidenceBanner.classList.toggle('hidden', !data.confidenceTooWeak);
       const p = panel();
       const style = RATING[data.rating] || RATING.Caution;
       const items = Array.isArray(data.results) ? data.results.slice() : [];

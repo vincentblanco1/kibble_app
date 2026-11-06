@@ -151,6 +151,7 @@ function filterRecords() {
     if (currentScanFilter === 'caution') matchesFilter = row.dataset.verdict === 'caution';
     var matchesFlag = currentFlagFilter === 'all' ||
       (currentFlagFilter === 'disputed' && row.dataset.disputed === 'true') ||
+      (currentFlagFilter === 'needs-review' && row.dataset.needsReview === 'true') ||
       (currentFlagFilter === 'unassessed' && row.dataset.unassessed === 'true');
     // 'risk' isn't one of the pill buttons -- it's a combined Toxic+Caution
     // view, only ever reached via the "Warnings" link on a Users & Pets

@@ -187,6 +187,15 @@
       </div>
     </header>
 
+    <!-- Low-confidence OCR read: hidden unless the server says this scan's photo was too
+         unclear to trust (see Safety Rules' "Critical Hazard Floor" and /api/assess) -->
+    <div id="lowConfidenceBanner" class="hidden mb-4 p-3 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-3">
+      <i class="fa-solid fa-camera-retro text-red-700 text-lg shrink-0"></i>
+      <p class="text-xs font-semibold text-red-800">
+        <strong>This photo was too unclear to read reliably.</strong> The result below may be missing or wrong information. Please retake the photo in good lighting, focused on the ingredients list, and rescan.
+      </p>
+    </div>
+
     <!-- Veterinary Disclaimer Banner -->
     <div class="mb-4 p-3 rounded-2xl bg-amber-50 border border-amber-200 flex items-center gap-3">
       <i class="fa-solid fa-stethoscope text-amber-700 text-lg shrink-0"></i>

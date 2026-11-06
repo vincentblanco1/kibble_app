@@ -331,6 +331,12 @@ db.serialize(() => {
   // Rules" (auto-approve threshold, critical hazard floor) and the OCR Scan Records KPIs are
   // meant to be computed from this -- without it they had nothing real to measure against.
   db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS ocr_confidence INTEGER`, () => {});
+  // Real outcomes of Safety Rules' "OCR Confidence Rules" sliders, computed once at scan time
+  // (see getSafetyRuleThresholds + runAnalysis in /api/assess) instead of those sliders only
+  // ever feeding a retroactive accuracy chart with nothing actually acting on them.
+  db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS needs_triage INTEGER DEFAULT 0`, () => {});
+  db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS triage_reason TEXT`, () => {});
+  db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS confidence_too_weak INTEGER DEFAULT 0`, () => {});
 
   // 5. Products Table
   db.run(`CREATE TABLE IF NOT EXISTS products (
@@ -1066,6 +1072,31 @@ function applyPetAllergies(analysis, tokens, pet) {
   return summary;
 }
 
+// pg can hand a boolean-as-INTEGER column back as a real boolean, a number, or a string,
+// depending on the driver/row path -- this treats any of 1/true/'1'/'true' as true.
+function isFlagTrue(v) {
+  return v === true || v === 1 || v === '1' || v === 'true';
+}
+
+// Reads the admin's saved OCR Confidence Rules (Safety Rules page, "kibbleguard-safety-rules")
+// so a real scan can actually be judged against them, instead of those two sliders only ever
+// feeding a retroactive accuracy chart on OCR Scan Records with nothing acting on them live.
+// Defaults match the sliders' own HTML defaults if nothing has been saved yet.
+function getSafetyRuleThresholds(cb) {
+  db.get(`SELECT value FROM admin_state WHERE key = 'kibbleguard-safety-rules'`, [], (err, row) => {
+    let autoApprove = 92, hazardFloor = 15;
+    if (!err && row && row.value) {
+      try {
+        const saved = JSON.parse(row.value);
+        const a = parseInt(saved.autoApprove, 10), h = parseInt(saved.hazardFloor, 10);
+        if (!isNaN(a)) autoApprove = a;
+        if (!isNaN(h)) hazardFloor = h;
+      } catch (e) { /* keep defaults */ }
+    }
+    cb({ autoApprove, hazardFloor });
+  });
+}
+
 // --- PET-FOOD CHECK: what Gemini says the photo shows ---
 function normalizeProductType(value) {
   const v = String(value || '').toLowerCase().trim();
@@ -1186,38 +1217,64 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
       const allergy = pet ? applyPetAllergies(analysis, ingredientTokens, pet) : null;
       const { flagged, parsedResults, score, finalRating } = analysis;
 
-      const insertQuery = `
-        INSERT INTO scans (user_id, pet_id, product_name, species, image_url, raw_text, summary, risk_score, rating, flagged_ingredients, results_json, ocr_confidence)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
+      getSafetyRuleThresholds(({ autoApprove, hazardFloor }) => {
+        // A manual-text entry never went through OCR, so neither rule applies to it. For a
+        // real photo scan: a read below the hazard floor isn't trustworthy either way, so it's
+        // flagged for the owner to retake the photo rather than acted on. At or above that
+        // floor, a possible Toxic match always gets a human to double-check it, and anything
+        // else below the auto-approve threshold also gets queued for a quick human check
+        // instead of silently auto-approving a read the admin said wasn't confident enough to
+        // trust on its own.
+        let confidenceTooWeak = false, needsTriage = false, triageReason = null;
+        if (ocrConfidence != null) {
+          if (ocrConfidence < hazardFloor) {
+            confidenceTooWeak = true;
+          } else if (finalRating === 'Toxic') {
+            needsTriage = true;
+            triageReason = 'toxic-match';
+          } else if (ocrConfidence < autoApprove) {
+            needsTriage = true;
+            triageReason = 'low-confidence';
+          }
+        }
 
-      db.run(insertQuery, [
-        user_id || 1,
-        pet_id || null,
-        product_name || 'Pet Food Scan',
-        species || 'Unknown',
-        imageUrl,
-        ingredientTokens.join(', '),
-        `${species || 'Companion'} nutritional safety scan processed via Vision AI.`,
-        score,
-        finalRating,
-        JSON.stringify(flagged),
-        JSON.stringify(parsedResults),
-        ocrConfidence
-      ], function(saveErr) {
-        if (saveErr) return res.status(500).json({ error: saveErr.message });
+        const insertQuery = `
+          INSERT INTO scans (user_id, pet_id, product_name, species, image_url, raw_text, summary, risk_score, rating, flagged_ingredients, results_json, ocr_confidence, needs_triage, triage_reason, confidence_too_weak)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
 
-        res.json({
-          success: true,
-          scanId: this.lastID,
+        db.run(insertQuery, [
+          user_id || 1,
+          pet_id || null,
+          product_name || 'Pet Food Scan',
+          species || 'Unknown',
+          imageUrl,
+          ingredientTokens.join(', '),
+          `${species || 'Companion'} nutritional safety scan processed via Vision AI.`,
           score,
-          rating: finalRating,
-          results: parsedResults,
-          flagged,
-          parsedIngredients: ingredientTokens,
-          allergy: allergy || undefined
+          finalRating,
+          JSON.stringify(flagged),
+          JSON.stringify(parsedResults),
+          ocrConfidence,
+          needsTriage ? 1 : 0,
+          triageReason,
+          confidenceTooWeak ? 1 : 0
+        ], function(saveErr) {
+          if (saveErr) return res.status(500).json({ error: saveErr.message });
+
+          res.json({
+            success: true,
+            scanId: this.lastID,
+            score,
+            rating: finalRating,
+            results: parsedResults,
+            flagged,
+            parsedIngredients: ingredientTokens,
+            allergy: allergy || undefined,
+            confidenceTooWeak
+          });
+          createScanAlert({ userId: user_id || 1, scanId: this.lastID, rating: finalRating, flagged, allergy, species });
         });
-        createScanAlert({ userId: user_id || 1, scanId: this.lastID, rating: finalRating, flagged, allergy, species });
       });
     };
 
@@ -1496,6 +1553,7 @@ app.get('/api/history/:id', (req, res) => {
       flagged: flaggedOut,
       image,
       dispute,
+      confidenceTooWeak: isFlagTrue(row.confidence_too_weak),
       date: toSafeDate(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     });
 
@@ -2158,6 +2216,7 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
           SELECT s.id, s.user_id, s.product_name, s.rating, s.risk_score, s.image_url, s.raw_text, s.results_json,
                  s.created_at, COALESCE(s.species, p.species) AS species,
                  s.dispute_note, s.dispute_created_at, s.dispute_resolved, s.ocr_confidence,
+                 s.needs_triage, s.triage_reason, s.confidence_too_weak,
                  u.name AS owner, u.email AS ownerEmail, p.name AS pet, p.breed AS petBreed
           FROM scans s
           LEFT JOIN users u ON u.id = s.user_id
@@ -2198,6 +2257,9 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
               hasImage: !!(r.image_url && /^data:image\//.test(r.image_url)),
               rawOcrText: r.raw_text || '',
               confidence: (r.ocr_confidence === null || r.ocr_confidence === undefined) ? null : Number(r.ocr_confidence),
+              needsTriage: isFlagTrue(r.needs_triage),
+              triageReason: r.triage_reason || null,
+              confidenceTooWeak: isFlagTrue(r.confidence_too_weak),
               substances,
               dispute
             };

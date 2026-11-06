@@ -165,15 +165,26 @@
     var disputeBadge = s.dispute
       ? '<span id="dispute-badge-' + s.id + '" class="ml-2 px-2 py-0.5 rounded-full bg-caution/10 text-caution text-[8px] font-bold uppercase tracking-widest not-italic" title="' + esc(s.dispute.note) + '">Disputed</span>'
       : '';
+    // Safety Rules' "OCR Confidence Rules" acting for real (see getSafetyRuleThresholds in
+    // server.js): confidenceTooWeak means the photo was too unclear to trust either way, and
+    // needsTriage means it cleared that bar but still needs a human look (a possible Toxic
+    // match, or a confidence below the auto-approve threshold).
+    var reviewBadge = s.confidenceTooWeak
+      ? '<span class="ml-2 px-2 py-0.5 rounded-full bg-danger/10 text-danger text-[8px] font-bold uppercase tracking-widest not-italic" title="OCR confidence was below the Critical Hazard Floor -- this read may be unreliable">Too Weak To Trust</span>'
+      : s.needsTriage
+      ? '<span class="ml-2 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-[8px] font-bold uppercase tracking-widest not-italic" title="' + (s.triageReason === 'toxic-match' ? 'Possible Toxic match -- always reviewed regardless of confidence' : 'OCR confidence was below the Auto-Approve Threshold') + '">Needs Review</span>'
+      : '';
     return '<tr class="feed-row hover:bg-stone-50/50 group" id="row-' + s.id + '" data-date="' + esc(s.timestamp.slice(0, 10)) + '" data-verdict="' + verdict +
-      '" data-species="' + s.species + '" data-confidence="' + (s.confidence != null ? esc(s.confidence) : '') + '" data-search="' + esc(search) + '"' + (s.dispute ? ' data-disputed="true"' : '') + '>' +
+      '" data-species="' + s.species + '" data-confidence="' + (s.confidence != null ? esc(s.confidence) : '') + '" data-needs-review="' + ((s.needsTriage || s.confidenceTooWeak) ? 'true' : 'false') +
+      '" data-search="' + esc(search) + '"' + (s.dispute ? ' data-disputed="true"' : '') + '>' +
       '<td class="px-10 py-6 font-mono text-xs text-stone-400 font-bold">#' + idTxt + '</td>' +
       '<td class="px-10 py-6"><div class="flex items-center gap-4"><div class="w-11 h-11 rounded-xl bg-stone-100 text-stone-400 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-image"></i></div>' +
-      '<div><p class="font-bold text-dark italic">' + esc(s.product) + disputeBadge + '</p></div></div></td>' +
+      '<div><p class="font-bold text-dark italic">' + esc(s.product) + disputeBadge + reviewBadge + '</p></div></div></td>' +
       '<td class="px-10 py-6"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-brand-light text-brand flex items-center justify-center text-[10px] font-bold">' + esc(initials(s.owner)) + '</div>' +
       '<div><p class="text-xs font-bold text-dark">' + esc(s.owner) + '</p><p class="text-[10px] text-stone-500 italic">Pet: ' + esc(s.pet || 'Not recorded') + (s.petBreed ? ' (' + esc(s.petBreed) + ')' : '') + '</p></div></div></td>' +
       '<td class="px-10 py-6"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-stone-600"><i class="fa-solid ' + (feline ? 'fa-cat text-[#B57EDC]' : 'fa-dog text-[#03C4C9]') + '"></i> ' + (feline ? 'Feline' : 'Canine') + '</span></td>' +
-      '<td class="px-10 py-6 text-xs font-bold text-stone-600 tabular-nums">&mdash;</td>' +
+      '<td class="px-10 py-6 text-xs font-bold tabular-nums ' + (s.confidenceTooWeak ? 'text-danger' : s.needsTriage ? 'text-amber-600' : 'text-stone-600') + '">' +
+        (s.confidence != null ? s.confidence + '%' : '&mdash;') + '</td>' +
       '<td class="px-10 py-6"><span class="text-sm font-display font-bold text-' + tone + ' tabular-nums">' + (s.score == null ? '&mdash;' : esc(s.score)) + '</span><span class="text-[10px] text-stone-400">/100</span></td>' +
       '<td class="px-10 py-6">' + badge(vName) + '</td>' +
       '<td class="px-10 py-6 text-right text-stone-400 font-mono text-xs">' + esc(s.timestamp.slice(0, 10) + ' ' + s.timestamp.slice(11, 16)) + '</td>' +
@@ -356,7 +367,8 @@
         confidence: (s.confidence != null ? s.confidence + '%' : 'Not measured'), clarity: 'Unknown', rawOcrText: s.rawOcrText,
         imageUrl: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : '',
         substances: (s.substances || []).map(function (x) { return { name: x.name, category: x.category, level: x.unrated ? 'Unrated' : x.level, note: x.note }; }),
-        dispute: s.dispute || null
+        dispute: s.dispute || null,
+        needsTriage: !!s.needsTriage, triageReason: s.triageReason || null, confidenceTooWeak: !!s.confidenceTooWeak
       };
       return { id: 'row-' + s.id, html: scanRow(s) };
     });

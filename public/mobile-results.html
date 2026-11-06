@@ -57,6 +57,15 @@
 
   <main class="p-4 space-y-4">
 
+    <!-- Low-confidence OCR read: hidden unless the server says this scan's photo was too
+         unclear to trust (see Safety Rules' "Critical Hazard Floor" and /api/assess) -->
+    <div id="lowConfidenceBanner" class="hidden p-3 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-2.5">
+      <i class="fa-solid fa-camera-retro text-red-700 shrink-0"></i>
+      <p class="text-[11px] font-semibold text-red-800">
+        <strong>Photo too unclear to read reliably.</strong> This result may be wrong -- please retake the photo and rescan.
+      </p>
+    </div>
+
     <!-- Viewport Box -->
     <div class="tactile-card p-3.5 space-y-2.5 bg-white">
       <div class="flex items-center justify-between text-xs">
