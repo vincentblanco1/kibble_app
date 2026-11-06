@@ -499,6 +499,45 @@ function editIngredient(rowId) {
 var ingredientCounter = 0; // used to make a unique id for each new row added this session
 // handles both add and edit: edit updates the existing row's fields in place,
 // while add builds a whole new row and inserts it at the top of the table
+// Builds the payload POST /api/admin/ingredients/sync expects for one ingredient,
+// reading the same dataset fields db-sync.js's own ingFromRow() reads when it does
+// this same job in the background -- kept deliberately in sync with that shape.
+function ingredientSyncPayload(row) {
+  var ds = row.dataset;
+  var nameEl = row.querySelector('[data-field="name"]');
+  var categoryEl = row.querySelector('[data-field="category"]');
+  return {
+    name: nameEl ? nameEl.textContent.trim() : '',
+    category: categoryEl ? categoryEl.textContent.trim() : '',
+    canine: ds.canine || 'Unrated', feline: ds.feline || 'Unrated',
+    canineNotes: ds.canineMetabolic || '', canineSymptoms: ds.canineSymptoms || '', canineDosage: ds.canineGuidance || '',
+    canineEmergency: ds.canineEmergency || '', canineBreed: ds.canineBreed || '', canineWeight: ds.canineWeight || '',
+    felineNotes: ds.felineMetabolic || '', felineSymptoms: ds.felineSymptoms || '', felineDosage: ds.felineGuidance || '',
+    felineEmergency: ds.felineEmergency || '', felineBreed: ds.felineBreed || '', felineWeight: ds.felineWeight || ''
+  };
+}
+
+// Saves one ingredient straight to the real database instead of relying on the
+// localStorage-diffing background sync to eventually notice and push it. Before
+// this, the ONLY way a new/edited ingredient reached the server was: write the
+// ENTIRE ingredient table's full row markup into one localStorage key, then wait
+// for a separate timer to diff that blob against a baseline and POST the
+// difference. With hundreds of real ingredients, that blob grew past the
+// browser's storage quota (~5-10MB) and localStorage.setItem started throwing --
+// which blocked EVERY add/edit outright, even though nothing about the single
+// ingredient being saved was too big on its own. This posts just that one
+// ingredient directly; local storage below is now only a best-effort display
+// cache, never a precondition for the real save succeeding.
+function syncIngredientToServer(row) {
+  return fetch('/api/admin/ingredients/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ upsert: [ingredientSyncPayload(row)], remove: [] })
+  }).then(function (r) {
+    if (!r.ok) throw new Error('The database rejected that save. Try again.');
+  });
+}
+
 function saveIngredient(mode, rowId) {
   var name = document.getElementById('f-name').value.trim();
   var subtitle = document.getElementById('f-subtitle').value.trim();
@@ -561,26 +600,32 @@ function saveIngredient(mode, rowId) {
     row.dataset.aliases = aliases;
     row.dataset.search = searchStr;
 
-    // the persist attempt sits right after the mutation and before any of the
-    // "it worked" UI below (toast, modal close, log entry) - if it throws, this
-    // puts the row back the way it was and re-throws so the outer catch in
-    // withSavingState shows the error toast instead of a false success
-    try {
-      savePersistedRows('kibbleguard-ingredients-rows', document.getElementById('ingredient-table-body'));
-    } catch (e) {
+    // the real save: goes straight to the database, not gated on localStorage
+    // having room for the whole table. If the server rejects it, put the row
+    // back exactly as it was and re-throw so withSavingState's catch shows
+    // the error toast instead of a false success.
+    return syncIngredientToServer(row).then(function () {
+      // best-effort local cache for the rest of this tab's UI (search, counts,
+      // etc.) -- its own storage failing never undoes the save above, which
+      // already succeeded for real
+      try {
+        savePersistedRows('kibbleguard-ingredients-rows', document.getElementById('ingredient-table-body'));
+      } catch (e) {
+        console.warn('Ingredient saved to the database, but this browser\'s local cache is full -- some lists may not reflect it until the page is refreshed.', e);
+      }
+      closeModal();
+      renameIngredientHistory(historyBefore.name, name);
+      recordIngredientChange(name, historyBefore, { canine: canine, feline: feline, canineRisk: canineRisk, felineRisk: felineRisk });
+      showToast('Ingredient node updated, changes are now live in the Risk Library', 'success');
+      logAdminAction('Edited ingredient: ' + name, 'edit');
+      renderIngredientScanCounts();
+      filterIngredients();
+    }).catch(function (e) {
       var revertTemp = document.createElement('tbody');
       revertTemp.innerHTML = originalRowHtml;
       row.parentNode.replaceChild(revertTemp.firstElementChild, row);
       throw e;
-    }
-
-    closeModal();
-    renameIngredientHistory(historyBefore.name, name);
-    recordIngredientChange(name, historyBefore, { canine: canine, feline: feline, canineRisk: canineRisk, felineRisk: felineRisk });
-    showToast('Ingredient node updated, changes are now live in the Risk Library', 'success');
-    logAdminAction('Edited ingredient: ' + name, 'edit');
-    renderIngredientScanCounts();
-    filterIngredients();
+    });
   } else {
     ingredientCounter++;
     var newId = 'row-new-' + ingredientCounter;
@@ -618,25 +663,29 @@ function saveIngredient(mode, rowId) {
     tbody.insertBefore(tr, tbody.firstChild);
     upgradeActionCells();
 
-    // same reasoning as the edit branch above: try to persist right after the
-    // insert, before any success UI, and undo the insert if it fails
-    try {
-      savePersistedRows('kibbleguard-ingredients-rows', tbody);
-    } catch (e) {
+    // same reasoning as the edit branch above: the real save goes straight to
+    // the database first; local storage is a best-effort cache afterward, not
+    // a precondition for it. Undo the insert only if the real save fails.
+    return syncIngredientToServer(tr).then(function () {
+      try {
+        savePersistedRows('kibbleguard-ingredients-rows', tbody);
+      } catch (e) {
+        console.warn('Ingredient saved to the database, but this browser\'s local cache is full -- some lists may not reflect it until the page is refreshed.', e);
+      }
+      if (typeof applyPermissionGating === 'function') applyPermissionGating();
+      closeModal();
+      filterIngredients();
+      showToast('New ingredient added as Pending Verification -- a vet needs to approve it before pet owners see it', 'success');
+      logAdminAction('Added new ingredient: ' + name, 'add');
+      recordIngredientChange(name, null, { canine: canine, feline: feline, canineRisk: canineRisk, felineRisk: felineRisk });
+      if (typeof onIngredientAddedFromScan === 'function') onIngredientAddedFromScan(name);
+      finalizeScanIfPending(name, canine, feline);
+      tr.classList.add('flash-highlight');
+      setTimeout(function () { tr.classList.remove('flash-highlight'); }, 800);
+    }).catch(function (e) {
       tr.remove();
       throw e;
-    }
-
-    if (typeof applyPermissionGating === 'function') applyPermissionGating();
-    closeModal();
-    filterIngredients();
-    showToast('New ingredient added as Pending Verification -- a vet needs to approve it before pet owners see it', 'success');
-    logAdminAction('Added new ingredient: ' + name, 'add');
-    recordIngredientChange(name, null, { canine: canine, feline: feline, canineRisk: canineRisk, felineRisk: felineRisk });
-    if (typeof onIngredientAddedFromScan === 'function') onIngredientAddedFromScan(name);
-    finalizeScanIfPending(name, canine, feline);
-    tr.classList.add('flash-highlight');
-    setTimeout(function () { tr.classList.remove('flash-highlight'); }, 800);
+    });
   }
   });
 }

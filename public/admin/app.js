@@ -641,16 +641,32 @@ function withSavingState(btn, loadingLabel, commitFn) {
     btn.classList.add('opacity-70', 'cursor-not-allowed');
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + loadingLabel;
   }
-  setTimeout(function () {
-    try {
-      commitFn();
-    } catch (e) {
-      showToast('Something went wrong saving that - ' + (e && e.message ? e.message : 'please try again') + '.', 'danger');
-    }
+  function restore() {
     if (btn) {
       btn.disabled = false;
       btn.classList.remove('opacity-70', 'cursor-not-allowed');
       btn.innerHTML = originalHtml;
+    }
+  }
+  setTimeout(function () {
+    var result;
+    try {
+      result = commitFn();
+    } catch (e) {
+      showToast('Something went wrong saving that - ' + (e && e.message ? e.message : 'please try again') + '.', 'danger');
+      restore();
+      return;
+    }
+    // commitFn can return a Promise when the real save is a network request (e.g.
+    // posting an ingredient straight to the database) that has to be waited on
+    // before the button re-enables -- plain synchronous commitFns (most callers)
+    // behave exactly as before, restoring immediately.
+    if (result && typeof result.then === 'function') {
+      result.catch(function (e) {
+        showToast('Something went wrong saving that - ' + (e && e.message ? e.message : 'please try again') + '.', 'danger');
+      }).then(restore);
+    } else {
+      restore();
     }
   }, 450);
 }
