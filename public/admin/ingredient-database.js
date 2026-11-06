@@ -1650,19 +1650,37 @@ filterIngredients();   // also refreshes the "Showing all N ingredients" label, 
    species. Three steps: upload -> OCR extracts ingredient names -> each name is
    checked against the database (exact / possible / new) on the Scan Results screen. ---------- */
 var scanLabelState = null; // { results: [...], activeIndex } while a scan session is open
+var scanCameraStream = null; // active getUserMedia stream, if the camera tab is open
+var scanCapturedBlob = null; // photo taken with the camera, as an alternative to a chosen file
 
 function openScanLabelModal() {
   openModal({
     title: 'Scan Label',
-    subtitle: 'Upload a photo of a dog or cat food ingredients label',
+    subtitle: 'Scan or upload a photo of a dog or cat food ingredients label',
     bodyHtml:
       '<div class="space-y-4">' +
-        '<label class="flex flex-col items-center justify-center gap-3 p-10 rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50 cursor-pointer hover:border-brand transition-all" for="scan-label-file">' +
-          '<i class="fa-solid fa-camera text-2xl text-stone-400"></i>' +
-          '<span class="text-xs font-bold text-dark">Click to choose a label photo</span>' +
-          '<span class="text-[10px] text-stone-400">Works for dog or cat food, treats or supplements</span>' +
-          '<input type="file" id="scan-label-file" accept="image/*" class="hidden" onchange="onScanLabelFileChosen(this)">' +
-        '</label>' +
+        '<div class="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200 w-fit">' +
+          '<button type="button" id="scan-tab-upload" onclick="switchScanTab(\'upload\')" class="press px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all"><i class="fa-solid fa-upload mr-1"></i>Upload Photo</button>' +
+          '<button type="button" id="scan-tab-camera" onclick="switchScanTab(\'camera\')" class="press px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all"><i class="fa-solid fa-camera mr-1"></i>Use Camera</button>' +
+        '</div>' +
+
+        '<div id="scan-panel-upload">' +
+          '<label class="flex flex-col items-center justify-center gap-3 p-10 rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50 cursor-pointer hover:border-brand transition-all" for="scan-label-file">' +
+            '<i class="fa-solid fa-image text-2xl text-stone-400"></i>' +
+            '<span class="text-xs font-bold text-dark">Click to choose a label photo</span>' +
+            '<span class="text-[10px] text-stone-400">Works for dog or cat food, treats or supplements</span>' +
+            '<input type="file" id="scan-label-file" accept="image/*" class="hidden" onchange="onScanLabelFileChosen(this)">' +
+          '</label>' +
+        '</div>' +
+
+        '<div id="scan-panel-camera" class="hidden space-y-3">' +
+          '<div class="relative rounded-2xl overflow-hidden bg-stone-900 aspect-video flex items-center justify-center">' +
+            '<video id="scan-camera-video" class="w-full h-full object-cover" autoplay playsinline muted></video>' +
+            '<canvas id="scan-camera-canvas" class="hidden"></canvas>' +
+          '</div>' +
+          '<button type="button" onclick="captureScanPhoto()" class="press w-full py-2.5 rounded-xl bg-dark text-white text-xs font-bold flex items-center justify-center gap-2"><i class="fa-solid fa-camera"></i> Capture Photo</button>' +
+        '</div>' +
+
         '<div id="scan-label-preview" class="hidden flex items-center gap-3 p-3 rounded-xl bg-stone-100 border border-stone-200">' +
           '<img id="scan-label-preview-img" class="w-14 h-14 rounded-lg object-cover border border-stone-200" alt="">' +
           '<span id="scan-label-filename" class="text-xs font-bold text-dark flex-1 truncate"></span>' +
@@ -1673,12 +1691,87 @@ function openScanLabelModal() {
       '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
       '<button id="scan-label-submit-btn" onclick="submitLabelScan()" data-perm="manageIngredients" class="press px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all" disabled>Scan Label</button>'
   });
+  switchScanTab('upload');
+}
+
+// Upload Photo / Use Camera tabs. Switching away from Camera stops the hardware
+// stream -- a webcam left running in the background after the admin picks Upload
+// instead (or closes the modal) is both a privacy problem and a wasted resource.
+function switchScanTab(tab) {
+  var uploadPanel = document.getElementById('scan-panel-upload');
+  var cameraPanel = document.getElementById('scan-panel-camera');
+  var uploadTab = document.getElementById('scan-tab-upload');
+  var cameraTab = document.getElementById('scan-tab-camera');
+  var activeCls = 'press px-4 py-1.5 rounded-lg bg-white text-dark text-[10px] font-bold shadow-sm transition-all';
+  var inactiveCls = 'press px-4 py-1.5 rounded-lg text-stone-500 hover:text-dark text-[10px] font-bold transition-all';
+  if (uploadPanel) uploadPanel.classList.toggle('hidden', tab !== 'upload');
+  if (cameraPanel) cameraPanel.classList.toggle('hidden', tab !== 'camera');
+  if (uploadTab) uploadTab.className = tab === 'upload' ? activeCls : inactiveCls;
+  if (cameraTab) cameraTab.className = tab === 'camera' ? activeCls : inactiveCls;
+  if (tab === 'camera') {
+    startScanCamera();
+  } else {
+    stopScanCamera();
+  }
+}
+
+function startScanCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Camera access is not available in this browser.', 'danger');
+    switchScanTab('upload');
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function (stream) {
+    scanCameraStream = stream;
+    var video = document.getElementById('scan-camera-video');
+    if (video) video.srcObject = stream;
+  }).catch(function (err) {
+    showToast('Could not open the camera: ' + err.message, 'danger');
+    switchScanTab('upload');
+  });
+}
+
+function stopScanCamera() {
+  if (scanCameraStream) {
+    scanCameraStream.getTracks().forEach(function (t) { t.stop(); });
+    scanCameraStream = null;
+  }
+}
+
+// Snapshots the current camera frame to a JPEG blob -- same file shape (and the
+// same OCR endpoint/prompt) as a chosen upload, so the scan flow after this point
+// doesn't need to know or care which route the photo came from.
+function captureScanPhoto() {
+  var video = document.getElementById('scan-camera-video');
+  var canvas = document.getElementById('scan-camera-canvas');
+  if (!video || !canvas || !video.videoWidth) return;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  canvas.toBlob(function (blob) {
+    if (!blob) { showToast('Could not capture that photo. Try again.', 'danger'); return; }
+    scanCapturedBlob = blob;
+    var fileInput = document.getElementById('scan-label-file');
+    if (fileInput) fileInput.value = ''; // a capture replaces any previously chosen file
+    var preview = document.getElementById('scan-label-preview');
+    var img = document.getElementById('scan-label-preview-img');
+    var nameEl = document.getElementById('scan-label-filename');
+    if (preview && img && nameEl) {
+      img.src = URL.createObjectURL(blob);
+      nameEl.textContent = 'Photo captured just now';
+      preview.classList.remove('hidden');
+    }
+    var btn = document.getElementById('scan-label-submit-btn');
+    if (btn) btn.disabled = false;
+    showToast('Photo captured. Review it below, or capture again if it\'s blurry.', 'info');
+  }, 'image/jpeg', 0.92);
 }
 
 function onScanLabelFileChosen(input) {
   var file = input.files && input.files[0];
   var btn = document.getElementById('scan-label-submit-btn');
   if (!file) { if (btn) btn.disabled = true; return; }
+  scanCapturedBlob = null; // choosing a file replaces any earlier camera capture
   var preview = document.getElementById('scan-label-preview');
   var img = document.getElementById('scan-label-preview-img');
   var nameEl = document.getElementById('scan-label-filename');
@@ -1692,8 +1785,9 @@ function onScanLabelFileChosen(input) {
 
 function submitLabelScan() {
   var input = document.getElementById('scan-label-file');
-  var file = input && input.files && input.files[0];
+  var file = scanCapturedBlob || (input && input.files && input.files[0]);
   if (!file) return;
+  stopScanCamera();
   var btn = document.getElementById('scan-label-submit-btn');
   var statusWrap = document.getElementById('scan-label-status');
   var statusText = document.getElementById('scan-label-status-text');
@@ -1702,7 +1796,7 @@ function submitLabelScan() {
   if (statusText) statusText.textContent = 'Reading label...';
 
   var form = new FormData();
-  form.append('labelImage', file);
+  form.append('labelImage', file, file.name || 'label-capture.jpg');
   fetch('/api/admin/ingredients/ocr-label', { method: 'POST', body: form })
     .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
     .then(function (res) {
