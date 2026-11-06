@@ -313,6 +313,13 @@ db.serialize(() => {
   // Older databases lack these columns; the errors are ignored when they already exist
   db.run(`ALTER TABLE scans ADD COLUMN species TEXT`, () => {});
   db.run(`ALTER TABLE scans ADD COLUMN results_json TEXT`, () => {});
+  // Pet-owner dispute on a scan result -- one open dispute per scan at a time, which is
+  // enough for "I think this verdict is wrong" (re-disputing just overwrites the note).
+  // dispute_resolved follows this codebase's existing boolean-as-INTEGER convention (see
+  // users.is_banned above), not a real BOOLEAN column.
+  db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_note TEXT`, () => {});
+  db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_created_at TIMESTAMP`, () => {});
+  db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_resolved INTEGER DEFAULT 0`, () => {});
 
   // 5. Products Table
   db.run(`CREATE TABLE IF NOT EXISTS products (
@@ -1504,6 +1511,31 @@ app.post('/api/scans', (req, res) => {
   });
 });
 
+// Pet owner disputing a scan's verdict from the results screen ("I think this is wrong").
+// Just records the note against the real scan row -- the admin's existing OCR Scan Records
+// dispute panel reads it from /api/admin/data and already has the full uphold/overturn flow.
+app.post('/api/scans/:id/dispute', (req, res) => {
+  const note = String((req.body || {}).note || '').trim();
+  const userId = (req.body || {}).user_id;
+  if (!note) return res.status(400).json({ error: 'Please describe what seems wrong before submitting.' });
+  if (note.length > 2000) return res.status(400).json({ error: 'That note is too long -- please keep it under 2000 characters.' });
+  db.get('SELECT id, user_id FROM scans WHERE id = ?', [req.params.id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Scan not found.' });
+    if (userId && String(row.user_id) !== String(userId)) {
+      return res.status(403).json({ error: 'This scan does not belong to that account.' });
+    }
+    db.run(
+      `UPDATE scans SET dispute_note = ?, dispute_created_at = CURRENT_TIMESTAMP, dispute_resolved = 0 WHERE id = ?`,
+      [note, req.params.id],
+      (err2) => {
+        if (err2) return res.status(500).json({ error: err2.message });
+        res.json({ success: true });
+      }
+    );
+  });
+});
+
 // --- FAVORITES ROUTES ---
 app.get('/api/favorites', (req, res) => {
   const userId = req.query.user_id || 1;
@@ -2095,6 +2127,7 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
         const scanQuery = `
           SELECT s.id, s.user_id, s.product_name, s.rating, s.risk_score, s.image_url, s.raw_text, s.results_json,
                  s.created_at, COALESCE(s.species, p.species) AS species,
+                 s.dispute_note, s.dispute_created_at, s.dispute_resolved,
                  u.name AS owner, u.email AS ownerEmail, p.name AS pet, p.breed AS petBreed
           FROM scans s
           LEFT JOIN users u ON u.id = s.user_id
@@ -2114,6 +2147,12 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
               note: x.notes || ''
             }));
             const createdIso = toSafeDate(r.created_at).toISOString();
+            // pg can hand this back as a real boolean, a number, or (for an older row saved
+            // before this column existed) null -- any of 1/true/'1'/'true' counts as resolved
+            const resolved = r.dispute_resolved === true || r.dispute_resolved === 1 || r.dispute_resolved === '1' || r.dispute_resolved === 'true';
+            const dispute = (r.dispute_note && !resolved)
+              ? { owner: r.owner || 'Unknown owner', ownerEmail: r.ownerEmail || '', note: r.dispute_note, timestamp: toSafeDate(r.dispute_created_at).toISOString() }
+              : null;
             return {
               id: r.id,
               user_id: r.user_id,
@@ -2128,7 +2167,8 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
               timestamp: createdIso,
               hasImage: !!(r.image_url && /^data:image\//.test(r.image_url)),
               rawOcrText: r.raw_text || '',
-              substances
+              substances,
+              dispute
             };
           });
           // Postgres doesn't guarantee it only tries t.user_id::integer on rows that already
@@ -2480,6 +2520,19 @@ app.get('/api/admin/scan-image/:id', requireAdminAuth, (req, res) => {
     if (!m) return res.status(404).end();
     res.set('Content-Type', m[1]);
     res.send(Buffer.from(m[2], 'base64'));
+  });
+});
+
+// Marks a pet-owner dispute as closed, whichever way the admin decided (OCR Scan Records'
+// Uphold/Overturn buttons both call this). The admin UI's own "who replied, what was said,
+// was the owner notified" tracking stays exactly as it already worked (in-app + email) --
+// this just stops the dispute from reappearing for every admin/session forever, since
+// without it the only record of "resolved" was one admin's own browser storage.
+app.post('/api/admin/scans/:id/resolve-dispute', requireAdminAuth, (req, res) => {
+  db.run(`UPDATE scans SET dispute_resolved = 1 WHERE id = ?`, [req.params.id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!this.changes) return res.status(404).json({ error: 'Scan not found.' });
+    res.json({ success: true });
   });
 });
 

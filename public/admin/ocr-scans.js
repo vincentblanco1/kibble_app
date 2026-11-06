@@ -750,6 +750,18 @@ function renderCaptureQuality(clarityCounts, total) {
   captureQualityChartInstance.render();
 }
 
+// writes the resolution to the real scan row so it stops showing as disputed for
+// every admin everywhere, not just locally -- fire-and-forget: the local
+// markDisputeResolved() call next to every caller of this already makes the UI
+// correct for this session regardless of whether this request succeeds
+function persistDisputeResolution(scanId) {
+  // db-sync.js's global fetch wrapper adds the admin auth header automatically for any
+  // /api/admin/... URL, same as every other admin API call in this codebase.
+  var id = scanId.replace('KB-', '');
+  fetch('/api/admin/scans/' + encodeURIComponent(id) + '/resolve-dispute', { method: 'POST' })
+    .catch(function (e) { console.warn('Could not save dispute resolution to the server for ' + scanId + ':', e); });
+}
+
 function upholdDispute(scanId) {
   // actually sends the reply now (in-app + email) instead of just logging
   // it - the panel text always said it would get sent, this makes that true
@@ -797,6 +809,11 @@ function upholdDispute(scanId) {
       if (panel && panelParent) panelParent.insertBefore(panel, panelNextSibling);
       throw e;
     }
+
+    // closes it out on the real scan row too -- markDisputeResolved above is a local,
+    // per-browser list, so without this the same dispute would come back open for
+    // every other admin (or this one, after clearing site data) forever
+    persistDisputeResolution(scanId);
 
     if (ownerEmail) appendMessageHistory(ownerEmail, { subject: 'Re: your dispute on ' + scanId + ' (classification upheld)', body: response, alsoEmail: true, time: new Date().toISOString() });
     showToast('Sending reply to ' + ownerName + '...', 'info');
@@ -1187,6 +1204,7 @@ function overturnDispute(scanId) {
       overrides[scanId] = { ingredient: target.name, level: 'Safe', reason: response, from: before.verdict, to: after.verdict, by: actor ? actor.name : 'Unknown admin', time: new Date().toISOString() };
       localStorage.setItem('kibbleguard-scan-overrides', JSON.stringify(overrides));
       markDisputeResolved(scanId);
+      persistDisputeResolution(scanId);
     } catch (e) {
       target.level = oldLevel; target.note = oldNote;
       if (row && originalRowHtml) {

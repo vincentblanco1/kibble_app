@@ -151,11 +151,14 @@
     var feline = s.species === 'feline';
     var idTxt = 'KB-' + s.id;
     var search = [idTxt, s.product, s.owner, s.pet, s.species].join(' ').toLowerCase();
+    var disputeBadge = s.dispute
+      ? '<span id="dispute-badge-' + s.id + '" class="ml-2 px-2 py-0.5 rounded-full bg-caution/10 text-caution text-[8px] font-bold uppercase tracking-widest not-italic" title="' + esc(s.dispute.note) + '">Disputed</span>'
+      : '';
     return '<tr class="feed-row hover:bg-stone-50/50 group" id="row-' + s.id + '" data-date="' + esc(s.timestamp.slice(0, 10)) + '" data-verdict="' + verdict +
-      '" data-species="' + s.species + '" data-search="' + esc(search) + '">' +
+      '" data-species="' + s.species + '" data-search="' + esc(search) + '"' + (s.dispute ? ' data-disputed="true"' : '') + '>' +
       '<td class="px-10 py-6 font-mono text-xs text-stone-400 font-bold">#' + idTxt + '</td>' +
       '<td class="px-10 py-6"><div class="flex items-center gap-4"><div class="w-11 h-11 rounded-xl bg-stone-100 text-stone-400 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-image"></i></div>' +
-      '<div><p class="font-bold text-dark italic">' + esc(s.product) + '</p></div></div></td>' +
+      '<div><p class="font-bold text-dark italic">' + esc(s.product) + disputeBadge + '</p></div></div></td>' +
       '<td class="px-10 py-6"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-brand-light text-brand flex items-center justify-center text-[10px] font-bold">' + esc(initials(s.owner)) + '</div>' +
       '<div><p class="text-xs font-bold text-dark">' + esc(s.owner) + '</p><p class="text-[10px] text-stone-500 italic">Pet: ' + esc(s.pet || 'Not recorded') + (s.petBreed ? ' (' + esc(s.petBreed) + ')' : '') + '</p></div></div></td>' +
       '<td class="px-10 py-6"><span class="inline-flex items-center gap-1.5 text-xs font-bold text-stone-600"><i class="fa-solid ' + (feline ? 'fa-cat text-[#B57EDC]' : 'fa-dog text-[#03C4C9]') + '"></i> ' + (feline ? 'Feline' : 'Canine') + '</span></td>' +
@@ -331,13 +334,18 @@
         user_id: String(s.user_id), owner: s.owner, ownerEmail: s.ownerEmail, species: s.species, timestamp: s.timestamp,
         confidence: 'Not measured', clarity: 'Unknown', rawOcrText: s.rawOcrText,
         imageUrl: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : '',
-        substances: (s.substances || []).map(function (x) { return { name: x.name, category: x.category, level: x.unrated ? 'Unrated' : x.level, note: x.note }; })
+        substances: (s.substances || []).map(function (x) { return { name: x.name, category: x.category, level: x.unrated ? 'Unrated' : x.level, note: x.note }; }),
+        dispute: s.dispute || null
       };
       return { id: 'row-' + s.id, html: scanRow(s) };
     });
-    var savedScans = {};
-    parse(state[K_SCANS], []).forEach(function (h) { var id = rowId(h); if (id) savedScans[id] = h; });
-    origSet.call(localStorage, K_SCANS, JSON.stringify(builtScans.map(function (b) { return savedScans[b.id] || b.html; })));
+    // Unlike users/ingredients (below), a scan row has nothing locally editable to preserve --
+    // the admin never hand-edits a scan's own fields, only acts on it (dispute resolution etc.),
+    // which already happens by mutating the live DOM row directly. So the freshly built HTML
+    // always wins here; keeping the old cached HTML, like the other two sections do, would mean
+    // a scan that goes from "no dispute" to "disputed" (or back) never actually gets its badge
+    // updated after the row's first render, since the stale cached copy would win forever.
+    origSet.call(localStorage, K_SCANS, JSON.stringify(builtScans.map(function (b) { return b.html; })));
 
     // ---- Ingredient Database ----
     var savedIngs = {};

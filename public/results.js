@@ -784,6 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let selectedPet = null;     // { id, name, species: 'Canine'|'Feline', ... } or a generic "any dog / any cat"
     let scanning = false;
+    let currentScanId = null;   // the real scans.id of whatever result is on screen -- set in renderScan(), read by the Dispute button
 
     // ---- the result panels (these elements have ids on both pages) ----
     const panel = function () {
@@ -1029,6 +1030,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderScan(data, speciesName) {
       // Ensure ingredient DB is loaded before rendering so drawer has full data
       await _loadIngredientDB();
+      currentScanId = data.scanId || null;
       const p = panel();
       const style = RATING[data.rating] || RATING.Caution;
       const items = Array.isArray(data.results) ? data.results.slice() : [];
@@ -1160,6 +1162,81 @@ document.addEventListener('DOMContentLoaded', () => {
           .then(function (img) { return toJpegBlob(img, img.naturalWidth || img.width, img.naturalHeight || img.height); })
           .then(runScan)
           .catch(function (err) { showError(err.message); });
+      });
+    }
+
+    // ---------------------------------------------------------------------
+    // 4b. Dispute this result -- sends a note to the admin, tied to the real
+    // scan so they can see the exact product/ingredients that were scanned
+    // ---------------------------------------------------------------------
+    function closeDisputeModal() {
+      const overlay = $('disputeModalOverlay');
+      if (overlay) overlay.remove();
+    }
+    function submitDispute() {
+      const input = $('disputeNoteInput');
+      const errorEl = $('disputeModalError');
+      const note = input ? input.value.trim() : '';
+      if (errorEl) errorEl.classList.add('hidden');
+      if (!note) {
+        if (errorEl) { errorEl.textContent = 'Please describe what seems wrong.'; errorEl.classList.remove('hidden'); }
+        return;
+      }
+      const btn = $('disputeSubmitBtn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
+      fetch('/api/scans/' + encodeURIComponent(currentScanId) + '/dispute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: kgUserId, note: note })
+      })
+        .then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+        .then(function (res) {
+          if (!res.ok) throw new Error((res.body && res.body.error) || 'Could not submit your dispute. Try again.');
+          const card = document.querySelector('#disputeModalOverlay .tactile-card');
+          if (card) {
+            card.innerHTML =
+              '<div class="text-center py-2">' +
+                '<i class="fa-solid fa-circle-check text-3xl text-[#45671d] mb-3"></i>' +
+                '<h3 class="font-extrabold text-sm text-[#182811] mb-1">Dispute submitted</h3>' +
+                '<p class="text-xs text-[#788673]">An admin will review this exact scan and follow up if needed.</p>' +
+                '<button type="button" id="disputeDoneBtn" class="mt-4 px-5 py-2 text-xs font-bold text-white bg-[#45671d] rounded-xl">Done</button>' +
+              '</div>';
+            const doneBtn = $('disputeDoneBtn');
+            if (doneBtn) doneBtn.addEventListener('click', closeDisputeModal);
+          }
+        })
+        .catch(function (err) {
+          if (errorEl) { errorEl.textContent = err.message; errorEl.classList.remove('hidden'); }
+          if (btn) { btn.disabled = false; btn.textContent = 'Submit Dispute'; }
+        });
+    }
+    function openDisputeModal() {
+      closeDisputeModal();
+      const overlay = document.createElement('div');
+      overlay.id = 'disputeModalOverlay';
+      overlay.className = 'fixed inset-0 bg-black/40 flex items-center justify-center z-[200] p-4';
+      overlay.innerHTML =
+        '<div class="tactile-card bg-white rounded-2xl p-6 w-full max-w-sm">' +
+          '<h3 class="font-extrabold text-sm text-[#182811] mb-1">Dispute this result</h3>' +
+          '<p class="text-xs text-[#788673] mb-3">Tell us what seems wrong. An admin will review this exact scan, including every ingredient that was detected.</p>' +
+          '<textarea id="disputeNoteInput" rows="4" maxlength="2000" placeholder="e.g. I don’t think this ingredient should be flagged for my pet..." class="w-full px-3 py-2.5 border border-[#ebdcd0] rounded-xl text-xs focus:outline-none focus:border-[#45671d] resize-none"></textarea>' +
+          '<p id="disputeModalError" class="hidden text-[11px] text-red-600 mt-2"></p>' +
+          '<div class="flex items-center justify-end gap-2 mt-4">' +
+            '<button type="button" id="disputeCancelBtn" class="px-4 py-2 text-xs font-bold text-[#788673]">Cancel</button>' +
+            '<button type="button" id="disputeSubmitBtn" class="px-4 py-2 text-xs font-bold text-white bg-[#45671d] rounded-xl">Submit Dispute</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) closeDisputeModal(); });
+      const cancelBtn = $('disputeCancelBtn'), submitBtn = $('disputeSubmitBtn');
+      if (cancelBtn) cancelBtn.addEventListener('click', closeDisputeModal);
+      if (submitBtn) submitBtn.addEventListener('click', submitDispute);
+    }
+    const disputeBtn = $('disputeResultBtn');
+    if (disputeBtn) {
+      disputeBtn.addEventListener('click', function () {
+        if (!currentScanId) { alert('Run or open a scan first, then you can dispute its result.'); return; }
+        openDisputeModal();
       });
     }
 
