@@ -121,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderStoredReports();
   renderAdminTeamList();
+  populateAdminProfileCard();
 });
 
 /* ---------- Appearance: theme selector ---------- */
@@ -142,6 +143,71 @@ function handleThemeButtonClick(preference) {
 }
 
 updateThemeSelectorUI(localStorage.getItem('kibbleguard-theme') || 'system');
+
+/* ---------- Admin Profile card ----------
+   The HTML's "Dr. Sarah Chen" / "sarah.chen@kibbleguard.app" values are just
+   placeholders -- a comment right above them in settings.html already says
+   populateAdminProfileCard() is supposed to overwrite both with whoever's
+   actually logged in, on every page load. That function never existed
+   anywhere, so every admin saw the seed account's name and email here
+   regardless of who they'd actually logged in or signed up as. */
+function populateAdminProfileCard() {
+  var me = getLoggedInAdmin();
+  if (!me) return;
+  var avatarImg = document.getElementById('profile-avatar-img');
+  var nameDisplay = document.getElementById('profile-name-display');
+  var roleBadge = document.getElementById('profile-role-badge');
+  var nameInput = document.getElementById('admin-name');
+  var emailInput = document.getElementById('admin-email');
+  if (avatarImg) avatarImg.src = getAvatarSrc(me);
+  if (nameDisplay) nameDisplay.textContent = me.name;
+  if (roleBadge) roleBadge.textContent = me.role;
+  if (nameInput) nameInput.value = me.name;
+  if (emailInput) emailInput.value = me.email;
+}
+
+// the camera button's onchange handler -- also referenced in settings.html
+// but, like populateAdminProfileCard above, never actually existed
+function handleAvatarFileSelected(event) {
+  var file = event.target.files && event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    var img = new Image();
+    img.onload = function () {
+      // downscale before storing -- a raw phone photo as base64 can be
+      // several MB, easily enough to blow past localStorage's quota and
+      // silently fail the save (the same bug this was just fixed for on
+      // the pet owner's own profile photo upload)
+      var MAX = 256;
+      var scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      var w = Math.max(1, Math.round(img.width * scale)), h = Math.max(1, Math.round(img.height * scale));
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var compressed = canvas.toDataURL('image/jpeg', 0.85);
+
+      var me = getLoggedInAdmin();
+      if (!me) return;
+      var accounts = getAdminAccounts();
+      var acc = accounts.find(function (a) { return a.email === me.email; });
+      if (!acc) return;
+      acc.avatarDataUrl = compressed;
+      try {
+        saveAdminAccounts(accounts, { unguarded: true });   // only touching our own record
+      } catch (err) {
+        showToast(err && err.message ? err.message : 'Could not save your photo, please try again', 'danger');
+        return;
+      }
+      populateAdminProfileCard();
+      if (typeof applySidebarIdentity === 'function') applySidebarIdentity();
+      if (typeof renderAdminTeamList === 'function') renderAdminTeamList();
+      showToast('Profile photo updated', 'success');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 
 /* ---------- Admin Team: invite, list, deactivate/restore/remove ----------
    The "Invite Admin" button called openInviteForm(), which didn't exist
