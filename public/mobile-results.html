@@ -131,6 +131,25 @@
       </div>
     </div>
 
+    <!-- Dispute: lets a pet owner flag this verdict for an admin to re-check, with the
+         scanned product/ingredients attached automatically. Sits right below the pet
+         evaluator box, and doubles as where the admin's reply shows up once they've responded. -->
+    <div class="tactile-card p-3.5 bg-white" id="disputeSection">
+      <button type="button" id="disputeResultBtn" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-[#45671d]">
+        <i class="fa-regular fa-flag"></i> Dispute this result
+      </button>
+      <div id="disputeStatusBlock" class="hidden mt-3 pt-3 border-t border-[#ebdcd0] text-xs space-y-2">
+        <p class="font-bold text-[#182811] flex items-center gap-1.5">
+          <i class="fa-regular fa-flag text-[#45671d]"></i> <span id="disputeStatusLabel">Dispute submitted</span>
+        </p>
+        <p id="disputeStatusNote" class="text-[#788673]"></p>
+        <div id="disputeAdminReply" class="hidden mt-2 p-3 rounded-xl bg-[#f3f7ee] border border-[#d9e8c9]">
+          <p class="text-[9.5px] font-extrabold uppercase text-[#45671d] tracking-widest mb-1">Admin response</p>
+          <p id="disputeAdminReplyText" class="text-[#182811] leading-relaxed"></p>
+        </div>
+      </div>
+    </div>
+
     <!-- Score & Verdict: Stacked Vertically so Text Never Gets Squished -->
     <div class="tactile-card p-5 bg-white score-card-mobile">
       
@@ -171,12 +190,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Dispute: lets a pet owner flag this verdict for an admin to re-check, with
-         the scanned product/ingredients attached automatically -->
-    <button type="button" id="disputeResultBtn" class="w-full tactile-card p-3 bg-white flex items-center justify-center gap-2 text-xs font-bold text-[#45671d]">
-      <i class="fa-regular fa-flag"></i> Dispute this result
-    </button>
 
     <!-- Extracted Finding Cards -->
     <div class="space-y-2.5">

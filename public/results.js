@@ -1031,6 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Ensure ingredient DB is loaded before rendering so drawer has full data
       await _loadIngredientDB();
       currentScanId = data.scanId || null;
+      renderDisputeStatus(data.dispute || null);
       const p = panel();
       const style = RATING[data.rating] || RATING.Caution;
       const items = Array.isArray(data.results) ? data.results.slice() : [];
@@ -1168,6 +1169,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---------------------------------------------------------------------
     // 4b. Dispute this result -- sends a note to the admin, tied to the real
     // scan so they can see the exact product/ingredients that were scanned
+    // Shows/hides the "Dispute submitted" + "Admin response" block that sits right under
+    // the pet-evaluator box. dispute is the {note, resolved, resolution, resolutionType,
+    // submittedAt} object /api/history/:id now returns for a scan, or null if none was filed.
+    function renderDisputeStatus(dispute) {
+      const block = $('disputeStatusBlock');
+      if (!block) return;
+      if (!dispute || !dispute.note) { block.classList.add('hidden'); return; }
+      block.classList.remove('hidden');
+      const labelEl = $('disputeStatusLabel');
+      const noteEl = $('disputeStatusNote');
+      const replyBox = $('disputeAdminReply');
+      const replyText = $('disputeAdminReplyText');
+      if (labelEl) labelEl.textContent = dispute.resolved ? 'Dispute reviewed' : 'Dispute submitted — awaiting admin review';
+      if (noteEl) noteEl.textContent = 'Your note: "' + dispute.note + '"';
+      if (dispute.resolved && dispute.resolution) {
+        if (replyBox) replyBox.classList.remove('hidden');
+        if (replyText) {
+          const verdictNote = dispute.resolutionType === 'overturned' ? ' The verdict was corrected.' : ' The original classification was upheld.';
+          replyText.textContent = dispute.resolution + verdictNote;
+        }
+      } else if (replyBox) {
+        replyBox.classList.add('hidden');
+      }
+    }
     // ---------------------------------------------------------------------
     function closeDisputeModal() {
       const overlay = $('disputeModalOverlay');
@@ -1192,6 +1217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
         .then(function (res) {
           if (!res.ok) throw new Error((res.body && res.body.error) || 'Could not submit your dispute. Try again.');
+          renderDisputeStatus({ note: note, resolved: false });
           const card = document.querySelector('#disputeModalOverlay .tactile-card');
           if (card) {
             card.innerHTML =

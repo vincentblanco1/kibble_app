@@ -320,6 +320,12 @@ db.serialize(() => {
   db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_note TEXT`, () => {});
   db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_created_at TIMESTAMP`, () => {});
   db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_resolved INTEGER DEFAULT 0`, () => {});
+  // The admin's actual reply text once they've upheld/overturned a dispute -- this is what
+  // makes the reply visible back on the pet owner's own results page (previously it only ever
+  // reached the admin's own browser's localStorage, so the pet owner could never see it).
+  db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_resolution TEXT`, () => {});
+  db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_resolution_type TEXT`, () => {});
+  db.run(`ALTER TABLE scans ADD COLUMN IF NOT EXISTS dispute_resolved_at TIMESTAMP`, () => {});
 
   // 5. Products Table
   db.run(`CREATE TABLE IF NOT EXISTS products (
@@ -1457,6 +1463,17 @@ app.get('/api/history/:id', (req, res) => {
     // Only a real photo is returned (scans saved by an earlier buggy version stored broken text)
     const image = row.image_url && /^data:image\//.test(row.image_url) ? row.image_url : null;
 
+    // Lets the pet owner's results page show the dispute they filed and, once an admin has
+    // replied, the admin's actual response -- both now persisted on the scan row itself.
+    const dispute = row.dispute_note ? {
+      note: row.dispute_note,
+      submittedAt: toSafeDate(row.dispute_created_at).toISOString(),
+      resolved: row.dispute_resolved === true || row.dispute_resolved === 1 || row.dispute_resolved === '1',
+      resolution: row.dispute_resolution || null,
+      resolutionType: row.dispute_resolution_type || null,
+      resolvedAt: row.dispute_resolved_at ? toSafeDate(row.dispute_resolved_at).toISOString() : null
+    } : null;
+
     const send = (results, flaggedOut) => res.json({
       scanId: row.id,
       productName: row.product_name,
@@ -1466,6 +1483,7 @@ app.get('/api/history/:id', (req, res) => {
       results,
       flagged: flaggedOut,
       image,
+      dispute,
       date: toSafeDate(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     });
 
@@ -2529,11 +2547,19 @@ app.get('/api/admin/scan-image/:id', requireAdminAuth, (req, res) => {
 // this just stops the dispute from reappearing for every admin/session forever, since
 // without it the only record of "resolved" was one admin's own browser storage.
 app.post('/api/admin/scans/:id/resolve-dispute', requireAdminAuth, (req, res) => {
-  db.run(`UPDATE scans SET dispute_resolved = 1 WHERE id = ?`, [req.params.id], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!this.changes) return res.status(404).json({ error: 'Scan not found.' });
-    res.json({ success: true });
-  });
+  // type is 'upheld' or 'overturned'; response is the admin's actual reply text typed into
+  // the dispute panel -- stored here so the pet owner's results page can show it for real,
+  // instead of it only ever landing in the admin's own browser's localStorage.
+  const { type, response } = req.body || {};
+  db.run(
+    `UPDATE scans SET dispute_resolved = 1, dispute_resolution = ?, dispute_resolution_type = ?, dispute_resolved_at = CURRENT_TIMESTAMP WHERE id = ?`,
+    [response || null, type || null, req.params.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!this.changes) return res.status(404).json({ error: 'Scan not found.' });
+      res.json({ success: true });
+    }
+  );
 });
 
 // --- START SERVER ---

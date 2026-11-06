@@ -289,6 +289,30 @@
           </div>
         </div>
 
+        <!-- Dispute: lets a pet owner flag this verdict for an admin to re-check, with the
+             scanned product/ingredients attached automatically. Lives right below the pet
+             box (not next to the score) so it reads as "dispute this call for this pet",
+             and doubles as where the admin's reply shows up once they've responded. -->
+        <div class="tactile-card p-4 bg-white" id="disputeSection">
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-[11px] text-[#91967e]">Think this result is wrong?</p>
+            <button type="button" id="disputeResultBtn" class="text-xs font-bold text-[#45671d] hover:underline flex items-center gap-1.5 shrink-0">
+              <i class="fa-regular fa-flag"></i> Dispute this result
+            </button>
+          </div>
+          <!-- Populated by results.js once this scan has a dispute on file -->
+          <div id="disputeStatusBlock" class="hidden mt-3 pt-3 border-t border-[#ebdcd0] text-xs space-y-2">
+            <p class="font-bold text-[#182811] flex items-center gap-1.5">
+              <i class="fa-regular fa-flag text-[#45671d]"></i> <span id="disputeStatusLabel">Dispute submitted</span>
+            </p>
+            <p id="disputeStatusNote" class="text-[#788673]"></p>
+            <div id="disputeAdminReply" class="hidden mt-2 p-3 rounded-xl bg-[#f3f7ee] border border-[#d9e8c9]">
+              <p class="text-[9.5px] font-extrabold uppercase text-[#45671d] tracking-widest mb-1">Admin response</p>
+              <p id="disputeAdminReplyText" class="text-[#182811] leading-relaxed"></p>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- ==================== RIGHT COLUMN ==================== -->
@@ -332,15 +356,6 @@
               </span>
             </div>
           </div>
-        </div>
-
-        <!-- Dispute: lets a pet owner flag this verdict for an admin to re-check, with
-             the scanned product/ingredients attached automatically -->
-        <div class="flex items-center justify-between gap-3 px-1">
-          <p class="text-[11px] text-[#91967e]">Think this result is wrong?</p>
-          <button type="button" id="disputeResultBtn" class="text-xs font-bold text-[#45671d] hover:underline flex items-center gap-1.5 shrink-0">
-            <i class="fa-regular fa-flag"></i> Dispute this result
-          </button>
         </div>
 
         <!-- Extracted Tokens Section -->
