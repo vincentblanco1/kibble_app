@@ -530,9 +530,6 @@ function saveIngredient(mode, rowId) {
   var today = new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
   var searchStr = (name + ' ' + subtitle + ' ' + category + ' ' + aliases).toLowerCase();
   var akaHtml = aliases ? '<p class="text-[10px] text-stone-400 mt-1" data-field="aliases-line"><span class="font-bold">aka</span> ' + escapeHTML(aliases) + '</p>' : '';
-  var regBadgeHtml = regVerified
-    ? '<span class="inline-flex items-center gap-1 text-[9px] font-bold text-safe ml-1" title="' + regBody + ' Verified"><i class="fa-solid fa-circle-check"></i></span>'
-    : '<span data-field="reg-badge" class="inline-flex items-center gap-1 text-[9px] font-bold text-stone-300 ml-1" title="Not yet regulatory-verified"><i class="fa-regular fa-circle"></i></span>';
 
   var saveBtn = document.getElementById('save-ingredient-btn');
   withSavingState(saveBtn, mode === 'edit' ? 'Saving...' : 'Adding...', function () {
@@ -545,9 +542,6 @@ function saveIngredient(mode, rowId) {
     row.querySelector('[data-field="name"]').textContent = name;
     row.querySelector('[data-field="subtitle"]').textContent = subtitle;
     row.querySelector('[data-field="category"]').textContent = category;
-    var existingRegBadge = row.querySelector('[data-field="reg-badge"]');
-    if (existingRegBadge) existingRegBadge.remove();
-    row.querySelector('[data-field="category"]').insertAdjacentHTML('afterend', regBadgeHtml.replace('<span class=', '<span data-field="reg-badge" class='));
     row.querySelector('[data-field="canine"]').innerHTML = riskBadgeHtml(canine);
     row.querySelector('[data-field="feline"]').innerHTML = riskBadgeHtml(feline);
     row.querySelector('[data-field="modified"]').textContent = today;
@@ -601,8 +595,6 @@ function saveIngredient(mode, rowId) {
     applyClinicalToDataset(tr.dataset, clinical, canine, feline);
     tr.dataset.source = source;
     tr.dataset.aliases = aliases;
-    tr.dataset.regVerified = regVerified ? 'true' : 'false';
-    tr.dataset.regBody = regBody;
     tr.dataset.search = searchStr;
     // New ingredients always start Pending Verification (see server.js upsertSpeciesIngredient)
     // -- shown here immediately rather than waiting for the next background sync/refresh. No
@@ -611,7 +603,7 @@ function saveIngredient(mode, rowId) {
     var newVetBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-caution/10 text-caution text-[9px] font-bold uppercase tracking-widest mt-1" data-field="vet-badge"><i class="fa-solid fa-clock-rotate-left"></i> Pending Vet Review</span>';
     tr.innerHTML =
       '<td class="px-10 py-6"><div><p class="font-bold text-dark text-base" data-field="name">' + escapeHTML(name) + '</p><p class="text-[11px] text-stone-400 font-medium italic" data-field="subtitle">' + escapeHTML(subtitle) + '</p>' + akaHtml + newVetBadge + '</div></td>' +
-      '<td class="px-10 py-6"><span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">' + escapeHTML(category) + '</span>' + regBadgeHtml.replace('<span class=', '<span data-field="reg-badge" class=') + '</td>' +
+      '<td class="px-10 py-6"><span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">' + escapeHTML(category) + '</span></td>' +
       '<td class="px-10 py-6" data-field="canine">' + riskBadgeHtml(canine) + '</td>' +
       '<td class="px-10 py-6" data-field="feline">' + riskBadgeHtml(feline) + '</td>' +
       '<td class="px-10 py-6 text-stone-600 font-bold text-xs tabular-nums" data-field="risk-index-cell">' + riskIndexCellHtml(tr.dataset) + '</td>' +
@@ -703,9 +695,6 @@ function previewIngredient(rowId) {
       '<div class="mb-6">' +
         '<div class="flex items-center gap-2 flex-wrap mb-3">' +
           '<span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600 uppercase tracking-widest">' + escapeHTML(category) + '</span>' +
-          (d.regVerified === 'true'
-            ? '<span class="px-3 py-1 rounded-lg bg-safe/10 text-safe text-[10px] font-bold uppercase tracking-widest border border-safe/10"><i class="fa-solid fa-circle-check mr-1"></i>Regulatory Compliance Verified</span>'
-            : '<span class="px-3 py-1 rounded-lg bg-stone-100 text-stone-400 text-[10px] font-bold uppercase tracking-widest"><i class="fa-regular fa-circle mr-1"></i>Not Yet Regulatory-Verified</span>') +
         '</div>' +
         '<p class="text-xs text-stone-500 font-medium">' + escapeHTML(subtitle) + '</p>' +
         (d.aliases ? '<p class="text-[11px] text-stone-400 mt-2"><span class="font-bold">Also recognized as:</span> ' + escapeHTML(d.aliases) + '</p>' : '') +
@@ -720,10 +709,9 @@ function previewIngredient(rowId) {
 
 var currentIngredientClassFilter = 'all';
 var currentIngredientSpeciesFilter = 'all';
-var currentIngredientVerificationFilter = 'all';
 var currentIngredientAgeFilter = 'all';   // 'all' | 'stale6' | 'stale12' -- by the Modified date
-// Separate from currentIngredientVerificationFilter above, which is the existing Regulatory
-// Compliance citation toggle. This is whether a vet has actually reviewed the entry.
+// Whether a vet has actually reviewed the entry (separate from the old Regulatory
+// Compliance "Verification" toggle, which was removed -- see computeRegistryHealth)
 var currentIngredientVetFilter = 'all';   // 'all' | 'pending' | 'approved'
 
 // keeps the three dropdowns, their "this one is active" outline, the Clear filters
@@ -733,7 +721,6 @@ function syncIngredientFilterUI() {
   var fields = [
     ['ingredient-filter-species', currentIngredientSpeciesFilter],
     ['ingredient-filter-class', currentIngredientClassFilter],
-    ['ingredient-filter-verification', currentIngredientVerificationFilter],
     ['ingredient-filter-vet', currentIngredientVetFilter],
     ['ingredient-filter-age', currentIngredientAgeFilter]
   ];
@@ -753,11 +740,6 @@ function syncIngredientFilterUI() {
   });
   var clearBtn = document.getElementById('ingredient-clear-filters');
   if (clearBtn) clearBtn.classList.toggle('hidden', !anyActive);
-  ['all', 'verified', 'pending'].forEach(function (key) {
-    var tile = document.getElementById('health-tile-' + key);
-    var on = key === currentIngredientVerificationFilter && currentIngredientVerificationFilter !== 'all';
-    if (tile) { tile.classList.toggle('ring-2', on); tile.classList.toggle('ring-brand', on); }
-  });
 }
 
 // Species dropdown: all / canine / feline
@@ -776,18 +758,6 @@ function setIngredientClassFilter(level) {
   filterIngredients();
 }
 
-// Verification dropdown, and the three Registry Health tiles (which call this too,
-// with scrollToTable so the filtered list comes into view).
-// "Verified" = the Regulatory Compliance Verified switch is on; "Pending" = it isn't
-function setIngredientVerificationFilter(mode, scrollToTable) {
-  currentIngredientVerificationFilter = mode;
-  syncIngredientFilterUI();
-  filterIngredients();
-  if (scrollToTable) {
-    var card = document.getElementById('ingredient-table-card');
-    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-}
 
 // Vet Review dropdown: all / pending / approved -- distinct from the Regulatory
 // Compliance "Verification" dropdown above
@@ -821,14 +791,13 @@ function isIngredientStale(row, months) {
 function clearIngredientFilters() {
   currentIngredientSpeciesFilter = 'all';
   currentIngredientClassFilter = 'all';
-  currentIngredientVerificationFilter = 'all';
   currentIngredientVetFilter = 'all';
   currentIngredientAgeFilter = 'all';
   syncIngredientFilterUI();
   filterIngredients();
 }
 
-// the actual filter logic, combining the search box with whichever species/classification/verification dropdowns are set.
+// the actual filter logic, combining the search box with whichever species/classification dropdowns are set.
 // when species is picked, class filters only that species' column; when it's "all", either column can match
 function filterIngredients() {
   var q = document.getElementById('ingredient-search').value.toLowerCase().trim();
@@ -845,13 +814,10 @@ function filterIngredients() {
     } else {
       matchesClass = row.dataset.canine === currentIngredientClassFilter || row.dataset.feline === currentIngredientClassFilter;
     }
-    var isVerified = row.dataset.regVerified === 'true';
-    var matchesVerification = currentIngredientVerificationFilter === 'all' ||
-      (currentIngredientVerificationFilter === 'verified' ? isVerified : !isVerified);
     var matchesVet = currentIngredientVetFilter === 'all' || row.dataset.vetStatus === currentIngredientVetFilter;
     var matchesAge = currentIngredientAgeFilter === 'all' ||
       isIngredientStale(row, currentIngredientAgeFilter === 'stale6' ? 6 : 12);
-    row.dataset.filterMatch = (matchesSearch && matchesClass && matchesVerification && matchesVet && matchesAge) ? 'true' : 'false';
+    row.dataset.filterMatch = (matchesSearch && matchesClass && matchesVet && matchesAge) ? 'true' : 'false';
   });
   updateIngredientCountLabel();
   applyTablePagination('ingredient-table-body', 'ingredient-pagination-controls', 10, true);
@@ -871,13 +837,8 @@ function updateIngredientCountLabel() {
   var titleEl = document.getElementById('ingredient-empty-title');
   var subEl = document.getElementById('ingredient-empty-sub');
   if (titleEl && subEl) {
-    var onlyPendingFilter = currentIngredientVerificationFilter === 'pending' && !q &&
-      currentIngredientClassFilter === 'all' && currentIngredientSpeciesFilter === 'all' && currentIngredientAgeFilter === 'all';
-    var anyFilter = currentIngredientVerificationFilter !== 'all' || currentIngredientClassFilter !== 'all' || currentIngredientSpeciesFilter !== 'all' || currentIngredientAgeFilter !== 'all';
-    if (onlyPendingFilter) {
-      titleEl.textContent = 'Nothing is pending verification';
-      subEl.textContent = 'Every ingredient in the database is already regulatory-verified.';
-    } else if (anyFilter && !q) {
+    var anyFilter = currentIngredientClassFilter !== 'all' || currentIngredientSpeciesFilter !== 'all' || currentIngredientVetFilter !== 'all' || currentIngredientAgeFilter !== 'all';
+    if (anyFilter && !q) {
       titleEl.textContent = 'No ingredients match these filters';
       subEl.textContent = 'Try turning off one of the filters above.';
     } else {
@@ -887,7 +848,7 @@ function updateIngredientCountLabel() {
   }
 
   var label = document.getElementById('ingredient-count-label');
-  var isFiltered = q || currentIngredientClassFilter !== 'all' || currentIngredientSpeciesFilter !== 'all' || currentIngredientVerificationFilter !== 'all' || currentIngredientAgeFilter !== 'all';
+  var isFiltered = q || currentIngredientClassFilter !== 'all' || currentIngredientSpeciesFilter !== 'all' || currentIngredientVetFilter !== 'all' || currentIngredientAgeFilter !== 'all';
   if (isFiltered) {
     label.textContent = 'Showing ' + visible + ' matching result' + (visible === 1 ? '' : 's') + ' of ' + total + ' loaded';
   } else {
@@ -1136,15 +1097,16 @@ function dismissWaitingItem(index) {
   computeRegistryHealth();
 }
 
-/* ---------- Registry Health: computed live from the table ---------- */
+/* ---------- Registry Health: computed live from the table ----------
+   The old "Regulatory Compliance Verified / Pending Verification" split lived
+   here too, keyed off a regVerified toggle. That toggle's only control was
+   removed from the add/edit form a while back (see the comment on
+   saveIngredientForm below), so it could never become true again -- the tiles
+   were permanently stuck at 0% verified / 100% pending no matter the real data.
+   Removed rather than left showing a frozen, meaningless number. */
 function computeRegistryHealth() {
   var rows = document.querySelectorAll('#ingredient-table-body tr[data-search]');
-  var total = rows.length;
-  var verified = 0;
-  rows.forEach(function (r) { if (r.dataset.regVerified === 'true') verified++; });
-  document.getElementById('health-total').textContent = total;
-  document.getElementById('health-verified').textContent = verified;
-  document.getElementById('health-pending').textContent = total - verified;
+  document.getElementById('health-total').textContent = rows.length;
   renderNeedsRatingPanel();
 }
 
@@ -1527,7 +1489,7 @@ function ensureSampleGlucosamineRow() {
     ds.search = 'glucosamine hydrochloride joint support supplement functional & specialty ingredients glucosamine hcl';
     tr.innerHTML =
       '<td class="px-10 py-6"><div><p class="font-bold text-dark text-base" data-field="name">Glucosamine Hydrochloride</p><p class="text-[11px] text-stone-400 font-medium italic" data-field="subtitle">Joint support supplement</p><p class="text-[10px] text-stone-400 mt-1" data-field="aliases-line"><span class="font-bold">aka</span> Glucosamine HCl</p></div></td>' +
-      '<td class="px-10 py-6"><span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">Functional &amp; Specialty Ingredients</span><span data-field="reg-badge" class="inline-flex items-center gap-1 text-[9px] font-bold text-stone-300 ml-1" title="Not yet regulatory-verified"><i class="fa-regular fa-circle"></i></span></td>' +
+      '<td class="px-10 py-6"><span class="px-3 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-600" data-field="category">Functional &amp; Specialty Ingredients</span></td>' +
       '<td class="px-10 py-6" data-field="canine">' + riskBadgeHtml('Safe') + '</td>' +
       '<td class="px-10 py-6" data-field="feline">' + riskBadgeHtml('Unrated') + '</td>' +
       '<td class="px-10 py-6 text-stone-600 font-bold text-xs tabular-nums" data-field="risk-index-cell">' + riskIndexCellHtml(ds) + '</td>' +
