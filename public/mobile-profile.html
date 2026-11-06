@@ -28,7 +28,10 @@
     <!-- User Avatar & Identity Card -->
     <div class="tactile-card p-5 bg-white text-center space-y-2">
       <div class="relative w-20 h-20 mx-auto">
-        <img id="profileAvatarPreview" src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Avatar" class="w-full h-full rounded-full object-cover border-4 border-[#45671d]">
+        <div id="profileAvatarInitials" class="w-full h-full rounded-full border-4 border-[#45671d] bg-[#45671d] flex items-center justify-center">
+          <span class="text-white font-extrabold text-2xl" id="profileInitialsText">U</span>
+        </div>
+        <img id="profileAvatarPreview" src="" alt="Avatar" class="hidden absolute inset-0 w-full h-full rounded-full object-cover border-4 border-[#45671d]">
         <label id="avatarUploadLabel" for="avatarInput" class="hidden absolute bottom-0 right-0 w-6 h-6 bg-[#45671d] text-white rounded-full flex items-center justify-center text-[10px] cursor-pointer shadow-md">
           <i class="fa-solid fa-camera"></i>
         </label>
