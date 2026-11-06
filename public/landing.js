@@ -173,6 +173,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const instantInput = document.getElementById('instantCheckInput');
   const chips = document.querySelectorAll('.quick-chip');
 
+  // Mobile's badge pill uses smaller sizing classes than desktop's; keep the base size
+  // classes intact when we swap in the new color classes below instead of hardcoding
+  // desktop's sizing on top (that pattern silently resized mobile's filter pills and
+  // wiki species-toggle buttons elsewhere in this app, so avoid repeating it here).
+  const badgeEl = document.getElementById('instantResultBadge');
+  const badgeBaseClass = badgeEl ? badgeEl.className.replace(/\bbg-\S+|\btext-\S+|\bborder(-\S+)?\b/g, '').trim() : '';
+
   function lookupIngredient(query) {
     const q = query.toLowerCase().trim();
     let match = null;
@@ -183,14 +190,19 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (q.includes('taurine')) match = QUICK_DATA['taurine'];
 
     if (match) {
-      document.getElementById('instantResultTitle').textContent = match.title;
-      document.getElementById('instantResultCategory').textContent = `${match.category} • ${match.riskScore}`;
-      document.getElementById('instantCanineNote').textContent = match.canine;
-      document.getElementById('instantFelineNote').textContent = match.feline;
-      
-      const b = document.getElementById('instantResultBadge');
-      b.textContent = match.badge;
-      b.className = `px-3 py-1 rounded-full font-extrabold text-xs uppercase ${match.badgeClass}`;
+      const titleEl = document.getElementById('instantResultTitle');
+      const categoryEl = document.getElementById('instantResultCategory');
+      const canineEl = document.getElementById('instantCanineNote');
+      const felineEl = document.getElementById('instantFelineNote');
+      if (titleEl) titleEl.textContent = match.title;
+      if (categoryEl) categoryEl.textContent = `${match.category} • ${match.riskScore}`;
+      if (canineEl) canineEl.textContent = match.canine;
+      if (felineEl) felineEl.textContent = match.feline;
+
+      if (badgeEl) {
+        badgeEl.textContent = match.badge;
+        badgeEl.className = `${badgeBaseClass} ${match.badgeClass}`.trim();
+      }
     }
   }
 
