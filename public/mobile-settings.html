@@ -71,6 +71,26 @@
           Submit Report
         </button>
       </form>
+      <div id="reportSuccessAlert" class="hidden p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-[#15803d] font-semibold flex items-center gap-2">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>Report logged. Thanks for helping keep evaluations accurate!</span>
+      </div>
+    </div>
+
+    <!-- Recent Inquiries Log -- was missing on mobile entirely, so there was no way to
+         see the status of a report (or an admin's reply) once it was filed. -->
+    <div class="tactile-card p-4 bg-white space-y-2.5 text-xs">
+      <div class="flex items-center justify-between pb-2 border-b border-[#f5efe6]">
+        <span class="text-[10px] font-extrabold uppercase text-[#788673] tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-clock-rotate-left"></i> Recent Inquiries
+        </span>
+        <span class="text-[10.5px] font-bold text-[#45671d]" id="reportsCountBadge">0 Logged</span>
+      </div>
+      <div id="recentReportsList" class="space-y-2 max-h-56 overflow-y-auto">
+        <div class="py-4 text-center text-[#788673] text-[11px]">
+          <p>No active disputes or bug reports filed yet.</p>
+        </div>
+      </div>
     </div>
   </main>
 
