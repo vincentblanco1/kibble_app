@@ -363,7 +363,7 @@
         user_id: String(s.user_id), owner: s.owner, ownerEmail: s.ownerEmail, species: s.species, timestamp: s.timestamp,
         // real confidence from the Vision AI call for an actual photo scan; manual-text
         // scans never had an image to read, so there's honestly nothing to measure there
-        confidence: (s.confidence != null ? s.confidence + '%' : 'Not measured'), clarity: 'Unknown', rawOcrText: s.rawOcrText,
+        confidence: (s.confidence != null ? s.confidence + '%' : 'Not measured'), rawOcrText: s.rawOcrText,
         imageUrl: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : '',
         substances: (s.substances || []).map(function (x) {
           return {

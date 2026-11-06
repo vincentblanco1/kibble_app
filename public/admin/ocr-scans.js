@@ -315,8 +315,7 @@ function inspectRecord(scanId) {
         '</div>' +
       '</div>' +
       unratedBannerHtml +
-      '<div class="grid grid-cols-3 gap-4 mb-6">' +
-        '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Image Clarity</p><p class="text-sm font-bold text-dark">' + escapeHTML(data.clarity) + '</p></div>' +
+      '<div class="grid grid-cols-2 gap-4 mb-6">' +
         '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">OCR Confidence</p><p class="text-sm font-bold text-dark">' + escapeHTML(data.confidence) + '</p></div>' +
         '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Species</p><p class="text-sm font-bold text-dark capitalize">' + escapeHTML(data.species) + '</p></div>' +
       '</div>' +
@@ -600,7 +599,6 @@ function computeAccuracyMetrics() {
   var disputedOpen = 0;
   var overturned = 0;
   var overrides = getScanOverrides();
-  var clarityCounts = {};
 
   rows.forEach(function (row) {
     var conf = parseInt(row.dataset.confidence, 10);
@@ -609,9 +607,6 @@ function computeAccuracyMetrics() {
 
     var scanId = 'KB-' + row.id.replace('row-', '');
     if (overrides[scanId]) overturned++;
-    var trace = traces[scanId];
-    var clarity = trace ? trace.clarity : 'Unknown';
-    clarityCounts[clarity] = (clarityCounts[clarity] || 0) + 1;
   });
 
   var matchedTokens = 0;
@@ -633,8 +628,6 @@ function computeAccuracyMetrics() {
 
   var sampleEl = document.getElementById('acc-sample-size');
   if (sampleEl) sampleEl.textContent = total;
-
-  renderCaptureQuality(clarityCounts, total);
 }
 
 // each accuracy metric gets its own radial gauge on the same 0-100% scale.
@@ -686,69 +679,6 @@ function renderAccuracyGauge(elId, label, value) {
     tooltip: { enabled: false }
   });
   accuracyGaugeInstances[elId].render();
-}
-
-// the Excellent/Good/Fair/Poor photo-quality breakdown.
-// called from computeAccuracyMetrics above, since it needs the same per-scan data.
-// clarity has a natural best-to-worst order, so a vertical bar chart keeps that
-// order left to right, and a rating with zero scans still shows as an empty
-// slot instead of silently disappearing (useful for seeing "no Poor captures")
-var captureQualityChartInstance = null;
-
-function renderCaptureQuality(clarityCounts, total) {
-  var colorMap = { 'Excellent': '#15803D', 'Good': '#8DA65F', 'Fair': '#C17817', 'Poor': '#B91C1C', 'Unknown': '#a8a29e' };
-  var chartEl = document.querySelector('#capture-quality-breakdown');
-  if (!chartEl || typeof ApexCharts === 'undefined') return;
-  if (captureQualityChartInstance) {
-    captureQualityChartInstance.destroy();
-    captureQualityChartInstance = null;
-  }
-  chartEl.innerHTML = '';
-
-  if (!total) {
-    chartEl.innerHTML = '<p class="text-xs text-stone-400 text-center py-10">No scans to break down yet.</p>';
-    return;
-  }
-  // the four real ratings always get a slot, Unknown only appears if some scan has it
-  var order = ['Excellent', 'Good', 'Fair', 'Poor'];
-  if (clarityCounts['Unknown']) order.push('Unknown');
-  var counts = order.map(function (k) { return clarityCounts[k] || 0; });
-  var axis = niceCountAxis(Math.max.apply(null, counts));
-
-  var isDark = document.documentElement.classList.contains('dark-theme');
-  captureQualityChartInstance = new ApexCharts(chartEl, {
-    series: [{ name: 'Scans', data: counts }],
-    chart: { type: 'bar', height: 240, toolbar: { show: false }, fontFamily: 'Inter' },
-    plotOptions: { bar: { horizontal: false, columnWidth: '45%', borderRadius: 6, distributed: true, dataLabels: { position: 'top' } } },
-    colors: order.map(function (k) { return colorMap[k]; }),
-    xaxis: {
-      categories: order,
-      labels: { style: { colors: isDark ? '#B8B0A0' : '#6B6558', fontWeight: 700, fontSize: '11px' } },
-      axisTicks: { show: false },
-      axisBorder: { show: false }
-    },
-    // counts are small whole numbers, so tick in whole steps (see the same note on the ingredient chart)
-    yaxis: {
-      min: 0,
-      max: axis.max,
-      tickAmount: axis.tickAmount,
-      labels: { style: { colors: '#94a3b8' }, formatter: function (val) { return Math.round(val); } }
-    },
-    grid: { borderColor: isDark ? '#2f3034' : '#f1f5f9', strokeDashArray: 4 },
-    legend: { show: false },
-    dataLabels: {
-      enabled: true,
-      formatter: function (val) { return val > 0 ? val + ' (' + Math.round((val / total) * 100) + '%)' : ''; },
-      offsetY: -22,
-      style: { fontSize: '11px', fontWeight: 700, colors: [isDark ? '#f5f5f6' : '#2A241C'] }
-    },
-    tooltip: {
-      enabled: true,
-      theme: isDark ? 'dark' : 'light',
-      y: { formatter: function (val) { return val + ' scan' + (val === 1 ? '' : 's') + ' (' + Math.round((val / total) * 100) + '%)'; } }
-    }
-  });
-  captureQualityChartInstance.render();
 }
 
 // writes the resolution to the real scan row so it stops showing as disputed for
