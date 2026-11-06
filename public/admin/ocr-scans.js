@@ -599,13 +599,17 @@ function computeAccuracyMetrics() {
   var traces = (typeof RECORD_TRACES !== 'undefined') ? RECORD_TRACES : {};
 
   var aboveThreshold = 0;
+  var scoredScans = 0; // only scans that actually have a confidence number -- see Avg. OCR Confidence fix
   var disputedOpen = 0;
   var overturned = 0;
   var overrides = getScanOverrides();
 
   rows.forEach(function (row) {
     var conf = parseInt(row.dataset.confidence, 10);
-    if (!isNaN(conf) && conf >= AUTO_APPROVE_THRESHOLD) aboveThreshold++;
+    if (!isNaN(conf)) {
+      scoredScans++;
+      if (conf >= AUTO_APPROVE_THRESHOLD) aboveThreshold++;
+    }
     if (row.dataset.disputed === 'true') disputedOpen++;
 
     var scanId = 'KB-' + row.id.replace('row-', '');
@@ -620,7 +624,7 @@ function computeAccuracyMetrics() {
     matchedTokens += trace.substances.length;
   });
 
-  var extraction = Math.round((aboveThreshold / total) * 100);
+  var extraction = scoredScans > 0 ? Math.round((aboveThreshold / scoredScans) * 100) : 0;
   var detection = totalTokens > 0 ? Math.round((matchedTokens / totalTokens) * 100) : 0;
   // a verdict only counts as standing if it is neither under dispute nor was overturned after one
   var classification = Math.round(((total - disputedOpen - overturned) / total) * 100);
