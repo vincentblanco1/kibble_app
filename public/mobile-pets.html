@@ -41,6 +41,24 @@
         </button>
       </div>
       <form id="mobileAddPetForm" class="space-y-3">
+        <!-- Companion Picture -- desktop's add/edit form has this; mobile's was missing it
+             entirely, so a pet's photo could only ever be set by editing on desktop. -->
+        <div class="p-3 rounded-2xl bg-[#fbf9f6] border border-[#ebdcd0] flex items-center gap-3">
+          <div id="petPhotoPreviewContainer" class="w-14 h-14 rounded-2xl bg-white border-2 border-dashed border-[#ebdcd0] flex items-center justify-center text-xl overflow-hidden shrink-0 shadow-inner">
+            <span id="previewEmojiFallback">🐶</span>
+            <img id="petPhotoPreviewImg" src="" alt="Preview" class="w-full h-full object-cover hidden">
+          </div>
+          <div class="flex-1 space-y-1">
+            <span class="font-bold text-[#182811] block text-[11px]">Companion Picture</span>
+            <div class="flex items-center gap-2">
+              <label for="petImageFileInput" class="px-2.5 py-1 bg-white border border-[#ebdcd0] text-[#182811] rounded-lg font-bold text-[10px] cursor-pointer shadow-2xs flex items-center gap-1">
+                <i class="fa-solid fa-arrow-up-from-bracket text-[9px]"></i> Choose Photo
+              </label>
+              <input type="file" id="petImageFileInput" accept="image/*" class="hidden">
+              <button type="button" id="removePhotoBtn" class="text-[10px] text-red-600 hover:underline hidden font-semibold">Remove</button>
+            </div>
+          </div>
+        </div>
         <!-- Pet Name -->
         <div>
           <label class="block text-[11px] font-bold text-[#788673] uppercase tracking-wider mb-1">Pet's Name *</label>

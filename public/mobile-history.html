@@ -18,6 +18,31 @@
     </div>
     <div class="flex items-center gap-2">
       <span class="text-[10px] font-extrabold text-[#788673]">19 AUDITED</span>
+
+      <!-- Notification Bell -- every other mobile page has this; History was missing it
+           (and the notifications.js script tag below) entirely. -->
+      <div class="relative">
+        <button type="button" id="notificationBellBtn" class="relative w-7 h-7 rounded-full bg-white border border-[#ebdcd0] text-[#182811] flex items-center justify-center shadow-2xs" title="Notifications">
+          <i class="fa-regular fa-bell text-xs"></i>
+          <span id="notificationBadge" class="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center shadow-xs">2</span>
+        </button>
+        <div id="notificationDropdown" class="hidden absolute right-[-48px] mt-2.5 w-72 sm:w-80 bg-white rounded-2xl border border-[#ebdcd0] shadow-2xl z-50 p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between pb-2 border-b border-[#f5efe6]">
+            <span class="font-extrabold text-xs text-[#182811] uppercase tracking-wide">Notifications</span>
+            <button type="button" id="markAllReadBtn" class="text-[10.5px] font-bold text-[#45671d] hover:underline cursor-pointer">Mark read</button>
+          </div>
+          <div id="notificationListContainer" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+          <div class="pt-2 border-t border-[#f5efe6] text-center">
+            <a href="mobile-notifications.html" class="text-[11px] font-extrabold text-[#45671d] hover:underline block">See all notifications →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Scan quick action -- desktop's history page has this in its header. -->
+      <a href="mobile-results.html" class="w-7 h-7 rounded-full bg-[#45671d] flex items-center justify-center text-xs text-white shadow-2xs" title="New Scan">
+        <i class="fa-solid fa-camera"></i>
+      </a>
+
       <a href="mobile-settings.html" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs text-[#182811]">
         <i class="fa-solid fa-gear"></i>
       </a>
@@ -46,9 +71,23 @@
       </div>
     </div>
 
+    <!-- Search Input -->
+    <div class="relative w-full">
+      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#788673] text-xs"></i>
+      <input type="text" id="historySearchInput" placeholder="Filter by product name, token, or batch..." class="w-full bg-white border border-[#ebdcd0] rounded-xl pl-9 pr-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#45671d]">
+    </div>
+
+    <!-- Filter Pills -->
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="historyFilterButtonGroup">
+      <button type="button" class="history-filter-btn px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-[#45671d] text-white shrink-0 shadow-xs" data-filter="all">All audits</button>
+      <button type="button" class="history-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-filter="caution">Caution</button>
+      <button type="button" class="history-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-filter="lethal">Lethal</button>
+      <button type="button" class="history-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0" data-filter="safe">Safe</button>
+    </div>
+
     <!-- Log Items Stack -->
     <div class="space-y-2.5 pt-1">
-      
+
       <div class="tactile-card p-3.5 space-y-1 bg-white border-l-4 border-l-[#ff9800]">
         <div class="flex items-center justify-between">
           <span class="font-mono text-[10px] font-bold text-slate-500">#KG-9021 • Oct 19</span>
@@ -86,6 +125,17 @@
       </div>
 
     </div>
+
+    <!-- Export Clinical Ledger Banner -->
+    <div class="tactile-card p-4 bg-[#182811] text-white flex flex-col items-center text-center gap-2.5 shadow-md">
+      <div>
+        <h3 class="text-xs font-extrabold text-white">Need these for your vet?</h3>
+        <p class="text-[10.5px] text-slate-300">Export the full ledger as a clinical report.</p>
+      </div>
+      <button onclick="window.print()" class="w-full py-2 rounded-xl bg-[#ffe066] text-[#182811] font-black text-[11px] uppercase tracking-wider shadow-md">
+        Export clinical ledger →
+      </button>
+    </div>
   </main>
 
   <!-- Floating Center Elevated Dock (Option 03/06) -->
@@ -115,5 +165,6 @@
   </nav>
 
   <script src="app.js"></script>
+  <script src="notifications.js"></script>
 </body>
 </html>

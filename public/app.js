@@ -739,6 +739,38 @@ document.addEventListener('DOMContentLoaded', () => {
       lethal: { edge: 'border-l-red-600', pill: 'bg-red-100 text-red-700', word: 'LETHAL' },
       allergy: { edge: 'border-l-purple-600', pill: 'bg-purple-100 text-purple-700', word: 'ALLERGY' }
     };
+    // Search box + filter pills -- mirrors desktop history.html's applyFilters(), which
+    // mobile never had any wiring for (the pills/search box were entirely missing from
+    // the mobile markup until now).
+    const mSearchInput = document.getElementById('historySearchInput');
+    const mFilterBtns = Array.prototype.slice.call(document.querySelectorAll('.history-filter-btn'));
+    const M_ACTIVE = 'history-filter-btn px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-[#45671d] text-white shrink-0 shadow-xs';
+    const M_IDLE = 'history-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0';
+    let mActiveFilter = 'all';
+    const mApplyFilters = function () {
+      if (!stack) return;
+      const q = mSearchInput ? mSearchInput.value.trim().toLowerCase() : '';
+      let shown = 0;
+      Array.prototype.forEach.call(stack.querySelectorAll('[data-status]'), function (card) {
+        const okStatus = mActiveFilter === 'all' || card.getAttribute('data-status') === mActiveFilter;
+        const okText = !q || card.textContent.toLowerCase().indexOf(q) !== -1;
+        card.style.display = okStatus && okText ? '' : 'none';
+        if (okStatus && okText) shown += 1;
+      });
+      let none = document.getElementById('mHistoryNoMatch');
+      if (!shown && stack.querySelector('[data-status]')) {
+        if (!none) { none = document.createElement('div'); none.id = 'mHistoryNoMatch'; none.className = 'tactile-card p-5 text-center text-xs text-[#788673] font-bold'; none.textContent = 'No scans match this filter.'; stack.appendChild(none); }
+      } else if (none) { none.remove(); }
+    };
+    mFilterBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        mActiveFilter = btn.getAttribute('data-filter') || 'all';
+        mFilterBtns.forEach(function (b) { b.className = b === btn ? M_ACTIVE : M_IDLE; });
+        mApplyFilters();
+      });
+    });
+    if (mSearchInput) mSearchInput.addEventListener('input', mApplyFilters);
+
     if (stack) {
       loadHistory().then(function (rows) {
         if (!Array.isArray(rows)) return;
@@ -751,18 +783,20 @@ document.addEventListener('DOMContentLoaded', () => {
           stats[3].textContent = n('Toxic') + ' Toxic';
         }
         stack.innerHTML = rows.length ? rows.map(function (r) {
-          const st = M[r.allergy ? 'allergy' : statusOf(r)];
+          const status = statusOf(r);
+          const st = M[r.allergy ? 'allergy' : status];
           const flagged = Array.isArray(r.flagged) ? r.flagged : [];
           const who = (r.petName ? r.petName + ' ' : '') + '(' + (isFeline(r.species) ? 'Feline' : 'Canine') + ')';
           const line = flagged.length ? flagged.slice(0, 2).join(', ') + ' flagged.' : 'No flagged ingredients.';
           return '' +
-            '<div class="tactile-card p-3.5 space-y-1 bg-white border-l-4 ' + st.edge + ' cursor-pointer" onclick="window.location.href=\'' + RESULTS_PAGE + '?batch=KG-' + esc(r.id) + '\'">' +
+            '<div class="tactile-card p-3.5 space-y-1 bg-white border-l-4 ' + st.edge + ' cursor-pointer" data-status="' + (r.allergy ? 'allergy' : status) + '" onclick="window.location.href=\'' + RESULTS_PAGE + '?batch=KG-' + esc(r.id) + '\'">' +
               '<div class="flex items-center justify-between"><span class="font-mono text-[10px] font-bold text-slate-500">#KG-' + esc(r.id) + ' • ' + esc(fmtShort(r.createdAt)) + '</span>' +
                 '<span class="px-2 py-0.5 rounded ' + st.pill + ' font-extrabold text-[8.5px]">' + st.word + '</span></div>' +
               '<h4 class="font-black text-xs text-[#182811]">' + esc(r.productName || 'Pet Food Scan') + '</h4>' +
               '<p class="text-[10.5px] text-[#788673]">' + esc(who) + ' • ' + esc(line) + '</p>' +
             '</div>';
         }).join('') : '<div class="tactile-card p-6 text-center text-xs text-[#788673] font-bold">No scans yet. Scan a label and it will show up here.</div>';
+        mApplyFilters();
       }).catch(function (err) { console.warn('History not loaded from the server, showing the page defaults:', err); });
     }
   }
@@ -917,6 +951,54 @@ document.addEventListener('DOMContentLoaded', () => {
     var petsById = {};
     var editingPetId = null;
 
+    // Companion photo upload -- mirrors desktop pets.js's own photo field, which the
+    // mobile add/edit form never had at all (editing only ever carried over whatever
+    // photo a pet already had; there was no way to set or change one on mobile).
+    var mCurrentUploadedPhoto = null;
+    var petImageFileInput = document.getElementById('petImageFileInput');
+    var petPhotoPreviewImg = document.getElementById('petPhotoPreviewImg');
+    var previewEmojiFallback = document.getElementById('previewEmojiFallback');
+    var removePhotoBtn = document.getElementById('removePhotoBtn');
+
+    function mShowPhotoInPreview(dataUrl) {
+      if (!petPhotoPreviewImg || !previewEmojiFallback) return;
+      if (dataUrl) {
+        petPhotoPreviewImg.src = dataUrl;
+        petPhotoPreviewImg.classList.remove('hidden');
+        previewEmojiFallback.classList.add('hidden');
+        if (removePhotoBtn) removePhotoBtn.classList.remove('hidden');
+      } else {
+        petPhotoPreviewImg.src = '';
+        petPhotoPreviewImg.classList.add('hidden');
+        previewEmojiFallback.classList.remove('hidden');
+        if (removePhotoBtn) removePhotoBtn.classList.add('hidden');
+      }
+    }
+
+    if (petImageFileInput) {
+      petImageFileInput.addEventListener('change', function (e) {
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+          alert('Selected image exceeds 2MB limit. Please select a smaller photo.');
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (evt) {
+          mCurrentUploadedPhoto = evt.target.result;
+          mShowPhotoInPreview(mCurrentUploadedPhoto);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    if (removePhotoBtn) {
+      removePhotoBtn.addEventListener('click', function () {
+        mCurrentUploadedPhoto = null;
+        if (petImageFileInput) petImageFileInput.value = '';
+        mShowPhotoInPreview(null);
+      });
+    }
+
     function mRenderPets(pets) {
       var main = document.getElementById('mobilePetsMain');
       var countEl = document.getElementById('mobilePetCount');
@@ -1003,6 +1085,8 @@ document.addEventListener('DOMContentLoaded', () => {
       set('mPetSupplementsInput', p.takes_supplements || 'No');
       mUpdateConditions(p.species || 'Canine');
       set('mPetMedicalConditionsInput', p.medical_conditions || 'None');
+      mCurrentUploadedPhoto = p.image_url || null;
+      mShowPhotoInPreview(mCurrentUploadedPhoto);
       modal.classList.remove('hidden');
       modal.style.display = 'flex';
     }
@@ -1033,6 +1117,8 @@ document.addEventListener('DOMContentLoaded', () => {
         var title = document.getElementById('mobileModalTitle');
         if (title) title.textContent = 'Add Pet';
         if (addForm) addForm.reset();
+        mCurrentUploadedPhoto = null;
+        mShowPhotoInPreview(null);
         mUpdateConditions('Canine');
         modal.classList.remove('hidden');
         modal.style.display = 'flex';
@@ -1082,7 +1168,7 @@ document.addEventListener('DOMContentLoaded', () => {
           takes_medicine: (document.getElementById('mPetMedicineInput') || {}).value || 'No',
           takes_supplements: (document.getElementById('mPetSupplementsInput') || {}).value || 'No',
           medical_conditions: (document.getElementById('mPetMedicalConditionsInput') || {}).value || 'None',
-          image_url: existingPet ? (existingPet.image_url || null) : null
+          image_url: mCurrentUploadedPhoto || (existingPet ? (existingPet.image_url || null) : null)
         };
         if (saveBtn) saveBtn.textContent = 'Saving…';
         fetch('/api/pets', {
@@ -1095,6 +1181,8 @@ document.addEventListener('DOMContentLoaded', () => {
           modal.style.display = 'none';
           addForm.reset();
           editingPetId = null;
+          mCurrentUploadedPhoto = null;
+          mShowPhotoInPreview(null);
           mLoadAndRender();
         }).catch(function(err) {
           console.error('Save error:', err);
