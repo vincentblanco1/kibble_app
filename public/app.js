@@ -1,3 +1,17 @@
+// Applies the saved dark/light preference on EVERY page, not just Settings (where it's set).
+// Runs immediately (this script tag sits right before </body>, so document.body already
+// exists) rather than waiting for DOMContentLoaded, so a dark-mode page doesn't flash light
+// first. Previously only settings.js ever added this class, and only while actually on the
+// Settings page -- navigating anywhere else silently dropped back to light, even though the
+// preference was saved correctly.
+(function applyStoredTheme() {
+  try {
+    if (localStorage.getItem('kibbleguard_theme') === 'dark') {
+      document.body.classList.add('dark-theme');
+    }
+  } catch (e) { /* localStorage unavailable (private mode, etc.) -- just stay light */ }
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 1. Universal User Profile & Title Sync across all pages
