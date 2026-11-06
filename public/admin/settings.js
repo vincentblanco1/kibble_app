@@ -434,3 +434,15 @@ function renderAdminTeamList() {
 
   if (typeof applyPermissionGating === 'function') applyPermissionGating();
 }
+
+// Every other admin page calls these two at the bottom of its own script --
+// applyRoleState() is what actually overwrites the sidebar's placeholder
+// "Dr. Sarah Chen, Chief Admin" with whoever is really logged in (it also
+// redirects to login if nobody is, and applies role-based permission
+// gating), and renderNavBadges() lights up the pending-item dots on the
+// sidebar links. Settings was the one page missing both calls, so the
+// sidebar on this page alone was stuck on the seed admin no matter who was
+// actually signed in -- everything else on the page (Admin Profile card,
+// Admin Team list) already read the real logged-in account correctly.
+renderNavBadges();
+applyRoleState();
