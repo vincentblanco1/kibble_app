@@ -70,26 +70,6 @@ function categoryOptionsHtml(selected) {
   }).join('');
 }
 
-// the "Regulatory Compliance Verified" switch on the add/edit form -
-// just a styled checkbox, this handles the visual on/off state
-function toggleRegVerifiedField() {
-  var checkbox = document.getElementById('f-reg-verified');
-  var toggle = document.getElementById('f-reg-verified-toggle');
-  var dot = toggle.querySelector('.pref-dot');
-  checkbox.checked = !checkbox.checked;
-  if (checkbox.checked) {
-    toggle.classList.add('bg-brand');
-    toggle.classList.remove('bg-stone-200');
-    dot.classList.add('left-6');
-    dot.classList.remove('left-1');
-  } else {
-    toggle.classList.remove('bg-brand');
-    toggle.classList.add('bg-stone-200');
-    dot.classList.remove('left-6');
-    dot.classList.add('left-1');
-  }
-}
-
 /* ---------- Per-species clinical details ----------
    Dogs and cats react differently, so every ingredient keeps a separate set of
    clinical details for each species -- stored as data-canine-metabolic /
@@ -499,21 +479,6 @@ function openIngredientForm(mode, rowId, prefillName) {
           clinicalPanelHtml('feline', existing ? existing.clinical.feline : null, existing ? existing.feline : 'Safe') +
         '</div>' +
 
-        '<div class="bg-stone-100 rounded-2xl p-5 border border-stone-200">' +
-          '<p class="text-xs font-bold text-dark uppercase tracking-widest mb-4 flex items-center gap-2"><span class="w-6 h-6 rounded-lg bg-dark text-white flex items-center justify-center text-[10px]"><i class="fa-solid fa-stamp"></i></span> Verification</p>' +
-          '<div class="grid grid-cols-2 gap-4">' +
-            '<div class="col-span-2"><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Scientific Source (optional)</label>' +
-              '<input id="f-source" value="' + escapeHTML(existing ? existing.source : '') + '" class="w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all" placeholder="Author (Year) or DOI link"></div>' +
-            '<div class="col-span-2 flex items-center justify-between p-4 rounded-2xl bg-white border border-brand/20">' +
-              '<div><p class="text-xs font-bold text-dark">Regulatory Compliance Verified</p><p class="text-[10px] text-stone-500 mt-0.5">Confirms this matches an official feed-control standard, regulatory safety guideline, or statutory prohibition.</p></div>' +
-              '<button type="button" id="f-reg-verified-toggle" onclick="toggleRegVerifiedField()" class="press shrink-0 w-12 h-7 rounded-full ' + (existing && existing.regVerified ? 'bg-brand' : 'bg-stone-200') + ' relative transition-all ml-4">' +
-                '<span class="pref-dot absolute top-1 w-5 h-5 rounded-full bg-white shadow-sm transition-all ' + (existing && existing.regVerified ? 'left-6' : 'left-1') + '"></span>' +
-              '</button>' +
-              '<input id="f-reg-verified" type="checkbox" ' + (existing && existing.regVerified ? 'checked' : '') + ' class="hidden">' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-
       '</div>',
     footerHtml:
       '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
@@ -546,9 +511,13 @@ function saveIngredient(mode, rowId) {
   var canineRisk = readSpeciesRiskIndex('canine', canine);
   var felineRisk = readSpeciesRiskIndex('feline', feline);
   var clinical = { canine: readClinicalForm('canine'), feline: readClinicalForm('feline') };
-  var source = document.getElementById('f-source').value.trim();
   var aliases = document.getElementById('f-aliases').value.trim();
-  var regVerified = document.getElementById('f-reg-verified').checked;
+  // Verification (Scientific Source / Regulatory Compliance Verified) no longer has
+  // fields on this form -- editing an ingredient keeps whatever it already had, and a
+  // brand-new one simply starts unverified, same as leaving the old toggle off.
+  var existingRow = mode === 'edit' ? document.getElementById(rowId) : null;
+  var source = existingRow ? (existingRow.dataset.source || '') : '';
+  var regVerified = existingRow ? existingRow.dataset.regVerified === 'true' : false;
   var regBody = regVerified ? 'Regulatory Compliance' : '';
 
   if (!name) {
