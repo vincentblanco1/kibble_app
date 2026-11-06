@@ -302,6 +302,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (petStatCount) petStatCount.textContent = `${pets.length} Registered`;
     if (petCanineCount) petCanineCount.textContent = `${canines.length} Canine`;
     if (petFelineCount) petFelineCount.textContent = `${felines.length} Feline`;
+    // Real count of pets with at least one sensitivity/allergy on file -- used to be a
+    // permanently hardcoded "Stratified Active" label that meant nothing.
+    const petStatWatches = document.getElementById('petStatWatches');
+    if (petStatWatches) {
+      const withWatches = pets.filter(p => normalizeSensitivities(p.allergies).length > 0).length;
+      petStatWatches.textContent = `${withWatches} ${withWatches === 1 ? 'Watch' : 'Watches'}`;
+    }
 
     if (!pets.length) {
       gridContainer.innerHTML = `
