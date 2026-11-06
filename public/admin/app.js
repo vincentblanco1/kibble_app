@@ -1589,6 +1589,7 @@ function openModal(opts) {
 /* Instant, non-animated removal. Used internally when swapping modal content
    so a new modal can never race a fade-out. */
 function removeModalImmediate() {
+  if (typeof stopScanCamera === 'function') stopScanCamera();
   var overlay = document.getElementById('kg-modal-overlay');
   if (overlay) overlay.remove();
   document.removeEventListener('keydown', escCloseHandler);
@@ -1598,6 +1599,9 @@ function removeModalImmediate() {
 // if a new modal opens with the same id before this one finishes closing,
 // re-querying would grab the wrong one
 function closeModal() {
+  // Scan Label's camera, if it was ever opened, must stop here too -- Escape
+  // and the overlay's own X both skip submitLabelScan()'s cleanup.
+  if (typeof stopScanCamera === 'function') stopScanCamera();
   var overlay = document.getElementById('kg-modal-overlay');
   if (!overlay) { document.removeEventListener('keydown', escCloseHandler); return; }
   var inner = overlay.firstElementChild;

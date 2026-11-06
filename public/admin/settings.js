@@ -1,6 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const themeLightBtn = document.getElementById('themeLightBtn');
-  const themeDarkBtn = document.getElementById('themeDarkBtn');
   const exportDataBtn = document.getElementById('exportDataBtn');
   const clearCacheBtn = document.getElementById('clearCacheBtn');
   const disputeReportForm = document.getElementById('disputeReportForm');
@@ -8,36 +6,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const recentReportsList = document.getElementById('recentReportsList');
   const reportsCountBadge = document.getElementById('reportsCountBadge');
 
-  // 1. Dark Mode Engine
-  const savedTheme = localStorage.getItem('kibbleguard_theme') || 'light';
-
-  function applyTheme(theme) {
-    if (theme === 'dark') {
-      document.body.classList.add('dark-theme');
-      if (themeDarkBtn && themeLightBtn) {
-        themeDarkBtn.className = 'flex-1 py-1.5 px-3 rounded-lg font-bold text-[11px] bg-[#45671d] text-white shadow-xs transition-all flex items-center justify-center gap-1.5';
-        themeLightBtn.className = 'flex-1 py-1.5 px-3 rounded-lg font-bold text-[11px] text-[#788673] hover:text-[#182811] transition-all flex items-center justify-center gap-1.5';
-      }
-    } else {
-      document.body.classList.remove('dark-theme');
-      if (themeDarkBtn && themeLightBtn) {
-        themeLightBtn.className = 'flex-1 py-1.5 px-3 rounded-lg font-bold text-[11px] bg-[#45671d] text-white shadow-xs transition-all flex items-center justify-center gap-1.5';
-        themeDarkBtn.className = 'flex-1 py-1.5 px-3 rounded-lg font-bold text-[11px] text-[#788673] hover:text-[#182811] transition-all flex items-center justify-center gap-1.5';
-      }
-    }
-  }
-
-  applyTheme(savedTheme);
-
-  themeLightBtn?.addEventListener('click', () => {
-    localStorage.setItem('kibbleguard_theme', 'light');
-    applyTheme('light');
-  });
-
-  themeDarkBtn?.addEventListener('click', () => {
-    localStorage.setItem('kibbleguard_theme', 'dark');
-    applyTheme('dark');
-  });
+  // Dark Mode Engine lives globally below (updateThemeSelectorUI / handleThemeButtonClick),
+  // since settings.html's buttons call it via inline onclick, which needs a global function,
+  // not one trapped inside this DOMContentLoaded closure. The actual theme engine
+  // (computeEffectiveTheme / applyTheme / restoreThemeState / setTheme) is in app.js and
+  // targets <html>.dark-theme, not document.body -- this file used to carry its own
+  // separate, older copy that targeted the body and a different pair of button ids
+  // ("themeLightBtn"/"themeDarkBtn") that no longer exist in the current settings.html,
+  // so it silently did nothing. Removed in favor of the one real implementation.
 
   // 2. Render Stored Dispute Reports
   function renderStoredReports() {
@@ -145,3 +121,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderStoredReports();
 });
+
+/* ---------- Appearance: theme selector ---------- */
+function updateThemeSelectorUI(preference) {
+  ['light', 'dark', 'system'].forEach(function (opt) {
+    var btn = document.getElementById('theme-btn-' + opt);
+    if (!btn) return;
+    btn.className = opt === preference
+      ? 'press flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-brand bg-brand-light text-brand transition-all'
+      : 'press flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-stone-100 text-stone-500 hover:border-stone-200 transition-all';
+  });
+}
+
+// one of the Light/Dark/System buttons was clicked
+function handleThemeButtonClick(preference) {
+  setTheme(preference);
+  var label = preference.charAt(0).toUpperCase() + preference.slice(1);
+  showToast('Theme set to ' + label, 'success');
+}
+
+updateThemeSelectorUI(localStorage.getItem('kibbleguard-theme') || 'system');
