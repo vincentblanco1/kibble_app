@@ -601,26 +601,33 @@ function saveIngredient(mode, rowId) {
     row.dataset.search = searchStr;
 
     // the real save: goes straight to the database, not gated on localStorage
-    // having room for the whole table. If the server rejects it, put the row
-    // back exactly as it was and re-throw so withSavingState's catch shows
-    // the error toast instead of a false success.
+    // having room for the whole table. The revert-on-failure below is wired as
+    // .then(onSuccess, onFailure) rather than .then(onSuccess).catch(onFailure)
+    // on purpose: with .catch(), a bug in onSuccess's own code (UI refresh,
+    // counters, etc.) would be caught by the SAME handler as a real server
+    // failure, wrongly reverting a save that had already gone through and
+    // telling the admin it failed when it hadn't. onFailure here only ever
+    // fires when syncIngredientToServer itself rejects.
     return syncIngredientToServer(row).then(function () {
-      // best-effort local cache for the rest of this tab's UI (search, counts,
-      // etc.) -- its own storage failing never undoes the save above, which
-      // already succeeded for real
+      // the real save already succeeded at this point -- nothing below should
+      // ever be able to make this look like it failed, so it's all best-effort
       try {
         savePersistedRows('kibbleguard-ingredients-rows', document.getElementById('ingredient-table-body'));
       } catch (e) {
         console.warn('Ingredient saved to the database, but this browser\'s local cache is full -- some lists may not reflect it until the page is refreshed.', e);
       }
       closeModal();
-      renameIngredientHistory(historyBefore.name, name);
-      recordIngredientChange(name, historyBefore, { canine: canine, feline: feline, canineRisk: canineRisk, felineRisk: felineRisk });
-      showToast('Ingredient node updated, changes are now live in the Risk Library', 'success');
-      logAdminAction('Edited ingredient: ' + name, 'edit');
-      renderIngredientScanCounts();
-      filterIngredients();
-    }).catch(function (e) {
+      try {
+        renameIngredientHistory(historyBefore.name, name);
+        recordIngredientChange(name, historyBefore, { canine: canine, feline: feline, canineRisk: canineRisk, felineRisk: felineRisk });
+        showToast('Ingredient node updated, changes are now live in the Risk Library', 'success');
+        logAdminAction('Edited ingredient: ' + name, 'edit');
+        renderIngredientScanCounts();
+        filterIngredients();
+      } catch (e) {
+        console.warn('Ingredient saved successfully, but refreshing the page after the save hit an error:', e);
+      }
+    }, function (e) {
       var revertTemp = document.createElement('tbody');
       revertTemp.innerHTML = originalRowHtml;
       row.parentNode.replaceChild(revertTemp.firstElementChild, row);
@@ -665,24 +672,31 @@ function saveIngredient(mode, rowId) {
 
     // same reasoning as the edit branch above: the real save goes straight to
     // the database first; local storage is a best-effort cache afterward, not
-    // a precondition for it. Undo the insert only if the real save fails.
+    // a precondition for it. Undo the insert only if the real save itself
+    // fails -- .then(onSuccess, onFailure), not .then(onSuccess).catch(onFailure),
+    // so a bug in the success-path UI refresh code can never be mistaken for a
+    // failed save and wrongly delete an ingredient that was actually saved fine.
     return syncIngredientToServer(tr).then(function () {
       try {
         savePersistedRows('kibbleguard-ingredients-rows', tbody);
       } catch (e) {
         console.warn('Ingredient saved to the database, but this browser\'s local cache is full -- some lists may not reflect it until the page is refreshed.', e);
       }
-      if (typeof applyPermissionGating === 'function') applyPermissionGating();
-      closeModal();
-      filterIngredients();
-      showToast('New ingredient added as Pending Verification -- a vet needs to approve it before pet owners see it', 'success');
-      logAdminAction('Added new ingredient: ' + name, 'add');
-      recordIngredientChange(name, null, { canine: canine, feline: feline, canineRisk: canineRisk, felineRisk: felineRisk });
-      if (typeof onIngredientAddedFromScan === 'function') onIngredientAddedFromScan(name);
-      finalizeScanIfPending(name, canine, feline);
-      tr.classList.add('flash-highlight');
-      setTimeout(function () { tr.classList.remove('flash-highlight'); }, 800);
-    }).catch(function (e) {
+      try {
+        if (typeof applyPermissionGating === 'function') applyPermissionGating();
+        closeModal();
+        filterIngredients();
+        showToast('New ingredient added as Pending Verification -- a vet needs to approve it before pet owners see it', 'success');
+        logAdminAction('Added new ingredient: ' + name, 'add');
+        recordIngredientChange(name, null, { canine: canine, feline: feline, canineRisk: canineRisk, felineRisk: felineRisk });
+        if (typeof onIngredientAddedFromScan === 'function') onIngredientAddedFromScan(name);
+        finalizeScanIfPending(name, canine, feline);
+        tr.classList.add('flash-highlight');
+        setTimeout(function () { tr.classList.remove('flash-highlight'); }, 800);
+      } catch (e) {
+        console.warn('Ingredient saved successfully, but refreshing the page after the save hit an error:', e);
+      }
+    }, function (e) {
       tr.remove();
       throw e;
     });
@@ -880,7 +894,8 @@ function updateIngredientCountLabel() {
   var total = rows.length;
   var visible = 0;
   rows.forEach(function (r) { if (r.dataset.filterMatch !== 'false') visible++; });
-  document.getElementById('ingredient-empty-row').classList.toggle('hidden', visible !== 0);
+  var emptyRowEl = document.getElementById('ingredient-empty-row');
+  if (emptyRowEl) emptyRowEl.classList.toggle('hidden', visible !== 0);
 
   // an empty list gets an explanation that matches WHY it's empty
   var titleEl = document.getElementById('ingredient-empty-title');
