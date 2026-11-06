@@ -259,6 +259,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // These hardcoded desktop classes used to overwrite mobile's smaller filter-pill
+  // sizing on the very first tap (mobile-notifications.html starts with px-3 py-1.5
+  // text-[11px] bg-white, desktop with px-4 py-2 text-xs bg-[#fbf9f6]) -- same class of
+  // bug found in wiki.js's species toggle, fixed the same way: branch on the page.
+  const IS_MOBILE = /mobile-/i.test(window.location.pathname);
+  const pageFilterInactiveCls = IS_MOBILE
+    ? 'notif-page-filter-btn px-3 py-1.5 rounded-full text-[11px] font-bold text-[#788673] bg-white border border-[#ebdcd0] shrink-0'
+    : 'notif-page-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0';
+  const pageFilterActiveCls = IS_MOBILE
+    ? 'notif-page-filter-btn px-3 py-1.5 rounded-full text-[11px] font-extrabold bg-[#45671d] text-white shrink-0 shadow-xs'
+    : 'notif-page-filter-btn px-4 py-2 rounded-full text-xs font-extrabold bg-[#45671d] text-white transition-all shrink-0 shadow-xs';
+
   pageFilterBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -266,10 +278,10 @@ document.addEventListener('DOMContentLoaded', () => {
       activePageFilter = button.getAttribute('data-filter');
 
       pageFilterBtns.forEach(b => {
-        b.className = 'notif-page-filter-btn px-4 py-2 rounded-full text-xs font-bold text-[#788673] bg-[#fbf9f6] border border-[#ebdcd0] hover:text-[#182811] transition-all shrink-0';
+        b.className = pageFilterInactiveCls;
       });
 
-      button.className = 'notif-page-filter-btn px-4 py-2 rounded-full text-xs font-extrabold bg-[#45671d] text-white transition-all shrink-0 shadow-xs';
+      button.className = pageFilterActiveCls;
 
       renderFullPage();
     });
