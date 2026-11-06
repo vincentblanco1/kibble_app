@@ -251,11 +251,10 @@
     // this now carries the card's real severity instead
     var severity = t.severity || 'Caution';
     var toxic = severity === 'Toxic';
-    var reasonLine = t.reason === 'toxic-verdict'
-      ? 'Toxic verdict &middot; Scan ID: <span class="font-mono text-stone-500">#KB-' + t.scan + '</span>'
-      : 'Scan ID: <span class="font-mono text-stone-500">#KB-' + t.scan + '</span> &middot; Not in the ingredient database yet';
+    var reasonLine = (toxic ? '<span class="font-bold text-danger">Possible Toxic Match:</span> ' : '&rarr; ') +
+      esc(t.match) + ' (' + t.confidence + '%) &middot; Scan ID: <span class="font-mono text-stone-500">#KB-' + t.scan + '</span>';
     return '<div class="feed-row p-6 flex items-center justify-between group" id="' + id + '" data-name="&quot;' + esc(t.name) + '&quot;" data-suggested-match="' + esc(t.match) +
-      '" data-severity="' + severity + '" data-scan="#KB-' + t.scan + '" data-confidence="not measured" data-reason="' + esc(t.reason || 'unrecognized') + '"' + (t.image ? ' data-image="' + esc(t.image) + '"' : '') + '>' +
+      '" data-severity="' + severity + '" data-scan="#KB-' + t.scan + '" data-confidence="' + t.confidence + '" data-reason="' + esc(t.reason || 'low-confidence-match') + '"' + (t.image ? ' data-image="' + esc(t.image) + '"' : '') + '>' +
       '<div class="flex items-center gap-5"><div class="w-12 h-12 rounded-xl ' + (toxic ? 'bg-danger/10 text-danger' : 'bg-amber-50 text-amber-500') + ' flex items-center justify-center text-xl group-hover:scale-110 transition-transform duration-200"><i class="fa-solid ' + (toxic ? 'fa-skull' : 'fa-flask') + '"></i></div>' +
       '<div><p class="text-sm font-bold text-dark italic">&quot;' + esc(t.name) + '&quot;</p>' +
       '<p class="text-[11px] text-stone-400">' + reasonLine + '</p></div></div>' +
@@ -366,7 +365,12 @@
         // scans never had an image to read, so there's honestly nothing to measure there
         confidence: (s.confidence != null ? s.confidence + '%' : 'Not measured'), clarity: 'Unknown', rawOcrText: s.rawOcrText,
         imageUrl: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : '',
-        substances: (s.substances || []).map(function (x) { return { name: x.name, category: x.category, level: x.unrated ? 'Unrated' : x.level, note: x.note }; }),
+        substances: (s.substances || []).map(function (x) {
+          return {
+            name: x.name, category: x.category, level: x.unrated ? 'Unrated' : x.level, note: x.note,
+            suggestedMatch: x.suggestedMatch || null, matchConfidence: (x.matchConfidence == null ? null : x.matchConfidence), possibleToxicMatch: !!x.possibleToxicMatch
+          };
+        }),
         dispute: s.dispute || null,
         needsTriage: !!s.needsTriage, triageReason: s.triageReason || null, confidenceTooWeak: !!s.confidenceTooWeak
       };
@@ -393,37 +397,58 @@
     });
     origSet.call(localStorage, K_INGS, JSON.stringify(ingRows));
 
-    // ---- Triage: ingredients the database does not know yet, AND any scan
-    // whose overall verdict came back Toxic (worth a second set of eyes even
-    // when every ingredient in it matched the database just fine) ----
-    var known = {};
-    (data.ingredients || []).forEach(function (i) { known[i.name.toLowerCase()] = true; });
+    // ---- Triage: scanned ingredients that fuzzy-matched something real in the
+    // database (so there's a concrete candidate to confirm) but whose match
+    // confidence fell below the Auto-Approve threshold. A token with no real
+    // candidate at all never lands here -- that belongs only in Waiting for a
+    // Rating (see getNotRatedDemand in ingredient-database.js). A candidate
+    // that's rated Toxic for this species, at or above the Critical Hazard
+    // Floor, is labeled Possible Toxic Match and sorted first (prioritizeTriageQueue
+    // in dashboard.js) with its own Overdue countdown (checkOverdueToxicCases).
+    var rulesSaved = null;
+    try { rulesSaved = JSON.parse(state['kibbleguard-safety-rules']); } catch (e) { rulesSaved = null; }
+    var autoApprove = (rulesSaved && rulesSaved.autoApprove != null && !isNaN(parseInt(rulesSaved.autoApprove, 10))) ? parseInt(rulesSaved.autoApprove, 10) : 92;
+    var hazardFloor = (rulesSaved && rulesSaved.hazardFloor != null && !isNaN(parseInt(rulesSaved.hazardFloor, 10))) ? parseInt(rulesSaved.hazardFloor, 10) : 15;
     var seenTokens = {}, cards = [];
     (data.scans || []).forEach(function (s) {
       (s.substances || []).forEach(function (x) {
         var key = String(x.name || '').toLowerCase();
-        if (!x.unrated || !key || seenTokens[key] || cards.length >= 15) return;
+        if (!key || !x.suggestedMatch || x.matchConfidence == null || seenTokens[key] || cards.length >= 15) return;
+        if (x.matchConfidence >= autoApprove) return;   // confident enough to not need a human
         seenTokens[key] = true;
-        var match = '';
-        Object.keys(known).some(function (n) { if (key.indexOf(n) !== -1 || n.indexOf(key) !== -1) { match = (data.ingredients.filter(function (i) { return i.name.toLowerCase() === n; })[0] || {}).name || ''; return true; } });
-        cards.push({ name: x.name, scan: s.id, match: match, severity: 'Caution', image: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : '' });
+        var isPossibleToxicMatch = !!x.possibleToxicMatch && x.matchConfidence >= hazardFloor;
+        cards.push({
+          name: x.name, scan: s.id, match: x.suggestedMatch, confidence: x.matchConfidence,
+          severity: isPossibleToxicMatch ? 'Toxic' : 'Caution',
+          reason: isPossibleToxicMatch ? 'possible-toxic-match' : 'low-confidence-match',
+          image: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : ''
+        });
       });
     });
-    (data.scans || []).forEach(function (s) {
-      if (s.rating !== 'Toxic' || cards.length >= 15) return;
-      var toxicSubstance = (s.substances || []).filter(function (x) { return x.level === 'Toxic'; })[0];
-      var name = toxicSubstance ? toxicSubstance.name : (s.product || ('Scan #KB-' + s.id));
-      var key = 'toxic-verdict:' + String(name).toLowerCase();
-      if (seenTokens[key]) return;
-      seenTokens[key] = true;
-      cards.push({ name: name, scan: s.id, match: '', severity: 'Toxic', reason: 'toxic-verdict', image: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : '' });
+    var seen = parse(state[K_SEEN], []), savedTriageRaw = parse(state[K_TRIAGE], []), fresh = [];
+    // One-time cleanup for cards saved under the old rules: a "toxic verdict" card
+    // (the whole scan's overall rating, unrelated to any one ingredient's match
+    // confidence) or a truly unrecognized ingredient with no suggested match at all
+    // -- neither belongs in High-Risk Triage anymore. The unrecognized ones now
+    // live only in Waiting for a Rating, which is computed fresh from the same
+    // scan data, so dropping them here is enough to "move" them there.
+    var savedTriage = savedTriageRaw.filter(function (html) {
+      var reasonMatch = /data-reason="([^"]*)"/.exec(html);
+      var matchMatch = /data-suggested-match="([^"]*)"/.exec(html);
+      var reason = reasonMatch ? reasonMatch[1] : '';
+      var suggested = matchMatch ? matchMatch[1] : '';
+      var stale = reason === 'toxic-verdict' || !suggested;
+      if (stale) {
+        var idMatch = /\sid="([^"]+)"/.exec(html);
+        if (idMatch) seen = seen.filter(function (s) { return s !== idMatch[1]; });
+      }
+      return !stale;
     });
-    var seen = parse(state[K_SEEN], []), savedTriage = parse(state[K_TRIAGE], []), fresh = [];
     cards.forEach(function (c) {
       var id = 'triage-' + c.scan + '-' + slug(c.name);
       if (seen.indexOf(id) === -1) { seen.push(id); fresh.push(triageCard(c)); }
     });
-    if (fresh.length || !(K_TRIAGE in state)) {
+    if (fresh.length || savedTriage.length !== savedTriageRaw.length || !(K_TRIAGE in state)) {
       var merged = savedTriage.concat(fresh);
       origSet.call(localStorage, K_TRIAGE, JSON.stringify(merged));
       origSet.call(localStorage, K_SEEN, JSON.stringify(seen));

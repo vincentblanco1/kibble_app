@@ -918,17 +918,43 @@ function isRealRating(level) {
   return level === 'Safe' || level === 'Caution' || level === 'Toxic';
 }
 
+// an admin can dismiss a Waiting for a Rating item (pure noise, a one-off OCR
+// garble not worth a database entry) or resolve it via "Add as Alias" (folded
+// into an existing ingredient rather than getting its own row) -- neither of
+// those leaves behind a real ingredient row for findIngredientRowByName to
+// find, so without this list a dismissed/aliased item would just reappear on
+// the next render as if nothing happened
+function getWaitingRatingDismissed() {
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem('kibbleguard-waiting-rating-dismissed')); } catch (e) { saved = null; }
+  return Array.isArray(saved) ? saved : [];
+}
+function addWaitingRatingDismissed(name, species) {
+  var key = String(name).toLowerCase() + '|' + species;
+  var list = getWaitingRatingDismissed();
+  if (list.indexOf(key) === -1) {
+    list.push(key);
+    try { localStorage.setItem('kibbleguard-waiting-rating-dismissed', JSON.stringify(list)); } catch (e) {}
+  }
+}
+
 function getNotRatedDemand() {
   var traces = (typeof RECORD_TRACES !== 'undefined') ? RECORD_TRACES : {};
+  var dismissed = getWaitingRatingDismissed();
   var items = {};
   Object.keys(traces).forEach(function (scanId) {
     var trace = traces[scanId];
     var sp = trace.species === 'feline' ? 'feline' : 'canine';
     trace.substances.forEach(function (s) {
       if (isRealRating(s.level)) return;
+      // a token that fuzzy-matched something real belongs in High-Risk Triage
+      // instead (there's a concrete candidate for an admin to confirm there) --
+      // only a token with no real candidate at all is genuinely "waiting"
+      if (s.suggestedMatch) return;
       var row = findIngredientRowByName(s.name);
       if (row && isRealRating(row.dataset[sp])) return;   // rated since that scan, nothing left to do
       var key = s.name + '|' + sp;
+      if (dismissed.indexOf(key.toLowerCase()) !== -1) return;
       if (!items[key]) items[key] = { name: s.name, species: sp, rowId: row ? row.id : null, scans: [] };
       items[key].scans.push({ scanId: scanId, owner: trace.owner || 'Unknown owner' });
     });
@@ -979,7 +1005,11 @@ function renderNeedsRatingPanel() {
               ' &middot; <a href="ocr-scans.html?inspect=' + encodeURIComponent(item.scans[0].scanId) + '" class="text-brand font-bold hover:underline">View scan</a></p>' +
           '</div>' +
         '</div>' +
-        '<button onclick="rateFromWaitingList(' + i + ')" data-perm="manageIngredients" class="press px-5 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all shrink-0">' + (item.rowId ? 'Rate for ' + word : 'Add to database') + '</button>' +
+        '<div class="flex items-center gap-2 shrink-0">' +
+          '<button onclick="rateFromWaitingList(' + i + ')" data-perm="manageIngredients" class="press px-4 py-2 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">' + (item.rowId ? 'Rate for ' + word : 'Add to Database') + '</button>' +
+          '<button onclick="openAddAsAliasForm(' + i + ')" data-perm="manageIngredients" class="press px-4 py-2 text-xs font-bold text-dark bg-stone-100 hover:bg-stone-200 rounded-xl transition-all">Add as Alias</button>' +
+          '<button onclick="dismissWaitingItem(' + i + ')" data-perm="manageIngredients" class="press px-3 py-2 text-xs font-bold text-stone-400 hover:text-danger transition-all">Dismiss</button>' +
+        '</div>' +
       '</div>';
   }).join('');
   if (typeof applyPermissionGating === 'function') applyPermissionGating();
@@ -1028,6 +1058,82 @@ function rateFromWaitingList(index) {
     if (nameField) nameField.value = item.name;
     showToast(item.name + ' is not in the database yet. Fill in its classification below', 'info');
   }
+}
+
+// "this scanned name is just another way of writing an ingredient we already
+// have" -- picks an existing entry and adds the scanned name to its aliases,
+// the same mechanism Merge uses, just starting from a Waiting for a Rating
+// item instead of a duplicate row
+function openAddAsAliasForm(index) {
+  var item = needsRatingItems[index];
+  if (!item) return;
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#ingredient-table-body tr[data-search]'));
+  if (!rows.length) { showToast('There are no ingredients yet to add this as an alias of', 'info'); return; }
+  var options = rows.map(function (r) {
+    var n = r.querySelector('[data-field="name"]').textContent;
+    return '<option value="' + r.id + '">' + escapeHTML(n) + '</option>';
+  }).join('');
+  openModal({
+    title: 'Add as Alias',
+    subtitle: '"' + item.name + '" will be recognized as another name for an existing ingredient',
+    bodyHtml:
+      '<label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Which existing ingredient is this?</label>' +
+      '<select id="f-alias-target" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand">' + options + '</select>' +
+      '<p class="text-[11px] text-stone-500 mt-4 leading-relaxed">Future scans that read &ldquo;' + escapeHTML(item.name) + '&rdquo; will be matched to whichever ingredient you choose here instead of landing back on this list.</p>',
+    footerHtml:
+      '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
+      '<button id="confirm-alias-btn" onclick="performAddAsAlias(' + index + ')" data-perm="manageIngredients" class="press px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Add Alias</button>'
+  });
+}
+
+function performAddAsAlias(index) {
+  var item = needsRatingItems[index];
+  if (!item) { closeModal(); return; }
+  var targetRow = document.getElementById(document.getElementById('f-alias-target').value);
+  if (!targetRow) { closeModal(); return; }
+  var btn = document.getElementById('confirm-alias-btn');
+
+  withSavingState(btn, 'Adding...', function () {
+    var targetAliases = targetRow.dataset.aliases ? targetRow.dataset.aliases.split(',').map(function (a) { return a.trim(); }).filter(Boolean) : [];
+    if (targetAliases.indexOf(item.name) === -1) targetAliases.push(item.name);
+    var mergedAliasStr = targetAliases.join(', ');
+
+    var targetName = targetRow.querySelector('[data-field="name"]').textContent;
+    var targetSubtitle = targetRow.querySelector('[data-field="subtitle"]').textContent;
+    var targetCategory = targetRow.querySelector('[data-field="category"]').textContent;
+    targetRow.dataset.aliases = mergedAliasStr;
+    targetRow.dataset.search = (targetName + ' ' + targetSubtitle + ' ' + targetCategory + ' ' + mergedAliasStr).toLowerCase();
+
+    var existingAkaLine = targetRow.querySelector('[data-field="aliases-line"]');
+    if (existingAkaLine) existingAkaLine.remove();
+    var akaHtml = '<p class="text-[10px] text-stone-400 mt-1" data-field="aliases-line"><span class="font-bold">aka</span> ' + escapeHTML(mergedAliasStr) + '</p>';
+    targetRow.querySelector('[data-field="subtitle"]').insertAdjacentHTML('afterend', akaHtml);
+
+    try {
+      savePersistedRows('kibbleguard-ingredients-rows', document.getElementById('ingredient-table-body'));
+    } catch (e) {
+      showToast(e && e.message ? e.message : 'Could not save that, please try again', 'danger');
+      return;
+    }
+
+    addWaitingRatingDismissed(item.name, item.species);
+    closeModal();
+    showToast('&ldquo;' + escapeHTML(item.name) + '&rdquo; added as an alias of &ldquo;' + escapeHTML(targetName) + '&rdquo;', 'success');
+    logAdminAction('Added "' + item.name + '" as an alias of ' + targetName + ' from Waiting for a Rating', 'merge');
+    recordIngredientEvent(targetName, 'Added alias "' + item.name + '" (from a pet owner scan with no match)');
+    computeRegistryHealth();   // refreshes Registry Health tiles and re-renders this panel together
+  });
+}
+
+// pure noise (a one-off OCR garble, not a real ingredient) -- just stops
+// asking about this exact name/species pair again
+function dismissWaitingItem(index) {
+  var item = needsRatingItems[index];
+  if (!item) return;
+  addWaitingRatingDismissed(item.name, item.species);
+  showToast('Dismissed &ldquo;' + escapeHTML(item.name) + '&rdquo;', 'info');
+  logAdminAction('Dismissed "' + item.name + '" from Waiting for a Rating', 'verify');
+  computeRegistryHealth();
 }
 
 /* ---------- Registry Health: computed live from the table ---------- */

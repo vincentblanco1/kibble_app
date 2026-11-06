@@ -810,6 +810,78 @@ async function fetchMergedIngredients() {
   return merged;
 }
 
+// ---------- OCR fuzzy matching (ported from the admin "OCR Token Tester") ----------
+// findMatch() below only catches an exact name/alias or a straight substring --
+// "Chick-n Meel" never contains "Chicken Meal" or vice versa, so it falls straight
+// through to "not found", even though a human reading the label can tell exactly
+// what it is. This gives a token that misses the exact/substring check one more
+// pass: a word-by-word similarity score against every ingredient name and alias,
+// the same scoring the admin's standalone OCR Token Tester uses. A close-enough
+// candidate becomes a "suggested match" attached to the Not Rated result -- never
+// used to silently assign a rating, only to tell High-Risk Triage there is
+// something concrete worth asking an admin to confirm, instead of routing the
+// token to Waiting for a Rating as a total unknown.
+function editDistance(a, b) {
+  var prev = [], i, j;
+  for (j = 0; j <= b.length; j++) prev[j] = j;
+  for (i = 1; i <= a.length; i++) {
+    var cur = [i];
+    for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+}
+function normalizeOcrToken(t) {
+  return String(t || '').toLowerCase().replace(/0/g, 'o').replace(/1/g, 'l').replace(/5/g, 's').replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+function ocrWords(t) {
+  return String(t || '').toLowerCase().replace(/0/g, 'o').replace(/1/g, 'l').replace(/5/g, 's').replace(/[^a-z0-9\s-]/g, '').replace(/-/g, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+}
+var OCR_GENERIC_WORDS = ['extract', 'powder', 'meal', 'oil', 'flavor', 'flavour', 'natural', 'concentrate', 'dried', 'dehydrated', 'derivative', 'compound', 'compounds'];
+function ocrContentWords(words) {
+  var kept = words.filter(function (w) { return OCR_GENERIC_WORDS.indexOf(w) === -1; });
+  return kept.length ? kept : words;
+}
+function ocrWordSim(a, b) {
+  if (a === b) return 1;
+  var lo = Math.min(a.length, b.length), hi = Math.max(a.length, b.length);
+  if (lo >= 4 && (a.indexOf(b) === 0 || b.indexOf(a) === 0)) return 0.55 + 0.45 * (lo / hi);
+  return 1 - editDistance(a, b) / hi;
+}
+function ocrWordScore(tokenWords, candWords) {
+  var tw = ocrContentWords(tokenWords), cw = ocrContentWords(candWords);
+  if (!tw.length || !cw.length) return 0;
+  function cover(from, to) {
+    var num = 0, den = 0;
+    from.forEach(function (f) {
+      var best = 0;
+      to.forEach(function (t) { best = Math.max(best, ocrWordSim(f, t)); });
+      num += best * f.length; den += f.length;
+    });
+    return den ? num / den : 0;
+  }
+  return Math.sqrt(cover(cw, tw) * cover(tw, cw));
+}
+// the lowest similarity worth surfacing as a "suggested match" at all -- below this,
+// it's noise, not a real candidate, and the token stays purely "not found"
+var OCR_FUZZY_FLOOR = 0.3;
+function findFuzzyIngredientMatch(token, mergedIngredients) {
+  var tNorm = normalizeOcrToken(token), words = ocrWords(token), best = null;
+  if (!tNorm) return null;
+  mergedIngredients.forEach(function (item) {
+    var candidates = [{ text: item.name, via: 'name' }];
+    String(item.aliases || '').split(',').forEach(function (a) { if (a.trim()) candidates.push({ text: a.trim(), via: 'alias' }); });
+    candidates.forEach(function (c) {
+      var cNorm = normalizeOcrToken(c.text);
+      if (!cNorm) return;
+      var whole = cNorm === tNorm ? 1 : 1 - editDistance(tNorm, cNorm) / Math.max(tNorm.length, cNorm.length);
+      var sim = Math.max(whole, ocrWordScore(words, ocrWords(c.text)));
+      if (!best || sim > best.sim) best = { item: item, name: c.text, sim: sim };
+    });
+  });
+  return (best && best.sim >= OCR_FUZZY_FLOOR) ? best : null;
+}
+
 // Scores a list of ingredient names against the merged Supabase ingredient list (shared by
 // scanning and re-opening a scan). Each match carries a real severity_score (0-100) from the
 // database for the species being scanned, so the score deduction scales with how dangerous the
@@ -957,11 +1029,29 @@ function analyzeIngredients(tokens, mergedIngredients, speciesKey) {
       // the pet owner can tell the difference between "checked, found fine" and "we don't
       // have data on this one yet," with a small score ding per unrated ingredient.
       score -= 1;
+      // One more pass before giving up entirely: a fuzzy word-similarity match (handles
+      // OCR misreads like "Chick-n Meel" for "Chicken Meal" that findMatch's exact/substring
+      // check can't catch). This never changes the rating or score above -- it only attaches
+      // a suggestion so High-Risk Triage has something concrete to ask an admin to confirm,
+      // instead of every unmatched token looking identically unknown.
+      var fuzzy = findFuzzyIngredientMatch(token, mergedIngredients);
+      var suggestedMatch = fuzzy ? fuzzy.name : null;
+      var matchConfidence = fuzzy ? Math.round(fuzzy.sim * 100) : null;
+      var possibleToxicMatch = false;
+      if (fuzzy) {
+        var fuzzySpeciesData = isFeline ? fuzzy.item.cat : fuzzy.item.dog;
+        possibleToxicMatch = !!(fuzzySpeciesData && fuzzySpeciesData.rating === 'Toxic');
+      }
       parsedResults.push({
         name: token,
         category: 'Ingredient',
         status: 'Not Rated',
-        notes: 'This ingredient was not found in the KibbleGuard database and has not been rated yet.'
+        notes: fuzzy
+          ? `This ingredient was not found in the KibbleGuard database and has not been rated yet. It may be a label read of "${suggestedMatch}" (${matchConfidence}% match) -- pending admin review.`
+          : 'This ingredient was not found in the KibbleGuard database and has not been rated yet.',
+        suggestedMatch,
+        matchConfidence,
+        possibleToxicMatch
       });
     }
   });
@@ -2232,8 +2322,15 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
               name: x.name,
               category: x.category,
               level: x.status || 'Safe',
-              unrated: x.category === 'Ingredient' && /no specific restrictions/i.test(x.notes || ''),
-              note: x.notes || ''
+              // was checking for text ("no specific restrictions") that analyzeIngredients
+              // never actually produces, so this was always false and no real scan ever
+              // populated Waiting for a Rating or High-Risk Triage's unrecognized-ingredient
+              // cards. The status itself ("Not Rated") is the real, reliable signal.
+              unrated: x.status === 'Not Rated',
+              note: x.notes || '',
+              suggestedMatch: x.suggestedMatch || null,
+              matchConfidence: (x.matchConfidence === null || x.matchConfidence === undefined) ? null : Number(x.matchConfidence),
+              possibleToxicMatch: !!x.possibleToxicMatch
             }));
             const createdIso = toSafeDate(r.created_at).toISOString();
             // pg can hand this back as a real boolean, a number, or (for an older row saved
