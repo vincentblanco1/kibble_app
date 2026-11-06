@@ -45,6 +45,43 @@ function verdictBadgeHtml(level) {
 
 /* ---------- Users & Pets-specific interactions ---------- */
 var currentUserStatusFilter = 'all';
+var currentUserBarangayFilter = 'all';
+
+// Fixed list of all 20 Las Piñas City barangays. Used everywhere a barangay
+// option list is needed (export modal + table filter) instead of deriving the
+// list from whichever barangays happen to have a registered user right now --
+// a barangay with zero users today should still show up (as 0), not vanish.
+var LAS_PINAS_BARANGAYS = [
+  'Almanza Uno', 'Almanza Dos', 'B.F. International Village', 'Daniel Fajardo',
+  'Elias Aldana', 'Ilaya', 'Manuyo Uno', 'Manuyo Dos', 'Pamplona Uno', 'Pamplona Dos',
+  'Pamplona Tres', 'Pilar', 'Pulang Lupa Uno', 'Pulang Lupa Dos', 'Talon Uno',
+  'Talon Dos', 'Talon Tres', 'Talon Kuatro', 'Talon Singko', 'Zapote'
+];
+
+// how many current table rows belong to a given barangay -- used to annotate
+// both the export modal's checkboxes and the table filter's dropdown options
+function countUsersInBarangay(barangay) {
+  var rows = document.querySelectorAll('#user-table-body tr[data-barangay]');
+  var count = 0;
+  rows.forEach(function (row) {
+    if (row.dataset.barangay === barangay) count++;
+  });
+  return count;
+}
+
+// populates the table's own "Barangay" filter dropdown (separate from the
+// export modal) with the fixed list + live per-barangay counts
+function populateBarangayFilterOptions() {
+  var sel = document.getElementById('user-filter-barangay');
+  if (!sel) return;
+  sel.innerHTML = '<option value="all">All Barangays</option>' +
+    LAS_PINAS_BARANGAYS.map(function (b) {
+      return '<option value="' + escapeHTML(b) + '">' + escapeHTML(b) + ' (' + countUsersInBarangay(b) + ')</option>';
+    }).join('');
+  // rebuilding the options wipes the selected value -- restore whatever filter
+  // was already active (e.g. after a refresh) instead of silently resetting to "All"
+  sel.value = currentUserBarangayFilter;
+}
 
 // keeps the Status dropdown's "this one is active" green outline and the Clear
 // filters button in step with the filter state
@@ -60,8 +97,19 @@ function syncUserFilterUI() {
     el.classList.toggle('bg-stone-100', !active);
     el.classList.toggle('text-dark', !active);
   }
+  var bEl = document.getElementById('user-filter-barangay');
+  if (bEl) {
+    var bActive = currentUserBarangayFilter !== 'all';
+    bEl.value = currentUserBarangayFilter;
+    bEl.classList.toggle('border-brand', bActive);
+    bEl.classList.toggle('bg-brand-light', bActive);
+    bEl.classList.toggle('text-brand', bActive);
+    bEl.classList.toggle('border-stone-200', !bActive);
+    bEl.classList.toggle('bg-stone-100', !bActive);
+    bEl.classList.toggle('text-dark', !bActive);
+  }
   var clearBtn = document.getElementById('user-clear-filters');
-  if (clearBtn) clearBtn.classList.toggle('hidden', currentUserStatusFilter === 'all');
+  if (clearBtn) clearBtn.classList.toggle('hidden', currentUserStatusFilter === 'all' && currentUserBarangayFilter === 'all');
 }
 
 // Status dropdown: all / active / flagged / banned
@@ -71,14 +119,22 @@ function setUserStatusFilter(status) {
   filterUsers();
 }
 
-// the "Clear filters" button: status back to "All" (search box has its own way to clear)
-function clearUserFilters() {
-  currentUserStatusFilter = 'all';
+// Barangay dropdown: all, or one of the 20 Las Piñas barangays
+function setUserBarangayFilter(barangay) {
+  currentUserBarangayFilter = barangay;
   syncUserFilterUI();
   filterUsers();
 }
 
-// combines the search box with the status filter above
+// the "Clear filters" button: status + barangay back to "All" (search box has its own way to clear)
+function clearUserFilters() {
+  currentUserStatusFilter = 'all';
+  currentUserBarangayFilter = 'all';
+  syncUserFilterUI();
+  filterUsers();
+}
+
+// combines the search box with the status + barangay filters above
 function filterUsers() {
   var q = document.getElementById('user-search').value.toLowerCase().trim();
   var rows = document.querySelectorAll('#user-table-body tr[data-search]');
@@ -86,13 +142,14 @@ function filterUsers() {
   rows.forEach(function (row) {
     var matchesSearch = row.dataset.search.indexOf(q) !== -1;
     var matchesStatus = currentUserStatusFilter === 'all' || row.dataset.status === currentUserStatusFilter;
-    var match = matchesSearch && matchesStatus;
+    var matchesBarangay = currentUserBarangayFilter === 'all' || row.dataset.barangay === currentUserBarangayFilter;
+    var match = matchesSearch && matchesStatus && matchesBarangay;
     row.dataset.filterMatch = match ? 'true' : 'false';
     if (match) visible++;
   });
   document.getElementById('user-empty-row').classList.toggle('hidden', visible !== 0);
   var label = document.getElementById('user-count-label');
-  var isFiltered = q || currentUserStatusFilter !== 'all';
+  var isFiltered = q || currentUserStatusFilter !== 'all' || currentUserBarangayFilter !== 'all';
   label.textContent = isFiltered ? ('Showing ' + visible + ' matching result' + (visible === 1 ? '' : 's')) : 'Showing all ' + visible + ' users';
   applyTablePagination('user-table-body', 'user-pagination-controls', 10, true);
 }
@@ -635,20 +692,15 @@ function confirmBanUser(rowId) {
   });
 }
 
-// every barangay actually in use right now, used to build the export
-// modal's location checkboxes. Region (NCR) and City (Las Piñas City) are
-// constant across every seeded user now that the paper's scope is Las
-// Piñas only, so filtering by either would be meaningless -- barangay is
-// the level that actually varies, so that's the real filter dimension
+// the full fixed list of barangays, used to build the export modal's location
+// checkboxes. Region (NCR) and City (Las Piñas City) are constant across every
+// seeded user now that the paper's scope is Las Piñas only, so filtering by
+// either would be meaningless -- barangay is the level that actually varies,
+// so that's the real filter dimension. Kept as its own function (rather than
+// referencing LAS_PINAS_BARANGAYS directly everywhere) so every caller stays
+// in sync if the list ever needs to change in one place.
 function getDistinctBarangays() {
-  var rows = document.querySelectorAll('#user-table-body tr[data-barangay]');
-  var seen = {};
-  var barangays = [];
-  rows.forEach(function (row) {
-    var b = row.dataset.barangay;
-    if (b && !seen[b]) { seen[b] = true; barangays.push(b); }
-  });
-  return barangays;
+  return LAS_PINAS_BARANGAYS.slice();
 }
 
 // turns a barangay name into a safe html id
@@ -664,8 +716,10 @@ function barangayCheckboxId(barangay) {
 function openExportOptions() {
   var barangays = getDistinctBarangays();
   var barangayCheckboxes = barangays.map(function (b) {
+    var count = countUsersInBarangay(b);
     return '<label class="flex items-center gap-2 px-3 py-2 rounded-xl bg-stone-100 border border-stone-200 cursor-pointer text-xs font-bold text-dark">' +
-      '<input type="checkbox" id="' + barangayCheckboxId(b) + '" checked class="accent-brand export-filter-input" onchange="updateExportMatchCount()">' + b + '</label>';
+      '<input type="checkbox" id="' + barangayCheckboxId(b) + '" checked class="accent-brand export-filter-input" onchange="updateExportMatchCount()">' +
+      b + ' <span class="text-stone-400 font-medium">(' + count + ')</span></label>';
   }).join('');
 
   openModal({
@@ -1118,6 +1172,7 @@ initScrollFadeIndicators();
 renderNavBadges();
 applyRoleState();
 restrictPageToRoles(['chief', 'support']);
+populateBarangayFilterOptions();
 filterUsers();   // also refreshes the "Showing all N users" label from the real rows
 
 // lets other pages (like the Inquiries admin page's Account Flag/Suspension
@@ -1142,6 +1197,7 @@ function refreshUsers() {
   refreshScanStatsFromRecords();
   refreshTopKpis();
   computePetDemographics();
+  populateBarangayFilterOptions();
   var page = PAGINATION_STATE['user-table-body'] || 1;
   filterUsers();
   if (page > 1) {

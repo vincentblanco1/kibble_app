@@ -126,7 +126,7 @@
     var scanText = st.n + (st.n === 1 ? ' Scan' : ' Scans') + ' &middot; ' + st.warn + (st.warn === 1 ? ' Risk Warning' : ' Risk Warnings') + ' triggered';
     var search = [u.name, u.email, pets.map(function (p) { return p.name; }).join(' '), 'pet owner'].join(' ').toLowerCase();
     return '<tr class="feed-row hover:bg-stone-50/50 group" id="' + id + '" data-name="' + esc(u.name) + '" data-email="' + esc(u.email) +
-      '" data-role="Pet Owner" data-country="" data-region="" data-city="" data-barangay="" data-feeding-style="" data-owned-animals="' + pets.length +
+      '" data-role="Pet Owner" data-country="" data-region="" data-city="" data-barangay="' + esc(u.barangay || '') + '" data-feeding-style="" data-owned-animals="' + pets.length +
       '" data-pets="' + esc(petData) + '" data-scans="' + scanText + '" data-status="' + (banned ? 'banned' : 'active') +
       '" data-joined="' + esc(isNaN(joined) ? '' : joined.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })) +
       '" data-joined-date="' + esc(isNaN(joined) ? '' : u.created_at.slice(0, 10)) + '" data-last-active="' + esc(st.last ? ago(st.last) : 'Never') + '"' +

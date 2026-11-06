@@ -2025,7 +2025,7 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
-  db.all(`SELECT id, name, email, is_banned, ban_reason, created_at FROM users WHERE role = 'user' ORDER BY created_at DESC`, [], (e1, users) => {
+  db.all(`SELECT id, name, email, is_banned, ban_reason, barangay, created_at FROM users WHERE role = 'user' ORDER BY created_at DESC`, [], (e1, users) => {
     if (e1) return res.status(500).json({ error: e1.message });
     db.all(`SELECT * FROM pets`, [], (e2, pets) => {
       if (e2) return res.status(500).json({ error: e2.message });
