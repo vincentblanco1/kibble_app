@@ -143,7 +143,7 @@
       <div class="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
           <h2 class="font-display font-bold text-base text-dark">Pipeline Accuracy</h2>
-          <p class="text-xs text-stone-400 font-medium">Computed from the <span id="acc-sample-size">-</span> scans currently in view, against the auto-approve threshold set in Safety Rules</p>
+          <p class="text-xs text-stone-400 font-medium">Computed from the <span id="acc-sample-size">-</span> scans currently in view (Extraction only counts scans with an OCR confidence score), against the auto-approve threshold set in Safety Rules</p>
         </div>
         <a href="safety-rules.html" class="press text-[10px] font-bold text-brand hover:underline uppercase tracking-widest">Adjust Thresholds</a>
       </div>
@@ -152,19 +152,19 @@
         <div class="p-5 rounded-2xl border border-stone-200 bg-stone-100/40">
           <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Extraction</p>
           <div id="acc-gauge-extraction" role="img" class="min-h-[210px] my-1"></div>
-          <p class="text-[10px] text-stone-400 leading-relaxed">Scans read above the auto-approve confidence threshold, needing no manual correction.</p>
+          <p class="text-[10px] text-stone-400 leading-relaxed">Of scans that got an OCR confidence score, the share read clearly enough to clear the auto-approve bar. This is about photo legibility only &mdash; a scan can score 100% here and still need review below for a possible Toxic ingredient match.</p>
         </div>
 
         <div class="p-5 rounded-2xl border border-stone-200 bg-stone-100/40">
           <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Detection</p>
           <div id="acc-gauge-detection" role="img" class="min-h-[210px] my-1"></div>
-          <p class="text-[10px] text-stone-400 leading-relaxed">Extracted ingredient tokens successfully matched to a database entry.</p>
+          <p class="text-[10px] text-stone-400 leading-relaxed">Of every ingredient word the OCR pulled off a label, the share that was found in the Ingredient Database. The rest are unmatched tokens &mdash; new or misspelled ingredients the database doesn't recognize yet.</p>
         </div>
 
         <div class="p-5 rounded-2xl border border-stone-200 bg-stone-100/40">
           <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Classification</p>
           <div id="acc-gauge-classification" role="img" class="min-h-[210px] my-1"></div>
-          <p class="text-[10px] text-stone-400 leading-relaxed">Verdicts that stood after review, not overturned by an owner dispute.</p>
+          <p class="text-[10px] text-stone-400 leading-relaxed">Of all scans, the share whose Safe/Caution/Toxic verdict still stands &mdash; no open dispute from a pet owner, and no admin override that changed the result.</p>
         </div>
       </div>
     </div>
