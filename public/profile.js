@@ -153,20 +153,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   avatarInput?.addEventListener('change', (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        userProfile.avatar = event.target.result;
-        // Switch from initials to photo
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      // A raw phone-camera photo can be several MB as base64, which silently
+      // broke Save: localStorage.setItem() on submit would throw a quota
+      // error that nothing caught, so the handler died right there and the
+      // button looked like it did nothing. Downscale to a small thumbnail
+      // first so it comfortably fits in both localStorage and the database.
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 256;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const width = Math.max(1, Math.round(img.width * scale));
+        const height = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL('image/jpeg', 0.82);
+
+        userProfile.avatar = compressed;
         if (profileAvatarPreview) {
-          profileAvatarPreview.src = event.target.result;
+          profileAvatarPreview.src = compressed;
           profileAvatarPreview.classList.remove('hidden');
         }
         const profileAvatarInitials = document.getElementById('profileAvatarInitials');
         if (profileAvatarInitials) profileAvatarInitials.classList.add('hidden');
       };
-      reader.readAsDataURL(file);
-    }
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
   });
 
   editToggleBtn?.addEventListener('click', () => setEditMode(true));
@@ -203,7 +220,13 @@ document.addEventListener('DOMContentLoaded', () => {
       feedingStyle: getVal('feedingStyleInput')
     };
 
-    localStorage.setItem('kibbleguard_user_profile', JSON.stringify(userProfile));
+    try {
+      localStorage.setItem('kibbleguard_user_profile', JSON.stringify(userProfile));
+    } catch (storageErr) {
+      console.warn('Could not save profile locally:', storageErr);
+      alert('That photo is too large to save. Please pick a smaller photo and try again.');
+      return;
+    }
 
     // Save to database if logged in
     if (kgUserId) {
