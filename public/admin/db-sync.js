@@ -366,10 +366,16 @@
         // scans never had an image to read, so there's honestly nothing to measure there
         confidence: (s.confidence != null ? s.confidence + '%' : 'Not measured'), rawOcrText: s.rawOcrText,
         imageUrl: s.hasImage ? '/api/admin/scan-image/' + s.id + '?t=' + encodeURIComponent(t) : '',
+        // the actual score/verdict the pet owner saw, straight from the scans row --
+        // Inspect used to always recompute its own score from substances alone, which
+        // silently dropped any allergy penalty (see applyPetAllergies() server-side)
+        // and could show e.g. 82/Caution here while the table correctly said 15/Toxic
+        score: (s.score == null ? null : Number(s.score)), rating: s.rating || null,
         substances: (s.substances || []).map(function (x) {
           return {
             name: x.name, category: x.category, level: x.unrated ? 'Unrated' : x.level, note: x.note,
-            suggestedMatch: x.suggestedMatch || null, matchConfidence: (x.matchConfidence == null ? null : x.matchConfidence), possibleToxicMatch: !!x.possibleToxicMatch
+            suggestedMatch: x.suggestedMatch || null, matchConfidence: (x.matchConfidence == null ? null : x.matchConfidence), possibleToxicMatch: !!x.possibleToxicMatch,
+            allergy: x.allergy || null
           };
         }),
         dispute: s.dispute || null,

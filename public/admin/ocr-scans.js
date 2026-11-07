@@ -256,17 +256,38 @@ function inspectRecord(scanId) {
   }
 
   var outcome = computeScanOutcome(data.substances);
-  var score = outcome.score;
-  var verdict = outcome.verdict;
+  // computeScanOutcome only ever looks at each ingredient's own Safe/Caution/Toxic
+  // classification, so it has no way to know about a pet allergy match, which can
+  // push the real score much lower (see applyPetAllergies() server-side). Prefer the
+  // real stored score/rating the pet owner actually saw -- except when nothing on
+  // this label was recognized at all (ratedCount 0), where the real rating would
+  // misleadingly read "Safe" (nothing was deducted because nothing was rated) and
+  // "Unable to Assess" is the honest thing to show instead.
+  var score, verdict;
+  if (outcome.ratedCount === 0) {
+    score = outcome.score;
+    verdict = outcome.verdict;
+  } else if (data.score != null && data.rating) {
+    score = data.score;
+    verdict = data.rating;
+  } else {
+    score = outcome.score;
+    verdict = outcome.verdict;
+  }
+  var allergyMatches = data.substances.filter(function (s) { return !!s.allergy; });
   var speciesWord = data.species === 'feline' ? 'cats' : 'dogs';
   var scoreColor = verdict === 'Unrated' ? 'text-stone-400 border-stone-300' : verdict === 'Safe' ? 'text-safe border-safe' : verdict === 'Caution' ? 'text-caution border-caution' : 'text-danger border-danger';
 
   var substancesHtml = data.substances.map(function (s) {
     var pts = pointsForLevel(s.level);
     var isUnrated = normalizeLevel(s.level) === 'Unrated';
+    // pointsForLevel only knows Safe/Caution/Toxic -- an allergy match costs the pet
+    // owner's actual score an extra 35 (direct) or 15 (related) pts server-side that
+    // this per-ingredient breakdown can't show, hence the "+ allergy penalty" note
     var ptsLabel = isUnrated ? 'Not scored' : (pts === 0 ? 'No deduction' : (pts + ' pts'));
-    var ptsColor = pts <= -55 ? 'text-danger' : (pts < 0 ? 'text-caution' : 'text-stone-400');
-    return '<div class="flex items-start gap-4 p-4 rounded-2xl border border-stone-200 bg-stone-100/50">' +
+    if (s.allergy) ptsLabel += ' + allergy penalty';
+    var ptsColor = pts <= -55 || s.allergy ? 'text-danger' : (pts < 0 ? 'text-caution' : 'text-stone-400');
+    return '<div class="flex items-start gap-4 p-4 rounded-2xl border ' + (s.allergy ? 'border-danger/20 bg-danger/5' : 'border-stone-200 bg-stone-100/50') + '">' +
       '<div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-stone-400 shrink-0"><i class="fa-solid fa-flask"></i></div>' +
       '<div class="flex-1 min-w-0">' +
         '<div class="flex items-center justify-between gap-3 mb-1">' +
@@ -278,6 +299,7 @@ function inspectRecord(scanId) {
         '</div>' +
         '<p class="text-[10px] text-stone-400 uppercase tracking-widest font-bold mb-1">' + escapeHTML(s.category) + '</p>' +
         '<p class="text-xs text-stone-500 leading-relaxed">' + escapeHTML(s.note) + '</p>' +
+        (s.allergy ? '<p class="text-[11px] font-bold text-danger mt-1.5"><i class="fa-solid fa-paw mr-1"></i>' + escapeHTML(s.allergy.message) + '</p>' : '') +
       '</div>' +
     '</div>';
   }).join('');
@@ -308,15 +330,24 @@ function inspectRecord(scanId) {
     bodyHtml:
       '<div class="flex items-center gap-6 mb-6 p-6 rounded-2xl bg-stone-100 border border-stone-200">' +
         '<div class="w-20 h-20 rounded-full border-4 ' + scoreColor + ' flex flex-col items-center justify-center shrink-0 bg-white">' +
-          '<span class="text-2xl font-display font-bold ' + scoreColor.split(' ')[0] + ' leading-none">' + (outcome.score === null ? '&mdash;' : score) + '</span>' +
-          '<span class="text-[8px] text-stone-400 font-bold text-center leading-tight">' + (outcome.score === null ? 'no rating' : (outcome.unratedNames.length ? 'rated only' : '/ 100')) + '</span>' +
+          '<span class="text-2xl font-display font-bold ' + scoreColor.split(' ')[0] + ' leading-none">' + (score === null ? '&mdash;' : score) + '</span>' +
+          '<span class="text-[8px] text-stone-400 font-bold text-center leading-tight">' + (score === null ? 'no rating' : (outcome.unratedNames.length ? 'rated only' : '/ 100')) + '</span>' +
         '</div>' +
         '<div class="flex-1">' +
           '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Safety Score and Final Verdict</p>' +
           verdictBadgeHtml(verdict) +
-          '<p class="text-[11px] text-stone-500 mt-2 leading-relaxed">Scored from every detected ingredient\u2019s classification, not just whether one Toxic match exists. Caution ingredients cost points too, and any Toxic match caps the score below the Safe range.</p>' +
+          '<p class="text-[11px] text-stone-500 mt-2 leading-relaxed">Scored from every detected ingredient\u2019s classification, not just whether one Toxic match exists' + (allergyMatches.length ? ', plus a penalty for any match against the pet\u2019s own allergy profile (see below)' : '') + '. Caution ingredients cost points too, and any Toxic match caps the score below the Safe range.</p>' +
         '</div>' +
       '</div>' +
+      (allergyMatches.length
+        ? '<div class="flex items-start gap-3 p-4 rounded-2xl bg-danger/5 border border-danger/10 mb-6">' +
+            '<i class="fa-solid fa-paw text-danger mt-0.5"></i>' +
+            '<div>' +
+              '<p class="text-xs font-bold text-danger">Lowered by a pet allergy match, not just ingredient risk</p>' +
+              '<p class="text-[11px] text-stone-600 leading-relaxed mt-1">' + allergyMatches.map(function (s) { return escapeHTML(s.allergy.message); }).join(' ') + ' The matched ingredient' + (allergyMatches.length === 1 ? ' is' : 's are') + ' marked below. This penalty is on top of each ingredient\u2019s own Safe/Caution/Toxic rating, which is why the score can read lower than the ingredient list alone would suggest.</p>' +
+            '</div>' +
+          '</div>'
+        : '') +
       unratedBannerHtml +
       '<div class="grid grid-cols-2 gap-4 mb-6">' +
         '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 text-center"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">OCR Confidence</p><p class="text-sm font-bold text-dark">' + escapeHTML(data.confidence) + '</p></div>' +
@@ -335,7 +366,7 @@ function inspectRecord(scanId) {
           '</div>' +
         '</div>' +
       '</details>' +
-      '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-3">Score Breakdown: 100 Base, Minus Each Match Below</p>' +
+      '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-3">Score Breakdown: 100 Base, Minus Each Match Below' + (allergyMatches.length ? ' (Plus the Allergy Penalty Above)' : '') + '</p>' +
       '<div class="space-y-3 mb-6">' + substancesHtml + '</div>' +
       (data.dispute && !isDisputeResolved(scanId) ? disputePanelHtml(scanId, data.dispute, data.substances) : '') +
       '<details class="text-xs"><summary class="cursor-pointer font-bold text-stone-400 hover:text-dark uppercase tracking-widest text-[10px]">View Raw Extraction Payload</summary>' +

@@ -2366,7 +2366,13 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
               note: x.notes || '',
               suggestedMatch: x.suggestedMatch || null,
               matchConfidence: (x.matchConfidence === null || x.matchConfidence === undefined) ? null : Number(x.matchConfidence),
-              possibleToxicMatch: !!x.possibleToxicMatch
+              possibleToxicMatch: !!x.possibleToxicMatch,
+              // set by applyPetAllergies() at scan time when this ingredient matched the
+              // pet's own allergy profile -- was being silently dropped here, which is why
+              // a scan could show Toxic in the table (score 15, allergy penalty applied)
+              // but look Safe/Caution in the admin Inspect modal, which only ever saw the
+              // ingredient's own classification and had no idea an allergy was involved
+              allergy: x.allergy || null
             }));
             const createdIso = toSafeDate(r.created_at).toISOString();
             // pg can hand this back as a real boolean, a number, or (for an older row saved
