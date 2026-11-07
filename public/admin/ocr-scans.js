@@ -140,7 +140,19 @@ function filterRecords() {
   // block -- otherwise searching a full name like "Sarah Jenkins" finds
   // nothing, since a row's data-search has "sarah" and "buster" as
   // separate words, never that exact two-word phrase together
-  var qWords = q ? q.split(/\s+/) : [];
+  // a scan ID word also gets normalized before matching: the pet owner app
+  // has always labeled this same scan "KG-<n>" everywhere (history, results,
+  // dispute references -- see results.js's own ?batch=KG- parsing), while
+  // the admin side has always used "KB-<n>" for that identical database row
+  // (see idTxt in scanRow(), db-sync.js). An admin pasting in exactly what an
+  // owner reported -- "KG-48", "#KG-48", even the "#KB-48" shown right there
+  // in this very table -- used to match nothing, because data-search only
+  // ever contains the bare "kb-48" form.
+  var qWords = q ? q.split(/\s+/).map(function (word) {
+    word = word.replace(/^#/, '');
+    var kgMatch = /^kg-?(\d+)$/.exec(word);
+    return kgMatch ? 'kb-' + kgMatch[1] : word;
+  }) : [];
   var rows = document.querySelectorAll('#records-table-body tr[data-search]');
   var visible = 0;
   rows.forEach(function (row) {
