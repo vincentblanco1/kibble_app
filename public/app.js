@@ -914,8 +914,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // 5. Pet Profiles (mobile): your pets from the database + add-pet form
   // --------------------------------------------------------------------------
   if (IS_MOBILE && /mobile-pets\.html$/.test(window.location.pathname)) {
-    var CANINE_CONDS = ['None','Allergies','Arthritis','Diabetes','Epilepsy','Heart Disease','Hypothyroidism','IBD','Kidney Disease','Liver Disease','Obesity','Skin Conditions'];
-    var FELINE_CONDS = ['None','Allergies','Arthritis','CKD (Chronic Kidney Disease)','Diabetes','Feline Asthma','Feline Lower Urinary Tract Disease','Heart Disease','Hyperthyroidism','IBD','Obesity','Skin Conditions'];
+    var CANINE_CONDS = ['Allergies'];
+    var FELINE_CONDS = ['Allergies'];
 
     function mUpdateConditions(species) {
       var sel = document.getElementById('mPetMedicalConditionsInput');

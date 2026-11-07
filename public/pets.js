@@ -125,8 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const petSupplementsInput = document.getElementById('petSupplementsInput');
   const petMedicalConditionsInput = document.getElementById('petMedicalConditionsInput');
 
-  const CANINE_CONDITIONS = ['None','Allergies','Arthritis','Diabetes','Epilepsy','Heart Disease','Hypothyroidism','IBD','Kidney Disease','Liver Disease','Obesity','Skin Conditions'];
-  const FELINE_CONDITIONS = ['None','Allergies','Arthritis','CKD (Chronic Kidney Disease)','Diabetes','Feline Asthma','Feline Lower Urinary Tract Disease','Heart Disease','Hyperthyroidism','IBD','Obesity','Skin Conditions'];
+  const CANINE_CONDITIONS = ['Allergies'];
+  const FELINE_CONDITIONS = ['Allergies'];
 
   function updateMedicalConditionsDropdown(species) {
     if (!petMedicalConditionsInput) return;
