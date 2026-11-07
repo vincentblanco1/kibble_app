@@ -210,8 +210,10 @@ document.addEventListener('DOMContentLoaded', () => {
           severity_score: Math.max(dog?.severity_score || 0, cat?.severity_score || 0),
           dog_severity: dog?.severity_score || 0,
           cat_severity: cat?.severity_score || 0,
-          dog_risk: (dog?.risk || 'safe').toLowerCase(),
-          cat_risk: (cat?.risk || 'safe').toLowerCase(),
+          // No row for a species at all means it hasn't been assessed -- 'unrated', never
+          // defaulted to 'safe' (a species with no data is not the same as a safe one).
+          dog_risk: dog ? (dog.risk || 'safe').toLowerCase() : 'unrated',
+          cat_risk: cat ? (cat.risk || 'safe').toLowerCase() : 'unrated',
           // Notes: prefer dog notes, fallback to cat
           notes: dog?.notes || cat?.notes || '',
           dog_notes: dog?.notes || '',
@@ -222,9 +224,16 @@ document.addEventListener('DOMContentLoaded', () => {
           dosage: dog?.dosage || cat?.dosage || '',
           dog_dosage: dog?.dosage || '',
           cat_dosage: cat?.dosage || '',
+          alternatives_guidance: dog?.alternatives_guidance || cat?.alternatives_guidance || '',
+          dog_alternatives: dog?.alternatives_guidance || '',
+          cat_alternatives: cat?.alternatives_guidance || '',
           emergency_action: dog?.emergency_action || cat?.emergency_action || '',
           dog_emergency: dog?.emergency_action || '',
           cat_emergency: cat?.emergency_action || '',
+          dog_weight_specific: dog?.weight_specific_data || '',
+          cat_weight_specific: cat?.weight_specific_data || '',
+          dog_breed_specific: dog?.breed_specific_data || '',
+          cat_breed_specific: cat?.breed_specific_data || '',
           weight_specific: dog?.weight_specific_data || cat?.weight_specific_data || '',
           age_specific: dog?.age_specific_data || cat?.age_specific_data || '',
           breed_specific: dog?.breed_specific_data || cat?.breed_specific_data || ''
@@ -329,6 +338,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const r = (risk || '').toLowerCase();
     if (r === 'toxic' || r === 'highly toxic') return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', strong: 'text-red-700', label: 'text-red-600', badgeBg: 'bg-red-100', badgeBorder: 'border-red-200', badgeText: 'text-red-700' };
     if (r === 'caution') return { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-amber-700', strong: 'text-amber-800', label: 'text-[#b45309]', badgeBg: 'bg-orange-100', badgeBorder: 'border-orange-200', badgeText: 'text-[#b45309]' };
+    // Not assessed for this species -- deliberately neutral grey, never green, so it's
+    // never mistaken for an actual "Safe" rating (an ingredient with no row for a species
+    // simply hasn't been evaluated for it, which is not the same thing as safe).
+    if (r === 'unrated') return { bg: 'bg-slate-100', border: 'border-slate-200', text: 'text-slate-500', strong: 'text-slate-500', label: 'text-slate-500', badgeBg: 'bg-slate-100', badgeBorder: 'border-slate-200', badgeText: 'text-slate-500' };
     // safe / beneficial
     return { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', strong: 'text-emerald-800', label: 'text-emerald-700', badgeBg: 'bg-emerald-100', badgeBorder: 'border-emerald-200', badgeText: 'text-emerald-800' };
   }
@@ -340,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (r === 'caution') return 'Caution';
     if (r === 'safe') return 'Safe';
     if (r === 'beneficial') return 'Beneficial';
+    if (r === 'unrated') return 'Not Rated';
     return risk || 'Unknown';
   }
 
@@ -782,12 +796,43 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeModalBtn = document.getElementById('closeDossierModalBtn');
   const closeModalBtn2 = document.getElementById('closeDossierModalBtn2');
 
+  // One labeled sub-block inside a species' assessment box -- only rendered when
+  // there's real text for it, so an unfilled field just doesn't take up space.
+  function dossierField(label, value) {
+    if (!value) return '';
+    return '<div><strong class="block text-[9.5px] font-extrabold uppercase tracking-wide opacity-70">' + escapeHtml(label) + '</strong>' +
+      '<p class="text-[11.5px] leading-relaxed whitespace-pre-line">' + escapeHtml(value) + '</p></div>';
+  }
+
+  // Builds one species' full assessment -- every column the database has for that
+  // species (not just notes), so nothing documented for an ingredient is left out
+  // of what a pet owner can see here.
+  function renderSpeciesAssessment(containerId, badgeId, hasRow, risk, notes, symptoms, dosage, alternatives, breed, weight) {
+    const container = document.getElementById(containerId);
+    const badgeEl = document.getElementById(badgeId);
+    const color = getRiskColor(risk);
+    if (badgeEl) {
+      badgeEl.innerHTML = '<span class="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase border ' + color.badgeBg + ' ' + color.badgeBorder + ' ' + color.badgeText + '">' + escapeHtml(getRiskLabel(risk)) + '</span>';
+    }
+    if (!container) return;
+    if (!hasRow) {
+      container.innerHTML = '<p class="text-[11.5px] leading-relaxed italic opacity-70">This ingredient has not been assessed for this species. Do not assume it is safe.</p>';
+      return;
+    }
+    const html = [
+      dossierField('Overview', notes),
+      dossierField('Clinical Symptoms', symptoms),
+      dossierField('Dosage / Toxic Threshold', dosage),
+      dossierField('Vet-Safe Alternatives / Guidance', alternatives),
+      dossierField('Breed-Specific Risk', breed),
+      dossierField('Weight-Specific Risk', weight)
+    ].join('');
+    container.innerHTML = html || '<p class="text-[11.5px] leading-relaxed italic opacity-70">No further clinical detail documented yet.</p>';
+  }
+
   function openDossier(ingredientId) {
     const item = allIngredients[ingredientId];
     if (!item || !modal) return;
-
-    const dogColor = getRiskColor(item.dog_risk);
-    const catColor = getRiskColor(item.cat_risk);
 
     document.getElementById('dossierModalTitle').textContent = item.primary_name;
     document.getElementById('dossierModalCategory').textContent = (item.category || 'Ingredient').toUpperCase();
@@ -796,28 +841,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mechanism / Notes
     document.getElementById('dossierModalMechanism').textContent = item.notes || 'No detailed notes available for this ingredient.';
 
-    // Canine details
-    const canineEl = document.getElementById('dossierModalCanine');
-    let canineText = item.dog_notes || 'No canine-specific data available.';
-    if (item.dog_clinical) canineText += '\n\nClinical symptoms: ' + item.dog_clinical;
-    if (item.dog_dosage) canineText += '\n\nDosage info: ' + item.dog_dosage;
-    canineEl.textContent = canineText;
+    renderSpeciesAssessment('dossierModalCanine', 'dossierModalCanineBadge', !!item.dog, item.dog_risk,
+      item.dog_notes, item.dog_clinical, item.dog_dosage, item.dog_alternatives, item.dog_breed_specific, item.dog_weight_specific);
+    renderSpeciesAssessment('dossierModalFeline', 'dossierModalFelineBadge', !!item.cat, item.cat_risk,
+      item.cat_notes, item.cat_clinical, item.cat_dosage, item.cat_alternatives, item.cat_breed_specific, item.cat_weight_specific);
 
-    // Feline details
-    const felineEl = document.getElementById('dossierModalFeline');
-    let felineText = item.cat_notes || 'No feline-specific data available.';
-    if (item.cat_clinical) felineText += '\n\nClinical symptoms: ' + item.cat_clinical;
-    if (item.cat_dosage) felineText += '\n\nDosage info: ' + item.cat_dosage;
-    felineEl.textContent = felineText;
-
-    // Emergency action section
+    // Emergency action section -- species-specific in the database, so when dogs and
+    // cats have different instructions both are shown instead of silently dropping one.
     const altEl = document.getElementById('dossierModalAlternatives');
     const emergencySection = document.getElementById('dossierModalEmergencySection');
-    if (item.emergency_action) {
-      altEl.textContent = item.emergency_action;
+    const dogEmergency = item.dog_emergency || '';
+    const catEmergency = item.cat_emergency || '';
+    if (dogEmergency || catEmergency) {
+      if (dogEmergency && catEmergency && dogEmergency !== catEmergency) {
+        altEl.innerHTML =
+          '<p><strong class="font-bold">For dogs:</strong> ' + escapeHtml(dogEmergency) + '</p>' +
+          '<p><strong class="font-bold">For cats:</strong> ' + escapeHtml(catEmergency) + '</p>';
+      } else {
+        altEl.innerHTML = '<p>' + escapeHtml(dogEmergency || catEmergency) + '</p>';
+      }
       if (emergencySection) emergencySection.classList.remove('hidden');
     } else {
-      altEl.textContent = '';
+      altEl.innerHTML = '';
       if (emergencySection) emergencySection.classList.add('hidden');
     }
 

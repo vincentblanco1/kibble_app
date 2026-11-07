@@ -262,32 +262,38 @@
         </div>
 
         <div class="space-y-4 text-xs text-[#586754]">
+          <div id="dossierModalEmergencySection" class="p-4 rounded-2xl bg-red-50 border border-red-200 space-y-1.5 hidden">
+            <strong class="text-red-900 text-xs font-bold block uppercase tracking-wide"><i class="fa-solid fa-kit-medical mr-1"></i>Emergency Action</strong>
+            <div id="dossierModalAlternatives" class="leading-relaxed text-red-800 whitespace-pre-line space-y-1.5"></div>
+          </div>
+
           <div class="p-4 rounded-2xl bg-[#fbf9f6] border border-[#ebdcd0] space-y-1.5">
             <strong class="text-[#182811] text-xs font-bold block uppercase tracking-wide">Description &amp; Notes</strong>
             <p id="dossierModalMechanism" class="leading-relaxed whitespace-pre-line">Detailed information about this ingredient.</p>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="p-4 rounded-2xl bg-orange-50 border border-orange-200 space-y-1.5">
-              <div class="flex items-center gap-1.5 text-[#b45309]">
-                <i class="fa-solid fa-dog text-sm"></i>
-                <strong class="font-bold uppercase tracking-wide text-[10.5px]">Canine Assessment</strong>
+            <div class="p-4 rounded-2xl bg-orange-50 border border-orange-200 space-y-2">
+              <div class="flex items-center justify-between gap-1.5 flex-wrap">
+                <div class="flex items-center gap-1.5 text-[#b45309]">
+                  <i class="fa-solid fa-dog text-sm"></i>
+                  <strong class="font-bold uppercase tracking-wide text-[10.5px]">Canine Assessment</strong>
+                </div>
+                <span id="dossierModalCanineBadge"></span>
               </div>
-              <p id="dossierModalCanine" class="text-[11.5px] leading-relaxed whitespace-pre-line">Impact on dogs.</p>
+              <div id="dossierModalCanine" class="space-y-2"></div>
             </div>
 
-            <div class="p-4 rounded-2xl bg-purple-50 border border-purple-200 space-y-1.5">
-              <div class="flex items-center gap-1.5 text-purple-800">
-                <i class="fa-solid fa-cat text-sm"></i>
-                <strong class="font-bold uppercase tracking-wide text-[10.5px]">Feline Assessment</strong>
+            <div class="p-4 rounded-2xl bg-purple-50 border border-purple-200 space-y-2">
+              <div class="flex items-center justify-between gap-1.5 flex-wrap">
+                <div class="flex items-center gap-1.5 text-purple-800">
+                  <i class="fa-solid fa-cat text-sm"></i>
+                  <strong class="font-bold uppercase tracking-wide text-[10.5px]">Feline Assessment</strong>
+                </div>
+                <span id="dossierModalFelineBadge"></span>
               </div>
-              <p id="dossierModalFeline" class="text-[11.5px] leading-relaxed whitespace-pre-line">Impact on cats.</p>
+              <div id="dossierModalFeline" class="space-y-2"></div>
             </div>
-          </div>
-
-          <div id="dossierModalEmergencySection" class="p-4 rounded-2xl bg-red-50 border border-red-200 space-y-1.5 hidden">
-            <strong class="text-red-900 text-xs font-bold block uppercase tracking-wide">Emergency Action</strong>
-            <p id="dossierModalAlternatives" class="leading-relaxed text-red-800 whitespace-pre-line">Emergency actions for this ingredient.</p>
           </div>
         </div>
 

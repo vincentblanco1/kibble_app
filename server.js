@@ -1556,7 +1556,10 @@ app.get('/api/wiki-ingredients', async (req, res) => {
         clinical_symptoms: '',
         dosage: '',
         alternatives_guidance: '',
-        emergency_action: ''
+        emergency_action: '',
+        breed_specific_data: '',
+        weight_specific_data: '',
+        age_specific_data: ''
       });
     };
 
