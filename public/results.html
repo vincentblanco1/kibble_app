@@ -191,7 +191,7 @@
          unclear to trust (see Safety Rules' "Critical Hazard Floor" and /api/assess) -->
     <div id="lowConfidenceBanner" class="hidden mb-4 p-3 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-3">
       <i class="fa-solid fa-camera-retro text-red-700 text-lg shrink-0"></i>
-      <p class="text-xs font-semibold text-red-800">
+      <p id="lowConfidenceBannerText" class="text-xs font-semibold text-red-800">
         <strong>This photo was too unclear to read reliably.</strong> The result below may be missing or wrong information. Please retake the photo in good lighting, focused on the ingredients list, and rescan.
       </p>
     </div>
@@ -221,6 +221,11 @@
               <input type="file" id="labelUploadInput" accept="image/*" class="hidden">
             </div>
           </div>
+
+          <p class="text-[11px] text-[#788673] font-semibold mb-2.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info text-[#45671d]"></i>
+            Keep the whole ingredients list in frame, with nothing covering any part of it.
+          </p>
 
           <div id="packagingBoxTrigger" title="Click to activate camera" class="relative w-full aspect-[4/3] bg-[#1e293b] rounded-2xl overflow-hidden p-4 flex flex-col justify-between border-2 border-dashed border-slate-600 hover:border-[#4caf50] cursor-pointer group transition-all">
             

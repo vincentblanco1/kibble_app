@@ -1060,7 +1060,25 @@ document.addEventListener('DOMContentLoaded', () => {
       currentScanId = data.scanId || null;
       renderDisputeStatus(data.dispute || null);
       var lowConfidenceBanner = $('lowConfidenceBanner');
-      if (lowConfidenceBanner) lowConfidenceBanner.classList.toggle('hidden', !data.confidenceTooWeak);
+      if (lowConfidenceBanner) {
+        lowConfidenceBanner.classList.toggle('hidden', !data.confidenceTooWeak);
+        var lowConfidenceBannerText = $('lowConfidenceBannerText');
+        if (lowConfidenceBannerText) {
+          // Obstructed (a finger/object/crop may be hiding part of the list) is a different
+          // problem from a generally blurry/dark photo -- the rest of the read can look
+          // perfectly confident, so the message needs to point at the real cause and tell
+          // the owner to check for something physically in the way, not just "retake it".
+          if (data.obstructed) {
+            lowConfidenceBannerText.innerHTML = IS_MOBILE
+              ? '<strong>Part of the label may be blocked.</strong> ' + (data.obstructionNote ? esc(data.obstructionNote) + ' -- ' : '') + 'An ingredient may be missing from this result. Retake the photo with the full list visible and rescan.'
+              : '<strong>Part of the ingredients list may be hidden.</strong> ' + (data.obstructionNote ? esc(data.obstructionNote) + '. ' : '') + 'The result below may be missing an ingredient. Please retake the photo with the full list visible and unobstructed, then rescan.';
+          } else {
+            lowConfidenceBannerText.innerHTML = IS_MOBILE
+              ? '<strong>Photo too unclear to read reliably.</strong> This result may be wrong -- please retake the photo and rescan.'
+              : '<strong>This photo was too unclear to read reliably.</strong> The result below may be missing or wrong information. Please retake the photo in good lighting, focused on the ingredients list, and rescan.';
+          }
+        }
+      }
       // Extraction Telemetry (desktop only) -- used to be a permanently hardcoded
       // "98.4% (Optimal)" regardless of the actual photo; now reflects this scan's
       // real self-reported OCR confidence and extracted token count from the server.

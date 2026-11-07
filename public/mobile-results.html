@@ -61,7 +61,7 @@
          unclear to trust (see Safety Rules' "Critical Hazard Floor" and /api/assess) -->
     <div id="lowConfidenceBanner" class="hidden p-3 rounded-2xl bg-red-50 border border-red-200 flex items-center gap-2.5">
       <i class="fa-solid fa-camera-retro text-red-700 shrink-0"></i>
-      <p class="text-[11px] font-semibold text-red-800">
+      <p id="lowConfidenceBannerText" class="text-[11px] font-semibold text-red-800">
         <strong>Photo too unclear to read reliably.</strong> This result may be wrong -- please retake the photo and rescan.
       </p>
     </div>
@@ -85,6 +85,11 @@
           <input type="file" id="labelUploadInput" accept="image/*" class="hidden">
         </div>
       </div>
+
+      <p class="text-[10.5px] text-[#788673] font-semibold flex items-center gap-1.5">
+        <i class="fa-solid fa-circle-info text-[#45671d]"></i>
+        Keep the whole list in frame, nothing covering any part of it.
+      </p>
 
       <div id="packagingBoxTrigger" class="relative w-full aspect-[4/3] bg-[#1e293b] rounded-2xl overflow-hidden p-3.5 flex flex-col justify-between border-2 border-dashed border-slate-600">
         <video id="liveVideoFeed" autoplay playsinline class="hidden absolute inset-0 w-full h-full object-cover z-10"></video>

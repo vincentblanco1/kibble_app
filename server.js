@@ -1210,6 +1210,8 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
     let ingredientTokens = [];
     let imageUrl = null;
     let ocrConfidence = null; // only a real OCR read (an image) has a confidence; manual text never does
+    let labelObstructed = false; // true when the AI thinks a finger/object/crop may be hiding part of the list
+    let obstructionNote = null;
 
     if (req.file) {
       imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
@@ -1228,7 +1230,7 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
             },
           },
           {
-            text: `You are an expert OCR parser for pet food packages. Look at the photo and first decide what it shows. Set product_type to exactly one of: "dog_or_cat_food" (the packaging or ingredient label of food, treats or supplements made for dogs or cats; typical clues are words like dog, cat, puppy, kitten, "complete and balanced", guaranteed analysis, AAFCO, or ingredients such as meat meal or animal digest), "other_animal_food" (food made for another animal, such as birds, fish, horses, rabbits or reptiles), "not_pet_food" (anything else: human food or drink, medicine, cosmetics, household products, or a photo with no product label), or "unclear" (a label that could be pet food but has nothing that shows what it is for). Write one short sentence in reason saying what the photo shows. Only when product_type is dog_or_cat_food, extract ONLY the ingredients list, normalizing each item into its clear ingredient name (e.g., "Beef", "Rice", "Sunflower Lecithin") and leaving out percentages, guaranteed analysis values, feeding instructions, and manufacturer details. For every other product_type return an empty ingredients list.`,
+            text: `You are an expert OCR parser for pet food packages. Look at the photo and first decide what it shows. Set product_type to exactly one of: "dog_or_cat_food" (the packaging or ingredient label of food, treats or supplements made for dogs or cats; typical clues are words like dog, cat, puppy, kitten, "complete and balanced", guaranteed analysis, AAFCO, or ingredients such as meat meal or animal digest), "other_animal_food" (food made for another animal, such as birds, fish, horses, rabbits or reptiles), "not_pet_food" (anything else: human food or drink, medicine, cosmetics, household products, or a photo with no product label), or "unclear" (a label that could be pet food but has nothing that shows what it is for). Write one short sentence in reason saying what the photo shows. Only when product_type is dog_or_cat_food, extract ONLY the ingredients list, normalizing each item into its clear ingredient name (e.g., "Beef", "Rice", "Sunflower Lecithin") and leaving out percentages, guaranteed analysis values, feeding instructions, and manufacturer details. For every other product_type return an empty ingredients list. Separately, check whether the ingredients list itself looks incomplete for a reason OTHER than blur or bad lighting -- specifically a finger, hand, or object covering part of the text, the list being cut off at the edge of the frame or folded out of view, or a comma followed by a gap that suggests a missing word. Set obstructed to true if you see any of this, even if the ingredients you WERE able to read are perfectly legible -- the concern is that something in the middle of the list may be hidden, not that what's visible is unclear. If obstructed is true, briefly say what seems to be blocking or cut off in obstruction_note; otherwise leave it empty.`,
           },
         ],
         config: {
@@ -1253,8 +1255,16 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
                 type: Type.NUMBER,
                 description: 'Your own confidence (0-100) that the ingredients list above was read correctly from this photo, factoring in image sharpness, lighting, glare, and how certain you are of each word. 100 = perfectly legible label, 0 = unreadable guess.',
               },
+              obstructed: {
+                type: Type.BOOLEAN,
+                description: 'True if a finger, hand, object, crop, or fold appears to hide part of the ingredients list, meaning an ingredient could be missing from what you extracted above -- regardless of how clear the rest of the photo looks.',
+              },
+              obstruction_note: {
+                type: Type.STRING,
+                description: 'If obstructed is true, one short phrase on what seems to be blocking or cutting off the list (e.g. "a finger covers the middle of the list"). Empty string otherwise.',
+              },
             },
-            required: ['product_type', 'reason', 'ingredients', 'confidence'],
+            required: ['product_type', 'reason', 'ingredients', 'confidence', 'obstructed', 'obstruction_note'],
           },
         },
       };
@@ -1284,6 +1294,8 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
       if (!productType) console.warn('[VISION AI] The answer had no usable product_type; continuing without the pet-food check.');
       ingredientTokens = parsedData.ingredients || [];
       ocrConfidence = Number.isFinite(parsedData.confidence) ? Math.max(0, Math.min(100, Math.round(parsedData.confidence))) : null;
+      labelObstructed = parsedData.obstructed === true;
+      obstructionNote = labelObstructed && parsedData.obstruction_note ? String(parsedData.obstruction_note).trim() || null : null;
     } else if (manual_text) {
       ingredientTokens = manual_text.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
     }
@@ -1327,6 +1339,14 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
             triageReason = 'low-confidence';
           }
         }
+        // A finger, object, crop, or fold hiding part of the label means an ingredient could
+        // be silently missing from this result -- that's true no matter how legible the rest
+        // of the photo looked, so it overrides a high confidence score instead of only adding
+        // to it. Treated the same as "too unclear to trust" so it can't get auto-approved.
+        if (labelObstructed) {
+          confidenceTooWeak = true;
+          triageReason = 'obstructed-label';
+        }
 
         const insertQuery = `
           INSERT INTO scans (user_id, pet_id, product_name, species, image_url, raw_text, summary, risk_score, rating, flagged_ingredients, results_json, ocr_confidence, needs_triage, triage_reason, confidence_too_weak)
@@ -1362,6 +1382,8 @@ app.post(['/api/assess', '/api/ocr-scan'], upload.single('labelImage'), async (r
             parsedIngredients: ingredientTokens,
             allergy: allergy || undefined,
             confidenceTooWeak,
+            obstructed: labelObstructed,
+            obstructionNote,
             // Real self-reported OCR confidence (0-100) and token count for this scan --
             // the client used to show a permanently hardcoded "98.4%" here regardless of
             // the actual photo; now it reflects this specific scan.

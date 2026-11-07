@@ -170,7 +170,7 @@
     // needsTriage means it cleared that bar but still needs a human look (a possible Toxic
     // match, or a confidence below the auto-approve threshold).
     var reviewBadge = s.confidenceTooWeak
-      ? '<span class="ml-2 px-2 py-0.5 rounded-full bg-danger/10 text-danger text-[8px] font-bold uppercase tracking-widest not-italic" title="OCR confidence was below the Critical Hazard Floor -- this read may be unreliable">Too Weak To Trust</span>'
+      ? '<span class="ml-2 px-2 py-0.5 rounded-full bg-danger/10 text-danger text-[8px] font-bold uppercase tracking-widest not-italic" title="' + (s.triageReason === 'obstructed-label' ? 'A finger, object, or crop may be hiding part of the ingredients list -- an ingredient could be missing from this read' : 'OCR confidence was below the Critical Hazard Floor -- this read may be unreliable') + '">' + (s.triageReason === 'obstructed-label' ? 'Possibly Obstructed' : 'Too Weak To Trust') + '</span>'
       : s.needsTriage
       ? '<span class="ml-2 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-[8px] font-bold uppercase tracking-widest not-italic" title="' + (s.triageReason === 'toxic-match' ? 'Possible Toxic match -- always reviewed regardless of confidence' : 'OCR confidence was below the Auto-Approve Threshold') + '">Needs Review</span>'
       : '';
