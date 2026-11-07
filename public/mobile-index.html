@@ -241,13 +241,19 @@
               const species = pet.species === 'Canine' ? 'Dog' : (pet.species === 'Feline' ? 'Cat' : (pet.species || ''));
               const breed = pet.breed || '';
               const subtitle = [breed, species].filter(Boolean).join(' • ');
+              // A pet with an uploaded photo should show that photo here, same as every
+              // other pet card in the app -- this grid was only ever drawing the
+              // initial-letter circle, so a real photo silently never appeared.
+              const avatar = pet.image_url
+                ? `<img src="${String(pet.image_url).replace(/"/g, '&quot;')}" alt="" class="w-9 h-9 rounded-full border-2 border-emerald-400 object-cover shrink-0 shadow-2xs">`
+                : `<div class="w-9 h-9 rounded-full border-2 border-emerald-400 bg-[#45671d] flex items-center justify-center shrink-0 shadow-2xs">
+                    <span class="text-white font-extrabold text-sm">${initial}</span>
+                  </div>`;
               const card = document.createElement('div');
               card.className = 'tactile-card p-3 bg-white flex items-center justify-between gap-2';
               card.innerHTML = `
                 <div class="flex items-center gap-2.5 min-w-0">
-                  <div class="w-9 h-9 rounded-full border-2 border-emerald-400 bg-[#45671d] flex items-center justify-center shrink-0 shadow-2xs">
-                    <span class="text-white font-extrabold text-sm">${initial}</span>
-                  </div>
+                  ${avatar}
                   <div class="min-w-0">
                     <h4 class="font-extrabold text-xs text-[#182811] truncate">${pet.name || 'Unnamed'}</h4>
                     <span class="text-[10px] text-[#788673] block truncate">${subtitle || 'No details'}</span>
