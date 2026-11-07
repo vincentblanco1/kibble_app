@@ -8,6 +8,29 @@ if (localStorage.getItem('kibbleguard-users-seed-version') !== USERS_SEED_VERSIO
   localStorage.removeItem('kibbleguard-users-rows');
   localStorage.setItem('kibbleguard-users-seed-version', USERS_SEED_VERSION);
 }
+// user-empty-row is static markup baked into users-pets.html, not one of the
+// user rows this page builds and caches -- but restorePersistedRows() below
+// (and every later resync) replaces #user-table-body's entire innerHTML with
+// just the cached/synced user rows, which silently deletes this row from the
+// DOM for good the first time real data loads. From then on,
+// document.getElementById('user-empty-row') came back null and crashed
+// filterUsers() on the very next line -- which is why the search box and the
+// status/barangay filters on this page looked like they simply did nothing
+// (the same bug, same cause, as OCR Scan Records' and Safety Feed's search).
+// Saved here, before that first restore, so it can be put back.
+var EMPTY_USER_ROW_HTML = (function () {
+  var el = document.getElementById('user-empty-row');
+  return el ? el.outerHTML : '';
+})();
+function ensureUserEmptyRow() {
+  var el = document.getElementById('user-empty-row');
+  if (!el && EMPTY_USER_ROW_HTML) {
+    var tbody = document.getElementById('user-table-body');
+    if (tbody) { tbody.insertAdjacentHTML('beforeend', EMPTY_USER_ROW_HTML); el = document.getElementById('user-empty-row'); }
+  }
+  return el;
+}
+
 restorePersistedRows('kibbleguard-users-rows', document.getElementById('user-table-body'));
 
 /* ---------- Shared badge helpers ---------- */
@@ -147,7 +170,8 @@ function filterUsers() {
     row.dataset.filterMatch = match ? 'true' : 'false';
     if (match) visible++;
   });
-  document.getElementById('user-empty-row').classList.toggle('hidden', visible !== 0);
+  var emptyRow = ensureUserEmptyRow();
+  if (emptyRow) emptyRow.classList.toggle('hidden', visible !== 0);
   var label = document.getElementById('user-count-label');
   var isFiltered = q || currentUserStatusFilter !== 'all' || currentUserBarangayFilter !== 'all';
   label.textContent = isFiltered ? ('Showing ' + visible + ' matching result' + (visible === 1 ? '' : 's')) : 'Showing all ' + visible + ' users';

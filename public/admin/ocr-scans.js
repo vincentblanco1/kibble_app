@@ -1,3 +1,18 @@
+// records-empty-row is static markup baked into ocr-scans.html, not one of the
+// scan rows db-sync.js builds and caches -- but restorePersistedRows() below
+// (and every later resync) replaces #records-table-body's entire innerHTML
+// with just the cached/synced scan rows, which silently deletes this row from
+// the DOM for good the first time real data loads. From then on,
+// filterRecords() crashed every single time it ran (its own
+// document.getElementById('records-empty-row') came back null), before ever
+// reaching the code that actually hides/shows rows -- which is why the
+// search box and every filter dropdown on this page looked like they simply
+// did nothing. Saved here, before that first restore, so it can be put back.
+var EMPTY_RECORDS_ROW_HTML = (function () {
+  var el = document.getElementById('records-empty-row');
+  return el ? el.outerHTML : '';
+})();
+
 restorePersistedRows('kibbleguard-scans-rows', document.getElementById('records-table-body'));
 
 // adds the sample "Canine Joint Support Chews" scan (see KB-902145 in app.js) to
@@ -175,7 +190,15 @@ function filterRecords() {
     row.dataset.filterMatch = show ? 'true' : 'false';
     if (show) visible++;
   });
-  document.getElementById('records-empty-row').classList.toggle('hidden', visible !== 0);
+  // put the placeholder row back if something already wiped it out of the DOM
+  // (see the big comment at the top of this file) instead of crashing here
+  // and silently skipping every bit of filtering logic below this line
+  var emptyRow = document.getElementById('records-empty-row');
+  if (!emptyRow && EMPTY_RECORDS_ROW_HTML) {
+    document.getElementById('records-table-body').insertAdjacentHTML('beforeend', EMPTY_RECORDS_ROW_HTML);
+    emptyRow = document.getElementById('records-empty-row');
+  }
+  if (emptyRow) emptyRow.classList.toggle('hidden', visible !== 0);
   var label = document.getElementById('records-count-label');
   var scope = currentScanFilter === 'safe' ? 'safe scan' : currentScanFilter === 'toxic' ? 'toxic scan' : currentScanFilter === 'caution' ? 'caution scan' : currentFlagFilter === 'disputed' ? 'disputed scan' : currentFlagFilter === 'unassessed' ? 'not-rated scan' : currentScanFilter === 'risk' ? 'at-risk scan' : 'historical scan';
   var isFiltered = q || currentScanFilter !== 'all' || currentSpeciesFilter !== 'all' || currentFlagFilter !== 'all';
