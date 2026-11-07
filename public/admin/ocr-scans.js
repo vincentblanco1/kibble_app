@@ -171,6 +171,9 @@ function filterRecords() {
     ? ('Displaying ' + visible + ' matching ' + scope + (visible === 1 ? '' : 's'))
     : 'Displaying all ' + visible + ' historical scans';
   applyTablePagination('records-table-body', 'records-pagination-controls', 10, true);
+  // Keep Pipeline Accuracy honest: it labels itself as scoped to whatever's currently
+  // filtered, so it has to actually recompute whenever the filter does.
+  if (typeof computeAccuracyMetrics === 'function') computeAccuracyMetrics();
 }
 
 /* RECORD_TRACES now lives in app.js as shared data -- see there for the full scan trace details. */
@@ -593,10 +596,30 @@ function renderIngredientFrequency() {
 // tokens that actually matched something in the database), and
 // classification rate (% of scans that never got disputed)
 function computeAccuracyMetrics() {
-  var rows = document.querySelectorAll('#records-table-body tr[data-verdict]');
+  // Only the scans that currently pass the search box + Safe/Caution/Toxic/species/flag
+  // filters -- filterRecords() tags every row's data-filterMatch, and a row that has never
+  // been filtered at all (filterMatch still unset) is treated as matching, same as "no
+  // filter applied" means "everything counts". This is what makes the "Computed from the
+  // N scans currently in view" caption underneath these gauges actually true, instead of
+  // always reporting the full unfiltered dataset no matter what's on screen.
+  var rows = Array.prototype.filter.call(
+    document.querySelectorAll('#records-table-body tr[data-verdict]'),
+    function (row) { return row.dataset.filterMatch !== 'false'; }
+  );
   var total = rows.length;
-  if (total === 0) return;
+  if (total === 0) {
+    renderAccuracyGauge('acc-gauge-extraction', 'Extraction', 0);
+    renderAccuracyGauge('acc-gauge-detection', 'Detection', 0);
+    renderAccuracyGauge('acc-gauge-classification', 'Classification', 0);
+    var sampleElEmpty = document.getElementById('acc-sample-size');
+    if (sampleElEmpty) sampleElEmpty.textContent = '0';
+    return;
+  }
   var traces = (typeof RECORD_TRACES !== 'undefined') ? RECORD_TRACES : {};
+  // Which scans are in the filtered set, so Detection's ingredient tally (below) covers
+  // only their tokens -- without this it would keep counting every scan ever synced,
+  // filter or no filter.
+  var inViewIds = {};
 
   var aboveThreshold = 0;
   var scoredScans = 0; // only scans that actually have a confidence number -- see Avg. OCR Confidence fix
@@ -617,6 +640,7 @@ function computeAccuracyMetrics() {
     if (row.dataset.disputed === 'true') disputedOpen++;
 
     var scanId = 'KB-' + row.id.replace('row-', '');
+    inViewIds[scanId] = true;
     if (row.dataset.overturned === 'true' || overrides[scanId]) overturned++;
   });
 
@@ -626,6 +650,7 @@ function computeAccuracyMetrics() {
   var matchedTokens = 0;
   var totalTokens = 0;
   Object.keys(traces).forEach(function (id) {
+    if (!inViewIds[id]) return;
     var trace = traces[id];
     (trace.substances || []).forEach(function (s) {
       totalTokens++;
