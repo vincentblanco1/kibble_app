@@ -512,11 +512,11 @@ var INGREDIENT_FREQUENCY_LIMIT = 8;
 
 /* tallyIngredientFrequency now lives in app.js as a shared function. */
 
-// the Toxic/Caution/Safe/All filter on the "most detected ingredients"
+// the Toxic/Caution/Safe/Unrated/All filter on the "most detected ingredients"
 // panel further down the page
 function setIngredientFrequencyFilter(level) {
   currentIngredientFrequencyFilter = level;
-  var ids = { all: 'ingfreq-filter-all', Toxic: 'ingfreq-filter-toxic', Caution: 'ingfreq-filter-caution', Safe: 'ingfreq-filter-safe' };
+  var ids = { all: 'ingfreq-filter-all', Toxic: 'ingfreq-filter-toxic', Caution: 'ingfreq-filter-caution', Safe: 'ingfreq-filter-safe', Unrated: 'ingfreq-filter-unrated' };
   Object.keys(ids).forEach(function (key) {
     document.getElementById(ids[key]).className = key === level
       ? 'press px-3 py-1.5 rounded-lg bg-brand text-white text-[10px] font-bold shadow-sm transition-all'
