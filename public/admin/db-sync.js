@@ -219,10 +219,10 @@
     // shape, matching what applyClinicalToDataset (ingredient-database.js) writes on save.
     var clinicalAttrs =
       ' data-canine-metabolic="' + esc(i.canineNotes || '') + '" data-canine-symptoms="' + esc(i.canineSymptoms || '') +
-      '" data-canine-guidance="' + esc(i.canineDosage || '') + '" data-canine-emergency="' + esc(i.canineEmergency || '') +
+      '" data-canine-dosage="' + esc(i.canineDosage || '') + '" data-canine-guidance="' + esc(i.canineAlternatives || '') + '" data-canine-emergency="' + esc(i.canineEmergency || '') +
       '" data-canine-breed="' + esc(i.canineBreed || '') + '" data-canine-weight="' + esc(i.canineWeight || '') +
       '" data-feline-metabolic="' + esc(i.felineNotes || '') + '" data-feline-symptoms="' + esc(i.felineSymptoms || '') +
-      '" data-feline-guidance="' + esc(i.felineDosage || '') + '" data-feline-emergency="' + esc(i.felineEmergency || '') +
+      '" data-feline-dosage="' + esc(i.felineDosage || '') + '" data-feline-guidance="' + esc(i.felineAlternatives || '') + '" data-feline-emergency="' + esc(i.felineEmergency || '') +
       '" data-feline-breed="' + esc(i.felineBreed || '') + '" data-feline-weight="' + esc(i.felineWeight || '') + '" data-clinical-v2="2"';
     return '<tr class="feed-row hover:bg-stone-50/50 group" id="' + id + '" data-canine="' + canine + '" data-feline="' + feline + '" data-risk-index="' + idx +
       '" data-alternatives="" data-source="" data-reg-verified="false" data-reg-body="" data-aliases="' + esc(i.aliases || '') + '" data-vet-status="' + vetStatus +
@@ -281,17 +281,17 @@
     var f = function (n) { var e = tr.querySelector('[data-field="' + n + '"]'); return e ? e.textContent.trim() : ''; };
     return {
       name: f('name'), category: f('category'), canine: ds.canine || 'Unrated', feline: ds.feline || 'Unrated',
-      canineNotes: ds.canineMetabolic || '', canineSymptoms: ds.canineSymptoms || '', canineDosage: ds.canineGuidance || '',
-      canineEmergency: ds.canineEmergency || '', canineBreed: ds.canineBreed || '', canineWeight: ds.canineWeight || '',
-      felineNotes: ds.felineMetabolic || '', felineSymptoms: ds.felineSymptoms || '', felineDosage: ds.felineGuidance || '',
-      felineEmergency: ds.felineEmergency || '', felineBreed: ds.felineBreed || '', felineWeight: ds.felineWeight || ''
+      canineNotes: ds.canineMetabolic || '', canineSymptoms: ds.canineSymptoms || '', canineDosage: ds.canineDosage || '',
+      canineAlternatives: ds.canineGuidance || '', canineEmergency: ds.canineEmergency || '', canineBreed: ds.canineBreed || '', canineWeight: ds.canineWeight || '',
+      felineNotes: ds.felineMetabolic || '', felineSymptoms: ds.felineSymptoms || '', felineDosage: ds.felineDosage || '',
+      felineAlternatives: ds.felineGuidance || '', felineEmergency: ds.felineEmergency || '', felineBreed: ds.felineBreed || '', felineWeight: ds.felineWeight || ''
     };
   }
   function ingSig(i) {
     return [
       i.canine || 'Unrated', i.feline || 'Unrated', i.category || '',
-      i.canineNotes || '', i.canineSymptoms || '', i.canineDosage || '', i.canineEmergency || '', i.canineBreed || '', i.canineWeight || '',
-      i.felineNotes || '', i.felineSymptoms || '', i.felineDosage || '', i.felineEmergency || '', i.felineBreed || '', i.felineWeight || ''
+      i.canineNotes || '', i.canineSymptoms || '', i.canineDosage || '', i.canineAlternatives || '', i.canineEmergency || '', i.canineBreed || '', i.canineWeight || '',
+      i.felineNotes || '', i.felineSymptoms || '', i.felineDosage || '', i.felineAlternatives || '', i.felineEmergency || '', i.felineBreed || '', i.felineWeight || ''
     ].join('|');
   }
   function alertFromRow(tr) {

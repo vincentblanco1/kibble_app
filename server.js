@@ -765,8 +765,8 @@ function mapRiskToRating(risk) {
 // the ingredient is *recognized* at all.
 async function fetchMergedIngredients() {
   const [dogResult, catResult] = await Promise.all([
-    pool.query(`SELECT ingredient_id, primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, emergency_action, breed_specific_data, weight_specific_data, review_status FROM dog_ingredients`),
-    pool.query(`SELECT ingredient_id, primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, emergency_action, breed_specific_data, weight_specific_data, review_status FROM cat_ingredients`)
+    pool.query(`SELECT ingredient_id, primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, alternatives_guidance, emergency_action, breed_specific_data, weight_specific_data, review_status FROM dog_ingredients`),
+    pool.query(`SELECT ingredient_id, primary_name, aliases, category, risk, severity_score, notes, clinical_symptoms, dosage, alternatives_guidance, emergency_action, breed_specific_data, weight_specific_data, review_status FROM cat_ingredients`)
   ]);
 
   const dogMap = new Map(dogResult.rows.map(r => [r.ingredient_id, r]));
@@ -781,6 +781,7 @@ async function fetchMergedIngredients() {
       notes: row.notes || '',
       clinical_symptoms: row.clinical_symptoms || '',
       dosage: row.dosage || '',
+      alternatives_guidance: row.alternatives_guidance || '',
       emergency_action: row.emergency_action || '',
       breed_specific_data: row.breed_specific_data || '',
       weight_specific_data: row.weight_specific_data || ''
@@ -1478,7 +1479,7 @@ app.get('/api/products', (req, res) => {
 app.get('/api/dog-ingredients', async (req, res) => {
   try {
     const search = req.query.q ? `%${req.query.q}%` : null;
-    let sql = `SELECT id, category, ingredient_id, primary_name, aliases, risk, severity_score, notes, dosage, weight_specific_data, age_specific_data, breed_specific_data, clinical_symptoms, emergency_action, updated_at FROM dog_ingredients`;
+    let sql = `SELECT id, category, ingredient_id, primary_name, aliases, risk, severity_score, notes, dosage, alternatives_guidance, weight_specific_data, age_specific_data, breed_specific_data, clinical_symptoms, emergency_action, updated_at FROM dog_ingredients`;
     const params = [];
     if (search) {
       sql += ` WHERE primary_name ILIKE $1 OR category ILIKE $1 OR notes ILIKE $1`;
@@ -1496,7 +1497,7 @@ app.get('/api/dog-ingredients', async (req, res) => {
 app.get('/api/cat-ingredients', async (req, res) => {
   try {
     const search = req.query.q ? `%${req.query.q}%` : null;
-    let sql = `SELECT id, category, ingredient_id, primary_name, aliases, risk, severity_score, notes, dosage, weight_specific_data, age_specific_data, breed_specific_data, clinical_symptoms, emergency_action, updated_at FROM cat_ingredients`;
+    let sql = `SELECT id, category, ingredient_id, primary_name, aliases, risk, severity_score, notes, dosage, alternatives_guidance, weight_specific_data, age_specific_data, breed_specific_data, clinical_symptoms, emergency_action, updated_at FROM cat_ingredients`;
     const params = [];
     if (search) {
       sql += ` WHERE primary_name ILIKE $1 OR category ILIKE $1 OR notes ILIKE $1`;
@@ -1554,6 +1555,7 @@ app.get('/api/wiki-ingredients', async (req, res) => {
         notes: 'This ingredient is not yet verified. Consult a veterinarian.',
         clinical_symptoms: '',
         dosage: '',
+        alternatives_guidance: '',
         emergency_action: ''
       });
     };
@@ -2442,10 +2444,10 @@ app.get('/api/admin/data', requireAdminAuth, async (req, res) => {
                 // is populated correctly straight after a page load/refresh, not just after an
                 // edit-and-save round trip in the same tab.
                 canineNotes: (i.dog && i.dog.notes) || '', canineSymptoms: (i.dog && i.dog.clinical_symptoms) || '',
-                canineDosage: (i.dog && i.dog.dosage) || '', canineEmergency: (i.dog && i.dog.emergency_action) || '',
+                canineDosage: (i.dog && i.dog.dosage) || '', canineAlternatives: (i.dog && i.dog.alternatives_guidance) || '', canineEmergency: (i.dog && i.dog.emergency_action) || '',
                 canineBreed: (i.dog && i.dog.breed_specific_data) || '', canineWeight: (i.dog && i.dog.weight_specific_data) || '',
                 felineNotes: (i.cat && i.cat.notes) || '', felineSymptoms: (i.cat && i.cat.clinical_symptoms) || '',
-                felineDosage: (i.cat && i.cat.dosage) || '', felineEmergency: (i.cat && i.cat.emergency_action) || '',
+                felineDosage: (i.cat && i.cat.dosage) || '', felineAlternatives: (i.cat && i.cat.alternatives_guidance) || '', felineEmergency: (i.cat && i.cat.emergency_action) || '',
                 felineBreed: (i.cat && i.cat.breed_specific_data) || '', felineWeight: (i.cat && i.cat.weight_specific_data) || ''
               })),
               scans,
@@ -2501,19 +2503,22 @@ async function findIngredientId(name) {
 // "Unrated", no row is created/touched for it -- an ingredient can legitimately be documented
 // for only one species, and writing a blank "Unrated" row would just be noise.
 // `fields` carries everything the per-species Clinical Details panel now captures: notes,
-// clinicalSymptoms, dosage (the "guidance" field), emergencyAction, breedSpecific, weightSpecific.
+// clinicalSymptoms, dosage, alternativesGuidance (the "guidance" field -- safe serving
+// amounts / safer swaps, distinct from the actual dosage threshold), emergencyAction,
+// breedSpecific, weightSpecific.
 async function upsertSpeciesIngredient(table, ingredientId, name, category, rating, fields) {
   if (!rating || rating === 'Unrated') return;
   fields = fields || {};
   const notes = fields.notes || '', clinicalSymptoms = fields.clinicalSymptoms || '', dosage = fields.dosage || '',
+    alternativesGuidance = fields.alternativesGuidance || '',
     emergencyAction = fields.emergencyAction || '', breedSpecific = fields.breedSpecific || '', weightSpecific = fields.weightSpecific || '';
   const existing = await pool.query(`SELECT ingredient_id FROM ${table} WHERE ingredient_id = $1`, [ingredientId]);
   if (existing.rows.length) {
     await pool.query(
       `UPDATE ${table} SET category = $2, primary_name = $3, risk = $4, notes = $5, clinical_symptoms = $6,
-         dosage = $7, emergency_action = $8, breed_specific_data = $9, weight_specific_data = $10, updated_at = NOW()
+         dosage = $7, alternatives_guidance = $8, emergency_action = $9, breed_specific_data = $10, weight_specific_data = $11, updated_at = NOW()
        WHERE ingredient_id = $1`,
-      [ingredientId, category || 'Ingredient', name, rating, notes, clinicalSymptoms, dosage, emergencyAction, breedSpecific, weightSpecific]
+      [ingredientId, category || 'Ingredient', name, rating, notes, clinicalSymptoms, dosage, alternativesGuidance, emergencyAction, breedSpecific, weightSpecific]
     );
   } else {
     // Explicitly 'pending' rather than relying on the column default -- every
@@ -2521,9 +2526,9 @@ async function upsertSpeciesIngredient(table, ingredientId, name, category, rati
     // sign-off before pet owners see its real data.
     await pool.query(
       `INSERT INTO ${table}
-         (ingredient_id, category, primary_name, aliases, risk, severity_score, notes, dosage, weight_specific_data, age_specific_data, breed_specific_data, clinical_symptoms, emergency_action, review_status, updated_at)
-       VALUES ($1, $2, $3, '{}', $4, '0', $5, $6, $7, '', $8, $9, $10, 'pending', NOW())`,
-      [ingredientId, category || 'Ingredient', name, rating, notes, dosage, weightSpecific, breedSpecific, clinicalSymptoms, emergencyAction]
+         (ingredient_id, category, primary_name, aliases, risk, severity_score, notes, dosage, alternatives_guidance, weight_specific_data, age_specific_data, breed_specific_data, clinical_symptoms, emergency_action, review_status, updated_at)
+       VALUES ($1, $2, $3, '{}', $4, '0', $5, $6, $7, $8, '', $9, $10, $11, 'pending', NOW())`,
+      [ingredientId, category || 'Ingredient', name, rating, notes, dosage, alternativesGuidance, weightSpecific, breedSpecific, clinicalSymptoms, emergencyAction]
     );
   }
 }
@@ -2728,11 +2733,11 @@ app.post('/api/admin/ingredients/sync', requireAdminAuth, async (req, res) => {
         ingredientId = 'ADM' + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 1000);
       }
       await upsertSpeciesIngredient('dog_ingredients', ingredientId, i.name, i.category, i.canine, {
-        notes: i.canineNotes, clinicalSymptoms: i.canineSymptoms, dosage: i.canineDosage,
+        notes: i.canineNotes, clinicalSymptoms: i.canineSymptoms, dosage: i.canineDosage, alternativesGuidance: i.canineAlternatives,
         emergencyAction: i.canineEmergency, breedSpecific: i.canineBreed, weightSpecific: i.canineWeight
       });
       await upsertSpeciesIngredient('cat_ingredients', ingredientId, i.name, i.category, i.feline, {
-        notes: i.felineNotes, clinicalSymptoms: i.felineSymptoms, dosage: i.felineDosage,
+        notes: i.felineNotes, clinicalSymptoms: i.felineSymptoms, dosage: i.felineDosage, alternativesGuidance: i.felineAlternatives,
         emergencyAction: i.felineEmergency, breedSpecific: i.felineBreed, weightSpecific: i.felineWeight
       });
     }

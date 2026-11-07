@@ -81,18 +81,21 @@ var CLINICAL_LABELS = {
   'Safe': {
     metabolic: 'Why It Is Well Tolerated',
     symptoms: 'Benefits / Role in Diet',
+    dosage: 'Typical Safe Amount',
     guidance: 'Safe Serving Guidance',
     emergency: null
   },
   'Caution': {
     metabolic: 'Why It Needs Moderation',
     symptoms: 'Possible Signs of Overuse',
+    dosage: 'Amount That May Cause Issues',
     guidance: 'Moderation Guidance & Safer Swaps',
     emergency: null
   },
   'Toxic': {
     metabolic: 'Why It Is Harmful',
     symptoms: 'Common Symptoms',
+    dosage: 'Toxic Dose Threshold',
     guidance: 'Vet-Safe Alternatives',
     emergency: 'What To Do If Eaten'
   }
@@ -107,6 +110,7 @@ function clinicalStarter(level, species) {
     return {
       metabolic: 'Known to be harmful to ' + word + ' even in small amounts.',
       symptoms: 'Vomiting, Lethargy, Loss of appetite',
+      dosage: 'No established safe amount -- toxic even in small amounts. Exact threshold not yet documented for ' + word + '; treat any ingested amount as an emergency.',
       guidance: 'Do not feed. Ask your veterinarian for a safe replacement.',
       emergency: 'Stop feeding immediately and contact your veterinarian or an animal poison control service right away. Do not wait for symptoms to appear.',
       breed: 'No breed-specific variation documented yet -- treat as harmful across all breeds until reviewed.',
@@ -117,6 +121,7 @@ function clinicalStarter(level, species) {
     return {
       metabolic: 'May cause mild digestive upset or sensitivity in some ' + word + ', so it is best given in moderation.',
       symptoms: 'Mild digestive upset, Loose stools, Reduced appetite',
+      dosage: 'Exact threshold not yet documented. Generally tolerated in small, occasional amounts -- larger or repeated amounts raise the risk.',
       guidance: 'Offer only in small amounts and monitor your pet. Ask your veterinarian before regular use.',
       emergency: '',
       breed: 'No breed-specific variation documented yet.',
@@ -126,6 +131,7 @@ function clinicalStarter(level, species) {
   return {
     metabolic: 'Generally well tolerated by ' + word + ' in appropriate amounts.',
     symptoms: 'Common ingredient with no known concerns for ' + word + ' at normal serving sizes',
+    dosage: "Safe at normal feeding amounts. Follow the product's feeding guidelines for your pet's weight.",
     guidance: "Safe to include in a balanced diet. Follow the product's feeding guidelines.",
     emergency: '',
     breed: 'No breed-specific concerns documented.',
@@ -140,6 +146,7 @@ function getClinicalFromRow(row) {
     return {
       metabolic: d[sp + 'Metabolic'] || '',
       symptoms: d[sp + 'Symptoms'] || '',
+      dosage: d[sp + 'Dosage'] || '',
       guidance: d[sp + 'Guidance'] || '',
       emergency: d[sp + 'Emergency'] || '',
       breed: d[sp + 'Breed'] || '',
@@ -157,11 +164,12 @@ function applyClinicalToDataset(ds, clinical, canineLevel, felineLevel) {
     var sp = pair[0], level = pair[1], c = clinical[sp];
     ds[sp + 'Metabolic'] = c.metabolic;
     ds[sp + 'Symptoms'] = c.symptoms;
+    ds[sp + 'Dosage'] = c.dosage;
     ds[sp + 'Guidance'] = c.guidance;
     ds[sp + 'Emergency'] = level === 'Toxic' ? c.emergency : '';
     ds[sp + 'Breed'] = c.breed || '';
     ds[sp + 'Weight'] = c.weight || '';
-    if (level === 'Unrated') { ds[sp + 'Metabolic'] = ''; ds[sp + 'Symptoms'] = ''; ds[sp + 'Guidance'] = ''; ds[sp + 'Breed'] = ''; ds[sp + 'Weight'] = ''; }
+    if (level === 'Unrated') { ds[sp + 'Metabolic'] = ''; ds[sp + 'Symptoms'] = ''; ds[sp + 'Dosage'] = ''; ds[sp + 'Guidance'] = ''; ds[sp + 'Breed'] = ''; ds[sp + 'Weight'] = ''; }
     delete ds[sp + 'Draft'];   // older builds flagged starter text as a draft; verification now covers that
   });
   delete ds.metabolic;
@@ -171,7 +179,7 @@ function applyClinicalToDataset(ds, clinical, canineLevel, felineLevel) {
 }
 
 function clinicalPanelHtml(sp, vals, level) {
-  vals = vals || { metabolic: '', symptoms: '', guidance: '', emergency: '', breed: '', weight: '' };
+  vals = vals || { metabolic: '', symptoms: '', dosage: '', guidance: '', emergency: '', breed: '', weight: '' };
   var inputCls = 'w-full mt-1.5 px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all';
   var labelCls = 'text-[10px] font-bold text-stone-500 uppercase tracking-widest';
   return '<div id="clin-panel-' + sp + '" class="hidden">' +
@@ -185,6 +193,9 @@ function clinicalPanelHtml(sp, vals, level) {
         '<textarea id="f-' + sp + '-metabolic" class="' + inputCls + ' h-20 resize-none">' + escapeHTML(vals.metabolic) + '</textarea></div>' +
       '<div class="col-span-2"><label id="lbl-' + sp + '-symptoms" class="' + labelCls + '"></label>' +
         '<input id="f-' + sp + '-symptoms" value="' + escapeHTML(vals.symptoms) + '" class="' + inputCls + '"></div>' +
+      '<div class="col-span-2"><label id="lbl-' + sp + '-dosage" class="' + labelCls + '"></label>' +
+        '<textarea id="f-' + sp + '-dosage" class="' + inputCls + ' h-16 resize-none">' + escapeHTML(vals.dosage) + '</textarea>' +
+        '<p class="text-[10px] text-stone-400 mt-1.5 leading-relaxed"><i class="fa-solid fa-circle-info mr-1"></i>How much it takes -- an amount, a weight-based threshold (e.g. mg/kg), or that no safe amount is known.</p></div>' +
       '<div class="col-span-2"><label id="lbl-' + sp + '-guidance" class="' + labelCls + '"></label>' +
         '<textarea id="f-' + sp + '-guidance" class="' + inputCls + ' h-16 resize-none">' + escapeHTML(vals.guidance) + '</textarea></div>' +
       '<div><label class="' + labelCls + '">Breed-Specific Risk</label>' +
@@ -227,9 +238,11 @@ function updateClinicalLabels(sp) {
   var setPlaceholder = function (id, text) { var el = document.getElementById(id); if (el) el.placeholder = text; };
   setText('lbl-' + sp + '-metabolic', L.metabolic);
   setText('lbl-' + sp + '-symptoms', L.symptoms + ' (comma separated)');
+  setText('lbl-' + sp + '-dosage', L.dosage);
   setText('lbl-' + sp + '-guidance', L.guidance);
   setPlaceholder('f-' + sp + '-metabolic', s.metabolic);
   setPlaceholder('f-' + sp + '-symptoms', s.symptoms);
+  setPlaceholder('f-' + sp + '-dosage', s.dosage);
   setPlaceholder('f-' + sp + '-guidance', s.guidance);
   var wrap = document.getElementById('wrap-' + sp + '-emergency');
   if (wrap) wrap.classList.toggle('hidden', !L.emergency);
@@ -271,7 +284,7 @@ function fillClinicalStarters(sp, silent) {
   if (level !== 'Safe' && level !== 'Caution' && level !== 'Toxic') return;
   var s = clinicalStarter(level, sp);
   var filledAny = false;
-  ['metabolic', 'symptoms', 'guidance', 'breed', 'weight'].concat(level === 'Toxic' ? ['emergency'] : []).forEach(function (key) {
+  ['metabolic', 'symptoms', 'dosage', 'guidance', 'breed', 'weight'].concat(level === 'Toxic' ? ['emergency'] : []).forEach(function (key) {
     var el = document.getElementById('f-' + sp + '-' + key);
     if (el && !el.value.trim()) { el.value = s[key]; filledAny = true; }
   });
@@ -284,7 +297,7 @@ function fillClinicalStarters(sp, silent) {
 
 function readClinicalForm(sp) {
   var get = function (key) { var el = document.getElementById('f-' + sp + '-' + key); return el ? el.value.trim() : ''; };
-  return { metabolic: get('metabolic'), symptoms: get('symptoms'), guidance: get('guidance'), emergency: get('emergency'), breed: get('breed'), weight: get('weight') };
+  return { metabolic: get('metabolic'), symptoms: get('symptoms'), dosage: get('dosage'), guidance: get('guidance'), emergency: get('emergency'), breed: get('breed'), weight: get('weight') };
 }
 
 // every species needs real text in every field that applies to its
@@ -298,6 +311,7 @@ function validateClinical(clinical, canineLevel, felineLevel) {
     var missing = [];
     if (!c.metabolic) missing.push(L.metabolic);
     if (!c.symptoms) missing.push(L.symptoms);
+    if (!c.dosage) missing.push(L.dosage);
     if (!c.guidance) missing.push(L.guidance);
     if (L.emergency && !c.emergency) missing.push(L.emergency);
     if (missing.length) {
@@ -510,10 +524,10 @@ function ingredientSyncPayload(row) {
     name: nameEl ? nameEl.textContent.trim() : '',
     category: categoryEl ? categoryEl.textContent.trim() : '',
     canine: ds.canine || 'Unrated', feline: ds.feline || 'Unrated',
-    canineNotes: ds.canineMetabolic || '', canineSymptoms: ds.canineSymptoms || '', canineDosage: ds.canineGuidance || '',
-    canineEmergency: ds.canineEmergency || '', canineBreed: ds.canineBreed || '', canineWeight: ds.canineWeight || '',
-    felineNotes: ds.felineMetabolic || '', felineSymptoms: ds.felineSymptoms || '', felineDosage: ds.felineGuidance || '',
-    felineEmergency: ds.felineEmergency || '', felineBreed: ds.felineBreed || '', felineWeight: ds.felineWeight || ''
+    canineNotes: ds.canineMetabolic || '', canineSymptoms: ds.canineSymptoms || '', canineDosage: ds.canineDosage || '',
+    canineAlternatives: ds.canineGuidance || '', canineEmergency: ds.canineEmergency || '', canineBreed: ds.canineBreed || '', canineWeight: ds.canineWeight || '',
+    felineNotes: ds.felineMetabolic || '', felineSymptoms: ds.felineSymptoms || '', felineDosage: ds.felineDosage || '',
+    felineAlternatives: ds.felineGuidance || '', felineEmergency: ds.felineEmergency || '', felineBreed: ds.felineBreed || '', felineWeight: ds.felineWeight || ''
   };
 }
 
@@ -743,6 +757,7 @@ function previewIngredient(rowId) {
           (items.length ? items.map(function (s) { return '<li class="flex items-center gap-2"><i class="fa-solid fa-circle text-[4px] text-stone-400"></i>' + escapeHTML(s) + '</li>'; }).join('') : '<li class="text-stone-400">Not documented</li>') +
         '</ul></div>' +
       '</div>' +
+      '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 mb-3"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-2">' + escapeHTML(L.dosage) + '</p><p class="text-xs text-dark leading-relaxed">' + escapeHTML(c.dosage || 'Not documented') + '</p></div>' +
       '<div class="p-4 rounded-2xl bg-brand-light border border-brand/10"><p class="text-[10px] font-bold text-brand uppercase tracking-widest mb-1">' + escapeHTML(L.guidance) + '</p><p class="text-xs text-dark font-medium leading-relaxed">' + escapeHTML(c.guidance || 'Not documented') + '</p></div>' +
       (level === 'Toxic' && c.emergency
         ? '<div class="p-4 rounded-2xl bg-danger/5 border border-danger/10 mt-3"><p class="text-[10px] font-bold text-danger uppercase tracking-widest mb-1"><i class="fa-solid fa-kit-medical mr-1"></i>' + escapeHTML(L.emergency) + '</p><p class="text-xs text-dark font-medium leading-relaxed">' + escapeHTML(c.emergency) + '</p></div>'
@@ -1543,16 +1558,19 @@ function migrateClinicalFields() {
       if (level === 'Toxic') {
         c.metabolic = override[sp] || old.metabolic || s.metabolic;
         c.symptoms = old.symptoms || s.symptoms;
+        c.dosage = s.dosage;
         c.guidance = old.alternatives || s.guidance;
         c.emergency = s.emergency;
       } else if (level === 'Caution') {
         c.metabolic = sharedMetabolic || s.metabolic;
         c.symptoms = (!mixed && old.symptoms) ? old.symptoms : s.symptoms;
+        c.dosage = s.dosage;
         c.guidance = old.alternatives ? 'Safer swaps: ' + old.alternatives : s.guidance;
         c.emergency = '';
       } else {
         c.metabolic = sharedMetabolic || s.metabolic;
         c.symptoms = s.symptoms;
+        c.dosage = s.dosage;
         c.guidance = s.guidance;
         c.emergency = '';
       }
@@ -1584,9 +1602,10 @@ function ensureSampleGlucosamineRow() {
     ds.felineRiskIndex = '';
     ds.canineMetabolic = 'Commonly used to support joint health in dogs and generally well tolerated at label doses.';
     ds.canineSymptoms = 'Supports joint comfort, Supports mobility in older dogs';
+    ds.canineDosage = "Safe at the amount on the product label; follow the label's dosing for your dog's weight.";
     ds.canineGuidance = 'Safe to include at the amounts on the product label. Check with your veterinarian for dogs on other joint medication.';
     ds.canineEmergency = '';
-    ds.felineMetabolic = ''; ds.felineSymptoms = ''; ds.felineGuidance = ''; ds.felineEmergency = '';
+    ds.felineMetabolic = ''; ds.felineSymptoms = ''; ds.felineDosage = ''; ds.felineGuidance = ''; ds.felineEmergency = '';
     ds.clinicalV2 = '2';
     ds.source = '';
     ds.regVerified = 'false';

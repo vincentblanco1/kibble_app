@@ -561,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
           mechanism: (dog ? dog.notes : '') || (cat ? cat.notes : '') || 'No detailed notes available.',
           canine: (dog ? dog.notes : '') || 'No canine-specific data available.',
           feline: (cat ? cat.notes : '') || 'No feline-specific data available.',
-          alternative: (dog ? dog.emergency_action : '') || (cat ? cat.emergency_action : '') || 'No alternative suggested.',
+          alternative: (dog ? dog.alternatives_guidance : '') || (cat ? cat.alternatives_guidance : '') || 'No alternative suggested.',
           wikiSearch: WIKI_PAGE + '?search=' + encodeURIComponent(primary.primary_name),
           clinical_symptoms: (dog ? dog.clinical_symptoms : '') || (cat ? cat.clinical_symptoms : '') || '',
           dosage: (dog ? dog.dosage : '') || (cat ? cat.dosage : '') || '',
