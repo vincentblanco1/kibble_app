@@ -1634,7 +1634,7 @@ app.get('/api/history', (req, res) => {
 app.get('/api/history/:id', (req, res) => {
   const userId = req.query.user_id || 1;
   const query = `
-    SELECT s.*, COALESCE(s.species, p.species) AS species_final
+    SELECT s.*, COALESCE(s.species, p.species) AS species_final, p.name AS pet_name
     FROM scans s
     LEFT JOIN pets p ON p.id = s.pet_id
     WHERE s.id = ? AND s.user_id = ?
@@ -1663,6 +1663,10 @@ app.get('/api/history/:id', (req, res) => {
     const send = (results, flaggedOut) => res.json({
       scanId: row.id,
       productName: row.product_name,
+      // So the results page can lock its pet picker to the exact pet this saved scan was
+      // run for, instead of falling back to whichever pet the picker defaults to.
+      petId: row.pet_id || null,
+      petName: row.pet_name || null,
       species,
       score: row.risk_score,
       rating: row.rating,

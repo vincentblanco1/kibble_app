@@ -899,6 +899,27 @@ document.addEventListener('DOMContentLoaded', () => {
       drawPetCards();
     }
 
+    // Opening a scan FROM THE LOGS (results.html?batch=KG-60) loads the saved record over
+    // the network separately from the live pets list, and the two fetches can resolve in
+    // either order. historyScanData holds whatever /api/history/:id came back with until
+    // both pieces are in hand; applyHistoryPetLock() runs after each fetch and only takes
+    // effect once it has both the pet list (to pull full profile details from) and the
+    // scan's petId (to know who to lock to) -- this is what makes an opened log show just
+    // the one pet it was actually scanned for, instead of the picker's generic default.
+    let historyScanData = null;
+    function applyHistoryPetLock() {
+      if (!historyScanData || !petBox || !petBox.__pets) return;
+      const pid = historyScanData.petId;
+      let pet = pid ? petBox.__pets.filter(function (p) { return String(p.id) === String(pid); })[0] : null;
+      if (!pet && historyScanData.petName) {
+        // Pet profile no longer exists (deleted/renamed since) -- lock to a minimal card
+        // built from what the scan record itself still remembers, rather than falling
+        // back to showing every current pet as if any of them could be the right one.
+        pet = { id: pid || null, name: historyScanData.petName, species: isFeline(historyScanData.species) ? 'Feline' : 'Canine', breed: '', weight: null, allergies: [] };
+      }
+      if (pet) { resultLockedPet = pet; drawLockedPetCard(pet); }
+    }
+
     if (petBox) {
       fetch('/api/pets?user_id=' + encodeURIComponent(kgUserId))
         .then(function (res) { if (!res.ok) throw new Error('Server returned ' + res.status); return res.json(); })
@@ -921,6 +942,7 @@ document.addEventListener('DOMContentLoaded', () => {
             (wanted && petBox.__pets.filter(function (p) { return (p.name || '').toLowerCase() === wanted.toLowerCase(); })[0]) ||
             petBox.__pets[0];
           drawPetCards();
+          applyHistoryPetLock();
           petBox.addEventListener('click', function (e) {
             const card = e.target.closest('[data-live-pet]');
             if (card) choosePet(card.getAttribute('data-live-pet'));
@@ -1429,6 +1451,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const speciesName = isFeline(data.species) ? 'Feline' : 'Canine';
           renderScan(data, speciesName);
           if (data.image) showSavedPhoto(data.image);
+          historyScanData = data;
+          applyHistoryPetLock();
         })
         .catch(function (err) { console.error('Could not load saved scan:', err); showError(err && err.message ? err.message : 'That scan could not be loaded.'); });
     }
