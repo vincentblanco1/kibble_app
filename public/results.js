@@ -870,8 +870,15 @@ document.addEventListener('DOMContentLoaded', () => {
             { key: 'any-dog', id: null, name: 'Any dog', species: 'Canine', breed: 'No pet profile selected' },
             { key: 'any-cat', id: null, name: 'Any cat', species: 'Feline', breed: 'No pet profile selected' }
           ];
+          // Different "Scan →" links across the app pass this differently: the Pets page
+          // passes the pet's real id, but the Overview page's pet cards pass the pet's
+          // NAME instead -- so matching only on id meant arriving from Overview silently
+          // fell through to the default (most recently added) pet instead of the one the
+          // link was actually for. Try an id match first, then fall back to a name match.
           const wanted = new URLSearchParams(window.location.search).get('pet');
-          selectedPet = petBox.__pets.filter(function (p) { return wanted && String(p.id) === wanted; })[0] || petBox.__pets[0];
+          selectedPet = (wanted && petBox.__pets.filter(function (p) { return String(p.id) === wanted; })[0]) ||
+            (wanted && petBox.__pets.filter(function (p) { return (p.name || '').toLowerCase() === wanted.toLowerCase(); })[0]) ||
+            petBox.__pets[0];
           drawPetCards();
           petBox.addEventListener('click', function (e) {
             const card = e.target.closest('[data-live-pet]');
@@ -1163,9 +1170,36 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    const snapCanvas = $('snapshotCanvas');
+    const snapBtn = $('takeSnapshotBtn');
+    const snapBtnOriginalHtml = snapBtn ? snapBtn.innerHTML : '';
+
+    // The OCR call can legitimately take several seconds (it retries on its own on a
+    // traffic spike), but nothing used to stop a second tap while the first was still
+    // in flight -- it just silently did nothing (scanning was true, so runScan() no-op'd
+    // right away), with no sign to the user that their tap was ignored. If someone got
+    // impatient, switched to a different pet, and tapped again, the FIRST request (for
+    // whichever pet was selected when it was sent) could still land after they'd moved
+    // on -- so the newest entry in the log could be for a pet they'd already switched
+    // away from, not the one they thought they'd just scanned for. Now the capture and
+    // upload controls are actually disabled for the duration of a scan, so a second tap
+    // can't happen at all instead of silently vanishing.
+    function setScanningLocked(locked) {
+      if (snapBtn) {
+        snapBtn.disabled = locked;
+        snapBtn.classList.toggle('opacity-50', locked);
+        snapBtn.classList.toggle('cursor-not-allowed', locked);
+        snapBtn.innerHTML = locked ? '<i class="fa-solid fa-spinner fa-spin"></i> Scanning…' : snapBtnOriginalHtml;
+      }
+      if (labelUploadInput) labelUploadInput.disabled = locked;
+      if (petBox) petBox.classList.toggle('pointer-events-none', locked);
+      if (petBox) petBox.classList.toggle('opacity-60', locked);
+    }
+
     async function runScan(blob) {
       if (scanning) return;
       scanning = true;
+      setScanningLocked(true);
       showBusy();
       const speciesName = speciesNow();
       try {
@@ -1188,11 +1222,10 @@ document.addEventListener('DOMContentLoaded', () => {
         showError(err && err.message ? err.message : 'Could not reach the scanner.');
       } finally {
         scanning = false;
+        setScanningLocked(false);
       }
     }
 
-    const snapCanvas = $('snapshotCanvas');
-    const snapBtn = $('takeSnapshotBtn');
     if (snapBtn && snapCanvas) {
       // the page's own capture code has just drawn the frame into the canvas
       snapBtn.addEventListener('click', function () {
