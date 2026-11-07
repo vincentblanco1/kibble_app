@@ -21,12 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const retakeCameraBtn = document.getElementById('retakeCameraBtn');
   const labelUploadInput = document.getElementById('labelUploadInput');
 
-  // Species Selection Elements
-  const targetBusterOption = document.getElementById('targetBusterOption');
-  const targetMiloOption = document.getElementById('targetMiloOption');
-  const busterIndicator = document.getElementById('busterIndicator');
-  const miloIndicator = document.getElementById('miloIndicator');
-
   // Diagnostic Indicators
   const scoreNumberDisplay = document.getElementById('scoreNumberDisplay');
   const scoreRiskLabel = document.getElementById('scoreRiskLabel');
@@ -35,10 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const verdictHeadline = document.getElementById('verdictHeadline');
   const verdictSubtext = document.getElementById('verdictSubtext');
   const tokenCountsRow = document.getElementById('tokenCountsRow');
-  const pgFindingCard = document.getElementById('pgFindingCard');
-  const pgBadge = document.getElementById('pgBadge');
-  const pgBodyText = document.getElementById('pgBodyText');
-  const pgNoteText = document.getElementById('pgNoteText');
   const filterFindingsBtn = document.getElementById('filterFindingsBtn');
 
   // Notification Elements
@@ -364,107 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
       reader.readAsDataURL(file);
     }
   });
-
-  // ===================================================
-  // 3. Species Switcher (Buster vs. Milo) - Fixed Layout
-  // ===================================================
-  function setSpecies(species) {
-    if (species === 'buster') {
-      // Buster Active
-      targetBusterOption.className = 'w-full p-3.5 rounded-2xl border-2 border-[#ff9800] bg-[#fff8ed] flex items-center justify-between cursor-pointer transition-all';
-      if (busterIndicator) busterIndicator.className = 'w-4 h-4 rounded-full border-4 border-[#ff9800] bg-white shrink-0 ml-3';
-
-      // Milo Inactive
-      targetMiloOption.className = 'w-full p-3.5 rounded-2xl border border-[#ebdcd0] bg-white opacity-75 hover:opacity-100 flex items-center justify-between cursor-pointer transition-all';
-      if (miloIndicator) miloIndicator.className = 'w-4 h-4 rounded-full border-2 border-slate-300 shrink-0 ml-3';
-
-      // Score: 64 Moderate Risk
-      if (scoreNumberDisplay) scoreNumberDisplay.textContent = '64';
-      if (scoreRiskLabel) {
-        scoreRiskLabel.textContent = 'Moderate Risk';
-        scoreRiskLabel.className = 'text-[7.5px] font-extrabold uppercase tracking-wider text-[#ff9800]';
-      }
-      if (scoreSvgGauge) {
-        scoreSvgGauge.setAttribute('stroke', '#ff9800');
-        scoreSvgGauge.style.strokeDashoffset = '90';
-      }
-      if (cautionPillBadge) {
-        cautionPillBadge.textContent = '⚠️ Caution Flag';
-        cautionPillBadge.className = 'px-2.5 py-1 rounded bg-[#fff3e0] text-[#b45309] font-extrabold text-[10.5px] uppercase border border-[#f59e0b] inline-block';
-      }
-      if (verdictHeadline) verdictHeadline.textContent = 'Contains Flagged Synthetic Antioxidants & Preservatives';
-      if (verdictSubtext) verdictSubtext.textContent = 'The rule-engine matched 2 flagged additives against canine veterinary toxicological records.';
-      
-      if (tokenCountsRow) {
-        tokenCountsRow.innerHTML = `
-          <span class="text-xs font-bold text-[#16a34a] flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#16a34a]"></span> 18 Safe Tokens</span>
-          <span class="text-xs font-bold text-[#ff9800] flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#ff9800]"></span> 2 Caution Tokens</span>
-          <span class="text-xs font-bold text-[#dc2626] flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#dc2626]"></span> 0 Lethal Toxins</span>
-        `;
-      }
-
-      // PG Finding Card (Caution for dogs)
-      if (pgFindingCard) pgFindingCard.className = 'tactile-card p-4 border-l-4 border-l-[#ff9800] flex items-start gap-4 diagnostic-item cursor-pointer hover:border-[#45671d] transition-all group';
-      if (pgBadge) {
-        pgBadge.textContent = 'CAUTION';
-        pgBadge.className = 'px-2 py-0.5 rounded bg-orange-100 text-[#b45309] font-extrabold text-[9.5px]';
-      }
-      if (pgBodyText) pgBodyText.textContent = 'Permitted in moderate thresholds for canines; strictly lethal and prohibited for felines (causes Heinz body anemia).';
-      if (pgNoteText) {
-        pgNoteText.textContent = 'Cross-Species Note: If shared with Milo (Cat), do NOT feed.';
-        pgNoteText.className = 'text-[10.5px] font-bold text-[#ba7f57]';
-      }
-
-    } else {
-      // Milo Active
-      targetMiloOption.className = 'w-full p-3.5 rounded-2xl border-2 border-purple-500 bg-purple-50/40 flex items-center justify-between cursor-pointer transition-all';
-      if (miloIndicator) miloIndicator.className = 'w-4 h-4 rounded-full border-4 border-purple-500 bg-white shrink-0 ml-3';
-
-      // Buster Inactive
-      targetBusterOption.className = 'w-full p-3.5 rounded-2xl border border-[#ebdcd0] bg-white opacity-75 hover:opacity-100 flex items-center justify-between cursor-pointer transition-all';
-      if (busterIndicator) busterIndicator.className = 'w-4 h-4 rounded-full border-2 border-slate-300 shrink-0 ml-3';
-
-      // Score: 92 Lethal Risk for Milo
-      if (scoreNumberDisplay) scoreNumberDisplay.textContent = '92';
-      if (scoreRiskLabel) {
-        scoreRiskLabel.textContent = 'Critical Hazard';
-        scoreRiskLabel.className = 'text-[7.5px] font-extrabold uppercase tracking-wider text-red-600';
-      }
-      if (scoreSvgGauge) {
-        scoreSvgGauge.setAttribute('stroke', '#dc2626');
-        scoreSvgGauge.style.strokeDashoffset = '20';
-      }
-      if (cautionPillBadge) {
-        cautionPillBadge.textContent = '🚨 Prohibited for Felines';
-        cautionPillBadge.className = 'px-2.5 py-1 rounded bg-red-100 text-red-800 font-extrabold text-[10.5px] uppercase border border-red-300 inline-block';
-      }
-      if (verdictHeadline) verdictHeadline.textContent = 'Formula Contains Additives Strictly Fatal to Cats';
-      if (verdictSubtext) verdictSubtext.textContent = 'Detected Propylene Glycol. Cats lack glucuronidation pathways, triggering acute Heinz body anemia.';
-
-      if (tokenCountsRow) {
-        tokenCountsRow.innerHTML = `
-          <span class="text-xs font-bold text-[#16a34a] flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#16a34a]"></span> 17 Safe Tokens</span>
-          <span class="text-xs font-bold text-[#ff9800] flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#ff9800]"></span> 1 Caution Token</span>
-          <span class="text-xs font-bold text-[#dc2626] flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#dc2626]"></span> 1 Lethal Hazard</span>
-        `;
-      }
-
-      // PG Finding Card (Fatal for cats)
-      if (pgFindingCard) pgFindingCard.className = 'tactile-card p-4 border-l-4 border-l-red-600 flex items-start gap-4 diagnostic-item bg-red-50/20 cursor-pointer hover:border-red-600 transition-all group';
-      if (pgBadge) {
-        pgBadge.textContent = 'FATAL HAZARD';
-        pgBadge.className = 'px-2 py-0.5 rounded bg-red-100 text-red-800 font-extrabold text-[9.5px] animate-pulse';
-      }
-      if (pgBodyText) pgBodyText.textContent = 'Strictly prohibited by FDA/FEDIAF for felines. Causes severe oxidative damage to red blood cells and hemolytic anemia.';
-      if (pgNoteText) {
-        pgNoteText.textContent = 'CRITICAL WARNING: NEVER feed this product to Milo under any circumstances.';
-        pgNoteText.className = 'text-[10.5px] font-black text-red-700';
-      }
-    }
-  }
-
-  targetBusterOption?.addEventListener('click', () => setSpecies('buster'));
-  targetMiloOption?.addEventListener('click', () => setSpecies('milo'));
 
   // ===================================================
   // 4. Hazard Level Filter
@@ -827,8 +716,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---------------------------------------------------------------------
     // 1. Your pets in the "Evaluating metabolic risk for" box
     // ---------------------------------------------------------------------
-    const firstPetCard = $('targetBusterOption');
-    const petBox = firstPetCard ? firstPetCard.parentElement : null;
+    // Used to locate itself through the "Buster"/"Milo" sample cards' parent element --
+    // broke the moment those were removed. Now has its own stable id instead.
+    const petBox = $('petPickerBox');
 
     function petCardHtml(p, selected) {
       const feline = p.species === 'Feline';
@@ -1121,6 +1011,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // Ensure ingredient DB is loaded before rendering so drawer has full data
       await _loadIngredientDB();
       currentScanId = data.scanId || null;
+      // Was permanently stuck on a hardcoded "#KG-9102-BF" sample id from the static
+      // markup, for a loaded scan just as much as for the empty pre-scan state -- now
+      // reflects the real scan, matching the "KG-" prefix the rest of the customer app uses.
+      var scanIdBadge = $('scanIdBadge');
+      if (scanIdBadge) {
+        scanIdBadge.textContent = currentScanId ? (IS_MOBILE ? '#KG-' + currentScanId : 'SCAN ID: #KG-' + currentScanId) : 'No scan yet';
+      }
       renderDisputeStatus(data.dispute || null);
       var lowConfidenceBanner = $('lowConfidenceBanner');
       if (lowConfidenceBanner) {

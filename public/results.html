@@ -143,8 +143,8 @@
           <span class="text-[#45671d] font-black">—</span> Overview
         </a>
         <h1 class="text-base sm:text-lg font-display font-extrabold text-[#182811]">Diagnostic Inspection Console</h1>
-        <span class="px-3 py-1 rounded-full bg-[#f4effa] border border-[#d8b4fe] text-[#9333ea] font-extrabold text-xs">
-          SCAN ID: #KG-9102-BF
+        <span id="scanIdBadge" class="px-3 py-1 rounded-full bg-[#f4effa] border border-[#d8b4fe] text-[#9333ea] font-extrabold text-xs">
+          No scan yet
         </span>
       </div>
 
@@ -293,31 +293,10 @@
         <div class="tactile-card p-5 bg-white">
           <span class="text-[10.5px] font-extrabold uppercase text-[#788673] tracking-wider block mb-3">Evaluating metabolic risk for</span>
           
-          <div class="flex flex-col gap-3" id="petEvalSwitcher">
-            <!-- Placeholder cards; results.js's liveScan() replaces this with the user's
-                 real pets fetched from /api/pets as soon as the page loads (it finds this
-                 box via the #targetBusterOption id below, same anchor mobile-results.html
-                 uses, so both pages share the exact same wiring). -->
-            <div id="targetBusterOption" class="w-full p-3.5 rounded-2xl border-2 border-[#ff9800] bg-[#fff8ed] flex items-center justify-between cursor-pointer transition-all">
-              <div class="flex items-center gap-3.5 flex-1 min-w-0">
-                <span class="text-2xl shrink-0">🐶</span>
-                <div class="flex flex-col min-w-0 flex-1">
-                  <h4 class="font-extrabold text-sm text-[#182811] leading-tight">Buster (Canine)</h4>
-                  <p class="text-[11px] text-[#788673] font-semibold truncate mt-0.5">Loading your pets…</p>
-                </div>
-              </div>
-              <div id="busterIndicator" class="w-4 h-4 rounded-full border-4 border-[#ff9800] bg-white shrink-0 ml-3"></div>
-            </div>
-            <div id="targetMiloOption" class="w-full p-3.5 rounded-2xl border border-[#ebdcd0] bg-white opacity-75 hover:opacity-100 flex items-center justify-between cursor-pointer transition-all">
-              <div class="flex items-center gap-3.5 flex-1 min-w-0">
-                <span class="text-2xl shrink-0">🐱</span>
-                <div class="flex flex-col min-w-0 flex-1">
-                  <h4 class="font-extrabold text-sm text-[#182811] leading-tight">Milo (Feline)</h4>
-                  <p class="text-[11px] text-[#788673] font-semibold truncate mt-0.5">Loading your pets…</p>
-                </div>
-              </div>
-              <div id="miloIndicator" class="w-4 h-4 rounded-full border-2 border-slate-300 shrink-0 ml-3"></div>
-            </div>
+          <div class="flex flex-col gap-3" id="petPickerBox">
+            <!-- results.js's drawPetCards() replaces this with the user's real pets,
+                 fetched from /api/pets, as soon as the page loads. -->
+            <div class="w-full p-3.5 rounded-2xl border border-[#ebdcd0] bg-white text-xs text-[#788673] text-center">Loading your pets…</div>
           </div>
 
           <div class="mt-4 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[10.5px] text-[#788673] leading-relaxed">
@@ -362,39 +341,29 @@
           <div class="relative w-28 h-28 shrink-0 flex items-center justify-center z-10">
             <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="40" stroke="#fef08a" stroke-width="12" fill="none"/>
-              <circle id="scoreSvgGauge" cx="50" cy="50" r="40" stroke="#f59e0b" stroke-width="12" stroke-dasharray="251.2" stroke-dashoffset="90" stroke-linecap="round" fill="none"/>
+              <circle id="scoreSvgGauge" cx="50" cy="50" r="40" stroke="#cbd5e1" stroke-width="12" stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" fill="none"/>
             </svg>
             <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <span id="scoreNumberDisplay" class="text-3xl font-black text-[#182811]">64</span>
-              <span id="scoreRiskLabel" class="text-[7.5px] font-extrabold uppercase tracking-wider text-[#b45309]">Moderate risk</span>
+              <span id="scoreNumberDisplay" class="text-3xl font-black text-[#182811]">—</span>
+              <span id="scoreRiskLabel" class="text-[7.5px] font-extrabold uppercase tracking-wider text-slate-400">No scan yet</span>
             </div>
           </div>
 
           <div class="space-y-2 text-center sm:text-left z-10 flex-1">
-            <span id="cautionPillBadge" class="px-3 py-1 rounded-full bg-white text-[#b45309] font-extrabold text-[10px] uppercase border border-amber-300 inline-block shadow-2xs">
-              Caution flag
+            <span id="cautionPillBadge" class="px-3 py-1 rounded-full bg-white text-slate-500 font-extrabold text-[10px] uppercase border border-slate-300 inline-block shadow-2xs">
+              No scan yet
             </span>
             <button type="button" id="emergencyTriageBtn" class="hidden ml-2 px-3 py-1 rounded-full bg-red-600 text-white font-black text-[10px] uppercase shadow-xs items-center gap-1.5 inline-flex">
               <i class="fa-solid fa-triangle-exclamation"></i> Emergency Triage
             </button>
             <h2 id="verdictHeadline" class="font-extrabold text-base sm:text-lg text-[#182811] leading-snug">
-              Contains flagged synthetic antioxidants &amp; <span class="bg-white px-2 py-0.5 rounded-lg border border-amber-200/60 shadow-2xs inline-block">preservatives</span>
+              No scan yet
             </h2>
             <p id="verdictSubtext" class="text-xs text-[#788673]">
-              The rule engine matched 2 flagged additives against canine veterinary toxicological records.
+              Take or upload a photo of a pet food label to see results here.
             </p>
-            
-            <div id="tokenCountsRow" class="flex flex-wrap items-center gap-2 pt-1.5 justify-center sm:justify-start text-xs font-bold">
-              <span class="px-3 py-1 rounded-full bg-[#e2f4ed] border border-[#b8e6d0] text-[#0f5132] text-[11px] shadow-2xs">
-                18 safe tokens
-              </span>
-              <span class="px-3 py-1 rounded-full bg-[#fef3c7] border border-[#fde68a] text-[#92400e] text-[11px] shadow-2xs">
-                2 caution tokens
-              </span>
-              <span class="px-3 py-1 rounded-full bg-white border border-[#ebdcd0] text-[#788673] text-[11px] shadow-2xs">
-                0 lethal toxins
-              </span>
-            </div>
+
+            <div id="tokenCountsRow" class="flex flex-wrap items-center gap-2 pt-1.5 justify-center sm:justify-start text-xs font-bold"></div>
           </div>
         </div>
 
@@ -408,76 +377,8 @@
           </div>
 
           <div class="space-y-3" id="diagnosticCardsList">
-            <div class="tactile-card p-4 bg-white border-l-4 border-l-[#ff9800] flex items-start gap-4 diagnostic-item cursor-pointer hover:border-[#45671d] transition-all group" data-hazard="caution" data-token="bha">
-              <div class="w-9 h-9 rounded-full bg-[#fff8ed] flex items-center justify-center text-base shrink-0 mt-0.5 text-[#ff9800]">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-              </div>
-              <div class="flex-1 space-y-1">
-                <div class="flex items-center justify-between">
-                  <h4 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">BHA (Butylated Hydroxyanisole)</h4>
-                  <span class="px-2.5 py-0.5 rounded bg-orange-100 text-[#b45309] font-extrabold text-[9.5px]">CAUTION</span>
-                </div>
-                <p class="text-[11px] font-bold text-[#8c633a]">Category: Synthetic phenolic antioxidant / fat stabilizer</p>
-                <p class="text-xs text-[#788673]">Long-term exposure has been associated with endocrine disruption and cellular inflammation in canine models.</p>
-                <div class="flex items-center justify-between pt-1">
-                  <p class="text-[10.5px] font-bold text-[#45671d]">Suggested alternative: mixed tocopherols (Vitamin E), rosemary extract</p>
-                  <span class="text-[10.5px] font-extrabold text-[#45671d] group-hover:underline">Drill down →</span>
-                </div>
-              </div>
-            </div>
-
-            <div id="pgFindingCard" class="tactile-card p-4 bg-white border-l-4 border-l-[#ff9800] flex items-start gap-4 diagnostic-item cursor-pointer hover:border-[#45671d] transition-all group" data-hazard="caution" data-token="pg">
-              <div class="w-9 h-9 rounded-full bg-[#fff8ed] flex items-center justify-center text-base shrink-0 mt-0.5 text-[#ff9800]">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-              </div>
-              <div class="flex-1 space-y-1">
-                <div class="flex items-center justify-between">
-                  <h4 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">Propylene Glycol</h4>
-                  <span id="pgBadge" class="px-2.5 py-0.5 rounded bg-orange-100 text-[#b45309] font-extrabold text-[9.5px]">CAUTION</span>
-                </div>
-                <p class="text-[11px] font-bold text-[#8c633a]">Category: Humectant / moisture-retaining additive</p>
-                <p id="pgBodyText" class="text-xs text-[#788673]">Permitted in moderate thresholds for canines; strictly lethal and prohibited for felines (causes Heinz body anemia).</p>
-                <div class="flex items-center justify-between pt-1">
-                  <p id="pgNoteText" class="text-[10.5px] font-bold text-[#ba7f57]">Cross-species note: if shared with Milo (cat), do NOT feed.</p>
-                  <span class="text-[10.5px] font-extrabold text-[#45671d] group-hover:underline">Drill down →</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="tactile-card p-4 bg-white border-l-4 border-l-[#4caf50] flex items-start gap-4 diagnostic-item cursor-pointer hover:border-[#45671d] transition-all group" data-hazard="safe" data-token="beef">
-              <div class="w-9 h-9 rounded-full bg-[#f0fdf4] flex items-center justify-center text-base shrink-0 mt-0.5 text-emerald-600">
-                <i class="fa-solid fa-check"></i>
-              </div>
-              <div class="flex-1 space-y-1">
-                <div class="flex items-center justify-between">
-                  <h4 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">Deboned Beef &amp; Organ Blend</h4>
-                  <span class="px-2.5 py-0.5 rounded bg-emerald-100 text-[#15803d] font-extrabold text-[9.5px]">SAFE</span>
-                </div>
-                <p class="text-[11px] font-bold text-[#16a34a]">Category: High-bioavailability animal protein</p>
-                <p class="text-xs text-[#788673]">Excellent amino acid profile supporting muscular integrity and healthy energy requirements for Golden Retrievers.</p>
-                <div class="flex items-center justify-between pt-1">
-                  <p class="text-[10.5px] font-bold text-[#16a34a]">FEDIAF biological standard: Optimal</p>
-                  <span class="text-[10.5px] font-extrabold text-[#45671d] group-hover:underline">Drill down →</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="tactile-card p-4 bg-white border-l-4 border-l-[#4caf50] flex items-start gap-4 diagnostic-item cursor-pointer hover:border-[#45671d] transition-all group" data-hazard="safe" data-token="rice">
-              <div class="w-9 h-9 rounded-full bg-[#f0fdf4] flex items-center justify-center text-base shrink-0 mt-0.5 text-emerald-600">
-                <i class="fa-solid fa-check"></i>
-              </div>
-              <div class="flex-1 space-y-1">
-                <div class="flex items-center justify-between">
-                  <h4 class="font-extrabold text-sm text-[#182811] group-hover:text-[#45671d] transition-colors">Whole Grain Brown Rice</h4>
-                  <span class="px-2.5 py-0.5 rounded bg-emerald-100 text-[#15803d] font-extrabold text-[9.5px]">SAFE</span>
-                </div>
-                <p class="text-[11px] font-bold text-[#16a34a]">Category: Complex carbohydrate &amp; soluble fiber</p>
-                <p class="text-xs text-[#788673]">Provides sustained glycemic release and supports gastrointestinal transit.</p>
-                <div class="flex items-center justify-between pt-1">
-                  <p class="text-[10.5px] font-bold text-[#16a34a]">Digestive tolerance: High</p>
-                  <span class="text-[10.5px] font-extrabold text-[#45671d] group-hover:underline">Drill down →</span>
-                </div>
-              </div>
+            <div class="tactile-card p-6 bg-white text-center text-xs text-[#788673]">
+              No scan yet. Take or upload a photo of a pet food label above to see ingredient findings here.
             </div>
           </div>
         </div>
