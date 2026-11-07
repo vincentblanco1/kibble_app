@@ -796,12 +796,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeModalBtn = document.getElementById('closeDossierModalBtn');
   const closeModalBtn2 = document.getElementById('closeDossierModalBtn2');
 
-  // One labeled sub-block inside a species' assessment box -- only rendered when
-  // there's real text for it, so an unfilled field just doesn't take up space.
+  // Each field gets its own separate boxed card inside the species' assessment --
+  // never merged into a shared paragraph -- and is only rendered when there's real
+  // text for it, so an unfilled field just doesn't take up space.
   function dossierField(label, value) {
     if (!value) return '';
-    return '<div><strong class="block text-[9.5px] font-extrabold uppercase tracking-wide opacity-70">' + escapeHtml(label) + '</strong>' +
-      '<p class="text-[11.5px] leading-relaxed whitespace-pre-line">' + escapeHtml(value) + '</p></div>';
+    return '<div class="p-3 rounded-xl bg-white/80 border border-black/5 shadow-sm">' +
+      '<strong class="block text-[9.5px] font-extrabold uppercase tracking-wide opacity-70">' + escapeHtml(label) + '</strong>' +
+      '<p class="text-[11.5px] leading-relaxed whitespace-pre-line mt-0.5">' + escapeHtml(value) + '</p></div>';
   }
 
   // Builds one species' full assessment -- every column the database has for that
