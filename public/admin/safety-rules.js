@@ -202,7 +202,7 @@ function saveLogicProfile() {
     }));
 
     showToast('Logic profile saved: auto-approve ' + autoApprove + ', hazard floor ' + hazardFloor, 'success');
-    logAdminAction('Updated safety rules: auto-approve ' + autoApprove + ', hazard floor ' + hazardFloor, 'settings');
+    logAdminAction('Updated safety rules: auto-approve ' + autoApprove + ', hazard floor ' + hazardFloor, 'settings', 'safety-rules.html');
     exitEditMode();
   });
 }

@@ -446,10 +446,10 @@ function submitUserMessage(rowId) {
 
   Promise.all(deliveries).then(function () {
     showToast('Message sent to ' + name + (alsoEmail ? ' (in-app and email)' : ' (in-app only)'), 'success');
-    logAdminAction('Sent message to ' + name + (alsoEmail ? ' (in-app + email): ' : ' (in-app only): ') + subject, 'edit');
+    logAdminAction('Sent message to ' + name + (alsoEmail ? ' (in-app + email): ' : ' (in-app only): ') + subject, 'edit', 'users-pets.html?openProfile=' + encodeURIComponent(rowId));
   }).catch(function () {
     showToast('Message could not be fully delivered to ' + name, 'danger');
-    logAdminAction('Message to ' + name + ' failed to fully deliver: ' + subject, 'edit');
+    logAdminAction('Message to ' + name + ' failed to fully deliver: ' + subject, 'edit', 'users-pets.html?openProfile=' + encodeURIComponent(rowId));
   });
 }
 
@@ -495,7 +495,7 @@ function toggleFlagUser(rowId) {
       }
 
       showToast(row.dataset.name + '\'s account was unflagged', 'success');
-      logAdminAction('Unflagged account: ' + row.dataset.name, 'security');
+      logAdminAction('Unflagged account: ' + row.dataset.name, 'security', 'users-pets.html?openProfile=' + encodeURIComponent(rowId));
       refreshTopKpis();
       filterUsers();
     });
@@ -559,7 +559,7 @@ function confirmFlagUser(rowId) {
     closeModal();
     var name = row.dataset.name, email = row.dataset.email;
     showToast('Sending notification email to ' + name + '...', 'info');
-    logAdminAction('Flagged account: ' + name + ': "' + reason + '"', 'security');
+    logAdminAction('Flagged account: ' + name + ': "' + reason + '"', 'security', 'users-pets.html?openProfile=' + encodeURIComponent(rowId));
     sendSystemEmail({ type: 'account-flagged', to: email, name: name, reason: reason }).then(function () {
       showToast(name + '\'s account was flagged, notification email sent', 'danger');
     }).catch(function () {
@@ -590,7 +590,7 @@ function confirmForcePasswordReset(rowId) {
   var name = row.dataset.name, email = row.dataset.email;
   closeModal();
   showToast('Sending password reset link to ' + name + '...', 'info');
-  logAdminAction('Force password reset issued to ' + name, 'security');
+  logAdminAction('Force password reset issued to ' + name, 'security', 'users-pets.html?openProfile=' + encodeURIComponent(rowId));
   sendSystemEmail({ type: 'password-reset', to: email, name: name }).then(function () {
     showToast('Password reset link sent to ' + email, 'success');
   }).catch(function () {
@@ -630,7 +630,7 @@ function toggleBanUser(rowId) {
 
       closeModal();
       showToast(row.dataset.name + '\'s account access was restored', 'success');
-      logAdminAction('Restored account access: ' + row.dataset.name, 'security');
+      logAdminAction('Restored account access: ' + row.dataset.name, 'security', 'users-pets.html?openProfile=' + encodeURIComponent(rowId));
       refreshTopKpis();
       filterUsers();
     });
@@ -694,7 +694,7 @@ function confirmBanUser(rowId) {
     closeModal();
     var name = row.dataset.name, email = row.dataset.email;
     showToast('Sending notification email to ' + name + '...', 'info');
-    logAdminAction('Banned account: ' + name + ': "' + reason + '"', 'ban');
+    logAdminAction('Banned account: ' + name + ': "' + reason + '"', 'ban', 'users-pets.html?openProfile=' + encodeURIComponent(rowId));
     sendSystemEmail({ type: 'account-banned', to: email, name: name, reason: reason }).then(function () {
       showToast(name + '\'s account was banned, notification email sent', 'danger');
     }).catch(function () {

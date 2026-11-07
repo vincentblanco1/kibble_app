@@ -1053,14 +1053,18 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // writes to the Activity Log - kept in localStorage since there's no real
-// backend yet, capped at 50 entries so it doesn't grow forever
-function logAdminAction(text, category) {
+// backend yet, capped at 50 entries so it doesn't grow forever.
+// "link" is optional: a relative href (e.g. "ocr-scans.html?inspect=KB-53")
+// to the actual record this action was about, which the Activity Log page
+// turns into a clickable row. Omitted when there's no specific record to
+// jump back to (a sign-out, a settings tweak with nothing to deep-link).
+function logAdminAction(text, category, link) {
   var log = [];
   try { log = JSON.parse(localStorage.getItem('kibbleguard-activity-log') || '[]'); } catch (e) { log = []; }
   // credited to whoever is actually logged in; falls back to a neutral label
   // (never to a specific person) if there is no active session
   var actor = (typeof getLoggedInAdmin === 'function') ? getLoggedInAdmin() : null;
-  log.unshift({ text: text, category: category, admin: actor ? actor.name : 'Unknown admin', time: new Date().toISOString() });
+  log.unshift({ text: text, category: category, admin: actor ? actor.name : 'Unknown admin', time: new Date().toISOString(), link: link || null });
   if (log.length > 50) log = log.slice(0, 50);
   localStorage.setItem('kibbleguard-activity-log', JSON.stringify(log));
 }

@@ -621,7 +621,7 @@ function saveIngredient(mode, rowId) {
         renameIngredientHistory(historyBefore.name, name);
         recordIngredientChange(name, historyBefore, { canine: canine, feline: feline, canineRisk: canineRisk, felineRisk: felineRisk });
         showToast('Ingredient node updated, changes are now live in the Risk Library', 'success');
-        logAdminAction('Edited ingredient: ' + name, 'edit');
+        logAdminAction('Edited ingredient: ' + name, 'edit', 'ingredient-database.html?edit-name=' + encodeURIComponent(name));
         renderIngredientScanCounts();
         filterIngredients();
       } catch (e) {
@@ -687,7 +687,7 @@ function saveIngredient(mode, rowId) {
         closeModal();
         filterIngredients();
         showToast('New ingredient added as Pending Verification -- a vet needs to approve it before pet owners see it', 'success');
-        logAdminAction('Added new ingredient: ' + name, 'add');
+        logAdminAction('Added new ingredient: ' + name, 'add', 'ingredient-database.html?edit-name=' + encodeURIComponent(name));
         recordIngredientChange(name, null, { canine: canine, feline: feline, canineRisk: canineRisk, felineRisk: felineRisk });
         if (typeof onIngredientAddedFromScan === 'function') onIngredientAddedFromScan(name);
         finalizeScanIfPending(name, canine, feline);
@@ -1182,7 +1182,7 @@ function performAddAsAlias(index) {
     addWaitingRatingDismissed(item.name, item.species);
     closeModal();
     showToast('&ldquo;' + escapeHTML(item.name) + '&rdquo; added as an alias of &ldquo;' + escapeHTML(targetName) + '&rdquo;', 'success');
-    logAdminAction('Added "' + item.name + '" as an alias of ' + targetName + ' from Waiting for a Rating', 'merge');
+    logAdminAction('Added "' + item.name + '" as an alias of ' + targetName + ' from Waiting for a Rating', 'merge', 'ingredient-database.html?edit-name=' + encodeURIComponent(targetName));
     recordIngredientEvent(targetName, 'Added alias "' + item.name + '" (from a pet owner scan with no match)');
     computeRegistryHealth();   // refreshes Registry Health tiles and re-renders this panel together
   });
@@ -1405,7 +1405,7 @@ function performMerge(sourceRowId) {
 
   closeModal();
   showToast('&ldquo;' + sourceName + '&rdquo; merged into &ldquo;' + targetName + '&rdquo; as an alias', 'success');
-  logAdminAction('Merged duplicate entry "' + sourceName + '" into ' + targetName, 'merge');
+  logAdminAction('Merged duplicate entry "' + sourceName + '" into ' + targetName, 'merge', 'ingredient-database.html?edit-name=' + encodeURIComponent(targetName));
   recordIngredientEvent(targetName, 'Merged in duplicate entry "' + sourceName + '". Names now recognized: ' + newAliasEntries.join(', '));
   recordIngredientEvent(sourceName, 'Merged into "' + targetName + '" and removed');
   });
@@ -1417,6 +1417,10 @@ function performMerge(sourceRowId) {
 function finalizeScanIfPending(ingredientName, canine, feline) {
   var scanRef = new URLSearchParams(window.location.search).get('forScan');
   if (!scanRef) return;
+  // forScan carries Dashboard's data-scan value, which has a leading "#"
+  // (see scanRow() in db-sync.js) that ocr-scans.html's ?inspect= reader
+  // doesn't expect -- strip it so the Activity Log link lands correctly
+  var scanLink = 'ocr-scans.html?inspect=' + encodeURIComponent(scanRef.replace(/^#/, ''));
 
   var resultText;
   if (canine === 'Unrated') resultText = ingredientName + ' is classified as ' + feline + ' for cats. It has not been assessed for dogs.';
@@ -1430,9 +1434,9 @@ function finalizeScanIfPending(ingredientName, canine, feline) {
     scan: scanRef,
     message: 'Your scan is complete. ' + resultText
   }).then(function () {
-    logAdminAction('Finalized scan ' + scanRef + ' using new entry "' + ingredientName + '", pet owner notified of the result', 'verify');
+    logAdminAction('Finalized scan ' + scanRef + ' using new entry "' + ingredientName + '", pet owner notified of the result', 'verify', scanLink);
   }).catch(function () {
-    logAdminAction('Finalized scan ' + scanRef + ' using new entry "' + ingredientName + '", but pet owner notification failed to queue', 'verify');
+    logAdminAction('Finalized scan ' + scanRef + ' using new entry "' + ingredientName + '", but pet owner notification failed to queue', 'verify', scanLink);
   });
 
   var resolved = [];

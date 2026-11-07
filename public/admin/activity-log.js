@@ -186,14 +186,24 @@ function renderActivityLog(resetPage) {
     // reason, dispute reply, and message subject in the whole app ends up
     // logged here eventually, so this is the one place that has to be safe
     // no matter where the text originally came from
-    return '<div class="p-5 flex items-center gap-4">' +
+    // entries logged with a "link" (the scan, ticket or account the action was
+    // about) render as an actual <a> straight to that record; older entries
+    // logged before this existed, or actions with nothing specific to jump to,
+    // just render as a plain row like before
+    var clickable = !!e.link;
+    var openTag = clickable
+      ? '<a href="' + escapeHTML(e.link) + '" class="p-5 flex items-center gap-4 hover:bg-stone-50 transition-colors">'
+      : '<div class="p-5 flex items-center gap-4">';
+    var closeTag = clickable ? '</a>' : '</div>';
+    return openTag +
       '<div class="w-9 h-9 rounded-xl ' + cat.cls + ' flex items-center justify-center text-sm shrink-0"><i class="fa-solid ' + cat.icon + '"></i></div>' +
       '<div class="flex-1 min-w-0">' +
         '<p class="text-sm font-bold text-dark leading-snug">' + escapeHTML(e.text) + '</p>' +
         '<p class="text-[11px] text-stone-400 mt-1">' + escapeHTML(e.admin) + '</p>' +
       '</div>' +
       '<span class="text-[10px] font-bold text-stone-400 uppercase tracking-widest shrink-0">' + relativeTime(e.time) + '</span>' +
-    '</div>';
+      (clickable ? '<i class="fa-solid fa-chevron-right text-stone-300 text-xs shrink-0"></i>' : '') +
+      closeTag;
   }).join('');
 
   if (countEl) countEl.textContent = entries.length + ' of ' + total + ' actions';

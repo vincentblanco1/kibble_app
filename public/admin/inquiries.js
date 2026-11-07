@@ -318,16 +318,16 @@ function resolveInquiry(inquiryId) {
       // nobody actually got it. Surface that honestly instead.
       var inAppResult = results[0];
       if (inAppResult && inAppResult.delivered === false) {
-        logAdminAction('Reply to inquiry ' + inquiryId + ' saved, but could not be delivered in-app: "' + response + '"', 'inquiry');
+        logAdminAction('Reply to inquiry ' + inquiryId + ' saved, but could not be delivered in-app: "' + response + '"', 'inquiry', 'inquiries.html?inspect=' + encodeURIComponent(inquiryId));
         showToast('Reply saved, but ' + ownerName + ' has no matching account to notify in-app' + (ownerEmail ? ' (email reply was still sent)' : ''), 'danger');
         renderNavBadges();
         return;
       }
-      logAdminAction('Replied to inquiry ' + inquiryId + ' (in-app + email): "' + response + '"', 'inquiry');
+      logAdminAction('Replied to inquiry ' + inquiryId + ' (in-app + email): "' + response + '"', 'inquiry', 'inquiries.html?inspect=' + encodeURIComponent(inquiryId));
       showToast('Reply sent to ' + ownerName, 'success');
       renderNavBadges();
     }).catch(function () {
-      logAdminAction('Reply to inquiry ' + inquiryId + ' failed to fully deliver: "' + response + '"', 'inquiry');
+      logAdminAction('Reply to inquiry ' + inquiryId + ' failed to fully deliver: "' + response + '"', 'inquiry', 'inquiries.html?inspect=' + encodeURIComponent(inquiryId));
       showToast('Reply could not be fully delivered to ' + ownerName, 'danger');
     });
   });
@@ -339,6 +339,13 @@ filterInquiries();
 renderNavBadges();
 applyRoleState();
 restrictPageToRoles(['chief', 'support']);
+
+// lets the Activity Log link straight back to the inquiry a reply was about,
+// same pattern as OCR Scan Records' ?inspect= deep link
+var deepLinkInquiryId = new URLSearchParams(window.location.search).get('inspect');
+if (deepLinkInquiryId && typeof INQUIRY_RECORDS !== 'undefined' && INQUIRY_RECORDS[deepLinkInquiryId]) {
+  openInquiryDetail(deepLinkInquiryId);
+}
 
 
 /* ---------- Refresh ----------

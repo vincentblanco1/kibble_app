@@ -801,10 +801,10 @@ function upholdDispute(scanId) {
     }
 
     Promise.all(deliveries).then(function () {
-      logAdminAction('Replied to dispute on ' + scanId + ' (in-app + email): "' + response + '"', 'dispute');
+      logAdminAction('Replied to dispute on ' + scanId + ' (in-app + email): "' + response + '"', 'dispute', 'ocr-scans.html?inspect=' + encodeURIComponent(scanId));
       showToast('Classification upheld, reply sent to ' + ownerName, 'success');
     }).catch(function () {
-      logAdminAction('Reply to dispute on ' + scanId + ' failed to fully deliver: "' + response + '"', 'dispute');
+      logAdminAction('Reply to dispute on ' + scanId + ' failed to fully deliver: "' + response + '"', 'dispute', 'ocr-scans.html?inspect=' + encodeURIComponent(scanId));
       showToast('Reply could not be fully delivered to ' + ownerName, 'danger');
     });
     computeOcrKpis();
@@ -1201,10 +1201,10 @@ function overturnDispute(scanId) {
     if (ownerEmail) deliveries.push(sendSystemEmail({ type: 'dispute-overturned', scan: scanId, to: ownerEmail, name: ownerName, message: response, newVerdict: after.verdict }));
     var logText = 'Overturned dispute on ' + scanId + ': ' + target.name + ' ' + oldLevel + ' -> Safe for this scan, verdict ' + before.verdict + ' -> ' + after.verdict + '. Reason: "' + response + '"';
     Promise.all(deliveries).then(function () {
-      logAdminAction(logText + ' (owner notified)', 'dispute');
+      logAdminAction(logText + ' (owner notified)', 'dispute', 'ocr-scans.html?inspect=' + encodeURIComponent(scanId));
       showToast('Dispute overturned, ' + ownerName + ' notified', 'success');
     }).catch(function () {
-      logAdminAction(logText + ' (owner notification failed)', 'dispute');
+      logAdminAction(logText + ' (owner notification failed)', 'dispute', 'ocr-scans.html?inspect=' + encodeURIComponent(scanId));
       showToast('Verdict corrected, but notifying ' + ownerName + ' failed', 'danger');
     });
     computeOcrKpis();

@@ -875,6 +875,10 @@ function submitTriageResolution(rowId) {
       var row = document.getElementById(rowId);
       var rawName = row ? row.dataset.name : '';
       var scanRef = row ? row.dataset.scan : rowId;
+      // data-scan carries a leading "#" (see scanRow() in db-sync.js) that
+      // ocr-scans.html's own ?inspect= reader doesn't expect -- strip it so
+      // the Activity Log link actually lands on the right row there
+      var scanLink = 'ocr-scans.html?inspect=' + encodeURIComponent(scanRef.replace(/^#/, ''));
       var cleanName = rawName.replace(/"/g, '').replace(/\s*Mapping$/, '').trim();
       showToast('Notifying pet owner their scan needs more time...', 'info');
       queueInAppNotification({
@@ -882,9 +886,9 @@ function submitTriageResolution(rowId) {
         scan: scanRef,
         message: "We're double-checking one of the ingredients on your scan before finalizing the result. This may take a bit longer than usual."
       }).then(function () {
-        logAdminAction('Flagged OCR mapping as unrecognized for scan ' + scanRef + ': "' + cleanName + '" (pet owner notified, scan remains pending)', 'verify');
+        logAdminAction('Flagged OCR mapping as unrecognized for scan ' + scanRef + ': "' + cleanName + '" (pet owner notified, scan remains pending)', 'verify', scanLink);
       }).catch(function () {
-        logAdminAction('Flagged OCR mapping as unrecognized for scan ' + scanRef + ': "' + cleanName + '" (pet owner notification failed to queue)', 'verify');
+        logAdminAction('Flagged OCR mapping as unrecognized for scan ' + scanRef + ': "' + cleanName + '" (pet owner notification failed to queue)', 'verify', scanLink);
       });
       setTimeout(function () {
         window.location.href = 'ingredient-database.html?new=' + encodeURIComponent(cleanName) + '&forScan=' + encodeURIComponent(scanRef);
@@ -907,6 +911,8 @@ function resolveTriage(rowId) {
   var suggestedMatch = row ? (row.dataset.suggestedMatch || row.dataset.name.replace(/^"|"$/g, '')) : '';
   var severity = row ? row.dataset.severity : '';
   var scanRef = row ? row.dataset.scan : rowId;
+  // same leading-"#" stripping as submitTriageResolution() above
+  var scanLink = 'ocr-scans.html?inspect=' + encodeURIComponent(scanRef.replace(/^#/, ''));
 
   // persist "row resolved" before the fade animation (and before closing the
   // modal) instead of after - same detach/attempt/rollback pattern as the
@@ -943,10 +949,10 @@ function resolveTriage(rowId) {
     message: 'Your scan result is ready: ' + suggestedMatch + ' was identified and classified as ' + severity + '.'
   }).then(function () {
     showToast('Mapping verified, pet owner notified of the finalized result', 'success');
-    logAdminAction('Verified OCR mapping for scan ' + scanRef + ' as ' + suggestedMatch + ' (' + severity + '), pet owner notified', 'verify');
+    logAdminAction('Verified OCR mapping for scan ' + scanRef + ' as ' + suggestedMatch + ' (' + severity + '), pet owner notified', 'verify', scanLink);
   }).catch(function () {
     showToast('Mapping verified, but notifying the pet owner failed', 'danger');
-    logAdminAction('Verified OCR mapping for scan ' + scanRef + ' as ' + suggestedMatch + ' (' + severity + '), pet owner notification failed', 'verify');
+    logAdminAction('Verified OCR mapping for scan ' + scanRef + ' as ' + suggestedMatch + ' (' + severity + '), pet owner notification failed', 'verify', scanLink);
   });
 }
 

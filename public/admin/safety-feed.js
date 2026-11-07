@@ -224,7 +224,7 @@ function saveAlert(mode, rowId, status) {
 
     closeModal();
     showToast('Alert updated', 'success');
-    logAdminAction('Edited alert: ' + title, 'edit');
+    logAdminAction('Edited alert: ' + title, 'edit', 'safety-feed.html?edit=' + encodeURIComponent(rowId));
     filterAlerts();
   } else {
     var newId = newAlertId();
@@ -264,10 +264,10 @@ function saveAlert(mode, rowId, status) {
     updateFeedKpis();
     if (asDraft) {
       showToast('Draft saved. Pet owners cannot see it until you set it Live', 'success');
-      logAdminAction('Saved draft alert: ' + title, 'edit');
+      logAdminAction('Saved draft alert: ' + title, 'edit', 'safety-feed.html?edit=' + encodeURIComponent(newId));
     } else {
       showToast('Alert published, now live on the pet owner app', 'success');
-      logAdminAction('Published alert: ' + title, 'publish');
+      logAdminAction('Published alert: ' + title, 'publish', 'safety-feed.html?edit=' + encodeURIComponent(newId));
     }
     filterAlerts();
     tr.classList.add('flash-highlight');
@@ -308,7 +308,7 @@ function toggleAlertStatus(rowId) {
   }
   if (goingLive) {
     showToast('Alert published, now live on the pet owner app', 'success');
-    logAdminAction('Set alert live: ' + title, 'publish');
+    logAdminAction('Set alert live: ' + title, 'publish', 'safety-feed.html?edit=' + encodeURIComponent(rowId));
   } else {
     showToast('Alert moved to Draft, hidden from the app', 'info');
   }
@@ -443,6 +443,13 @@ filterAlerts();
 
 if (new URLSearchParams(window.location.search).get('action') === 'publish' && hasPermission('manageSafetyFeed')) {
   openAlertForm('add');
+}
+
+// lets the Activity Log link straight back to the alert a log entry was about
+// (edited/published/set live), instead of landing the admin on the bare list
+var deepLinkEditAlert = new URLSearchParams(window.location.search).get('edit');
+if (deepLinkEditAlert && document.getElementById(deepLinkEditAlert) && hasPermission('manageSafetyFeed')) {
+  editAlert(deepLinkEditAlert);
 }
 
 /* ---------- Refresh ----------
