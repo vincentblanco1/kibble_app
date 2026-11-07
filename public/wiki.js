@@ -802,10 +802,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // species it's about without grouping it under anything. Skipped when empty.
   function dossierField(icon, speciesLabel, color, fieldLabel, value) {
     if (!value) return '';
+    // Species isn't repeated on every box here -- it's already established once by
+    // the risk box above it, so each field just names itself (Dosage, Symptoms, etc).
     return '<div class="p-4 rounded-2xl border-2 ' + color.border + ' ' + color.bg + ' shadow-sm">' +
       '<div class="flex items-center gap-1.5 mb-1">' +
         '<i class="fa-solid ' + icon + ' text-xs ' + color.strong + '"></i>' +
-        '<strong class="text-[9.5px] font-extrabold uppercase tracking-wide ' + color.strong + '">' + escapeHtml(speciesLabel) + ' &middot; ' + escapeHtml(fieldLabel) + '</strong>' +
+        '<strong class="text-[9.5px] font-extrabold uppercase tracking-wide ' + color.strong + '">' + escapeHtml(fieldLabel) + '</strong>' +
       '</div>' +
       '<p class="text-[11.5px] leading-relaxed whitespace-pre-line text-[#182811]">' + escapeHtml(value) + '</p></div>';
   }
