@@ -362,6 +362,10 @@
     var builtScans = (data.scans || []).map(function (s) {
       KGDB.recordTraces['KB-' + s.id] = {
         user_id: String(s.user_id), owner: s.owner, ownerEmail: s.ownerEmail, species: s.species, timestamp: s.timestamp,
+        // only needed so the Activity Log's quick-view popup has a title to show --
+        // ocr-scans.html doesn't need this itself, it reads the name straight off
+        // its own table row instead (see inspectRecord())
+        product: s.product || 'Pet Food Scan',
         // real confidence from the Vision AI call for an actual photo scan; manual-text
         // scans never had an image to read, so there's honestly nothing to measure there
         confidence: (s.confidence != null ? s.confidence + '%' : 'Not measured'), rawOcrText: s.rawOcrText,

@@ -28,6 +28,10 @@ var currentLogCategoryFilter = 'all';
 // rows in a <tbody>. Same idea, just done locally: slice the entries array
 // to the current page before building the HTML.
 var currentLogPage = 1;
+// the entries currently on screen, in the same order as the rows - lets a
+// row's onclick hand its index to openActivityEntryQuickView() instead of
+// re-finding itself in the full (filtered, paginated) list
+var currentLogPageEntries = [];
 var LOG_ROWS_PER_PAGE = 10;
 
 // example entries so this page isn't empty before anything real has
@@ -172,6 +176,129 @@ function inferActivityLogLink(text) {
   return null;
 }
 
+/* ---------- Quick-view popup ----------
+   Clicking a row opens the record right here instead of leaving the Activity
+   Log. A scan or inquiry mentioned in the text gets a real detail view, built
+   straight from the same RECORD_TRACES / INQUIRY_RECORDS db-sync.js already
+   loads on every admin page (including this one); anything else (an account,
+   an alert, an ingredient, a settings change) falls back to showing the log
+   line itself plus a link to the page that has the full record, since there's
+   no shared structured data for those on this page to pull from. */
+function openActivityEntryQuickView(i) {
+  var e = currentLogPageEntries[i];
+  if (!e) return;
+  var scanMatch = /#?(KB-\d+)/.exec(e.text);
+  if (scanMatch && typeof RECORD_TRACES !== 'undefined' && RECORD_TRACES[scanMatch[1]]) {
+    openScanQuickView(scanMatch[1], e);
+    return;
+  }
+  var ticketMatch = /ticket_\d+/.exec(e.text);
+  if (ticketMatch && typeof INQUIRY_RECORDS !== 'undefined' && INQUIRY_RECORDS[ticketMatch[0]]) {
+    openInquiryQuickView(ticketMatch[0], e);
+    return;
+  }
+  openGenericQuickView(e, e.link || inferActivityLogLink(e.text));
+}
+
+function openScanQuickView(scanId, e) {
+  var data = RECORD_TRACES[scanId];
+  var scoreColor = data.rating === 'Safe' ? 'text-safe border-safe' : data.rating === 'Caution' ? 'text-caution border-caution' : data.rating === 'Toxic' ? 'text-danger border-danger' : 'text-stone-400 border-stone-300';
+  var allergyMatches = (data.substances || []).filter(function (s) { return !!s.allergy; });
+  var ingredientsHtml = (data.substances || []).map(function (s) {
+    // app.js's riskBadgeHtml() only knows Safe/Caution/Toxic (the page-specific
+    // overrides that handle "Unrated" too live in ocr-scans.js etc., which
+    // aren't loaded here) -- fall back to the same "Not Rated" styling those
+    // pages use instead of letting an unrecognized ingredient render green
+    var badgeHtml = (s.level === 'Safe' || s.level === 'Caution' || s.level === 'Toxic')
+      ? riskBadgeHtml(s.level)
+      : '<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 text-stone-400 border-stone-200 font-bold text-[9px] uppercase tracking-widest border"><i class="fa-solid fa-circle-question"></i> Not Rated</span>';
+    return '<div class="flex items-start justify-between gap-3 p-3 rounded-xl border ' + (s.allergy ? 'border-danger/20 bg-danger/5' : 'border-stone-200 bg-stone-100/50') + '">' +
+      '<div class="min-w-0 flex-1">' +
+        '<p class="text-xs font-bold text-dark truncate">' + escapeHTML(s.name) + '</p>' +
+        (s.allergy
+          ? '<p class="text-[10px] font-bold text-danger mt-0.5 leading-snug"><i class="fa-solid fa-paw mr-1"></i>' + escapeHTML(s.allergy.message) + '</p>'
+          : '<p class="text-[10px] text-stone-400">' + escapeHTML(s.category || '') + '</p>') +
+      '</div>' +
+      badgeHtml +
+    '</div>';
+  }).join('');
+  var imageHtml = data.imageUrl
+    ? '<img src="' + escapeHTML(data.imageUrl) + '" alt="Captured label" class="w-full max-h-56 object-contain rounded-2xl border border-stone-200 bg-stone-100 mb-4" onerror="this.style.display=\'none\'">'
+    : '';
+  openModal({
+    title: data.product || 'Pet Food Scan',
+    subtitle: '#' + scanId + (data.timestamp ? ' · ' + data.timestamp : ''),
+    wide: true,
+    bodyHtml:
+      '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 mb-4">' +
+        '<p class="text-xs font-bold text-dark leading-snug mb-1">' + escapeHTML(e.text) + '</p>' +
+        '<p class="text-[11px] text-stone-400">' + escapeHTML(e.admin) + ' · ' + relativeTime(e.time) + '</p>' +
+      '</div>' +
+      '<div class="flex items-center gap-5 mb-4 p-5 rounded-2xl bg-stone-100 border border-stone-200">' +
+        '<div class="w-16 h-16 rounded-full border-4 ' + scoreColor + ' flex flex-col items-center justify-center shrink-0 bg-white">' +
+          '<span class="text-lg font-display font-bold ' + scoreColor.split(' ')[0] + ' leading-none">' + (data.score == null ? '&mdash;' : data.score) + '</span>' +
+        '</div>' +
+        '<div>' +
+          (data.rating ? verdictBadgeHtml(data.rating) : '') +
+          '<p class="text-[11px] text-stone-500 mt-2">' + (data.species === 'feline' ? 'Feline' : 'Canine') + ' · OCR confidence ' + escapeHTML(data.confidence || 'Not measured') + '</p>' +
+        '</div>' +
+      '</div>' +
+      (allergyMatches.length
+        ? '<div class="flex items-start gap-3 p-4 rounded-2xl bg-danger/5 border border-danger/10 mb-4"><i class="fa-solid fa-paw text-danger mt-0.5"></i><p class="text-[11px] text-stone-600 leading-relaxed">' + allergyMatches.map(function (s) { return escapeHTML(s.allergy.message); }).join(' ') + '</p></div>'
+        : '') +
+      imageHtml +
+      '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-2">Ingredients</p>' +
+      '<div class="space-y-2">' + (ingredientsHtml || '<p class="text-xs text-stone-400">No ingredient data on this trace.</p>') + '</div>',
+    footerHtml:
+      '<a href="ocr-scans.html?inspect=' + encodeURIComponent(scanId) + '" class="px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Open Full Record</a>' +
+      '<button onclick="closeModal()" class="px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Close</button>'
+  });
+}
+
+function openInquiryQuickView(inquiryId, e) {
+  var d = INQUIRY_RECORDS[inquiryId];
+  openModal({
+    title: 'Inquiry ' + inquiryId,
+    subtitle: (d.owner || 'Unknown owner') + (d.timestamp ? ' · ' + relativeTime(d.timestamp) : ''),
+    wide: true,
+    bodyHtml:
+      '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200 mb-4">' +
+        '<p class="text-xs font-bold text-dark leading-snug mb-1">' + escapeHTML(e.text) + '</p>' +
+        '<p class="text-[11px] text-stone-400">' + escapeHTML(e.admin) + ' · ' + relativeTime(e.time) + '</p>' +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-4 mb-4">' +
+        '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">From</p><p class="text-sm font-bold text-dark">' + escapeHTML(d.owner || 'Unknown') + '</p>' + (d.ownerEmail ? '<p class="text-[11px] text-stone-400 truncate">' + escapeHTML(d.ownerEmail) + '</p>' : '') + '</div>' +
+        '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200"><p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Category</p><p class="text-sm font-bold text-dark">' + escapeHTML(d.category || 'General') + '</p></div>' +
+      '</div>' +
+      '<p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-2">Original Message</p>' +
+      '<div class="p-4 rounded-2xl bg-stone-100 border border-stone-200"><p class="text-sm text-dark leading-relaxed">' + escapeHTML(d.message || '') + '</p></div>',
+    footerHtml:
+      '<a href="inquiries.html?inspect=' + encodeURIComponent(inquiryId) + '" class="px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Open Full Record</a>' +
+      '<button onclick="closeModal()" class="px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Close</button>'
+  });
+}
+
+// everything that isn't a scan or inquiry (an account, an alert, an
+// ingredient, a settings change) - no shared structured data to pull from
+// here, so this just surfaces the log line itself plus, when a target page
+// is known, a way to get to the real record
+function openGenericQuickView(e, link) {
+  var cat = ACTIVITY_CATEGORIES[e.category] || ACTIVITY_CATEGORIES.settings;
+  var label = e.category ? e.category.charAt(0).toUpperCase() + e.category.slice(1) : 'Admin';
+  openModal({
+    title: label + ' Action',
+    subtitle: e.admin + ' · ' + relativeTime(e.time),
+    bodyHtml:
+      '<div class="flex items-start gap-4">' +
+        '<div class="w-10 h-10 rounded-xl ' + cat.cls + ' flex items-center justify-center text-sm shrink-0"><i class="fa-solid ' + cat.icon + '"></i></div>' +
+        '<p class="text-sm text-dark leading-relaxed">' + escapeHTML(e.text) + '</p>' +
+      '</div>',
+    footerHtml:
+      (link ? '<a href="' + escapeHTML(link) + '" class="px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Open Full Record</a>' : '') +
+      '<button onclick="closeModal()" class="px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Close</button>'
+  });
+}
+
 function renderActivityLog(resetPage) {
   var countEl = document.getElementById('log-visible-count');
   populateLogAdminFilter();
@@ -194,34 +321,28 @@ function renderActivityLog(resetPage) {
   if (currentLogPage > totalPages) currentLogPage = totalPages;
   var pageEntries = entries.slice((currentLogPage - 1) * LOG_ROWS_PER_PAGE, currentLogPage * LOG_ROWS_PER_PAGE);
 
+  // kept so a row's onclick can look itself back up by position without
+  // having to round-trip the whole entry through an HTML attribute
+  currentLogPageEntries = pageEntries;
+
   var list = document.getElementById('activity-log-list');
-  list.innerHTML = pageEntries.map(function (e) {
+  list.innerHTML = pageEntries.map(function (e, i) {
     var cat = ACTIVITY_CATEGORIES[e.category] || ACTIVITY_CATEGORIES.settings;
     // escaping matters a lot on this page specifically - almost every ban
     // reason, dispute reply, and message subject in the whole app ends up
     // logged here eventually, so this is the one place that has to be safe
-    // no matter where the text originally came from
-    // entries logged with a "link" (the scan, ticket or account the action was
-    // about) render as an actual <a> straight to that record. Every entry that
-    // was already sitting in localStorage before this existed has no "link"
-    // field at all (it simply predates it, forever -- there's no action log
-    // to go back and re-run), so inferActivityLogLink() falls back to reading
-    // the scan/ticket ID straight out of the text itself for those
-    var link = e.link || inferActivityLogLink(e.text);
-    var clickable = !!link;
-    var openTag = clickable
-      ? '<a href="' + escapeHTML(link) + '" class="p-5 flex items-center gap-4 hover:bg-stone-50 transition-colors">'
-      : '<div class="p-5 flex items-center gap-4">';
-    var closeTag = clickable ? '</a>' : '</div>';
-    return openTag +
+    // no matter where the text originally came from.
+    // every row opens a quick-view popup in place, instead of navigating off
+    // the Activity Log entirely - see openActivityEntryQuickView() below
+    return '<div class="p-5 flex items-center gap-4 hover:bg-stone-50 transition-colors cursor-pointer" onclick="openActivityEntryQuickView(' + i + ')">' +
       '<div class="w-9 h-9 rounded-xl ' + cat.cls + ' flex items-center justify-center text-sm shrink-0"><i class="fa-solid ' + cat.icon + '"></i></div>' +
       '<div class="flex-1 min-w-0">' +
         '<p class="text-sm font-bold text-dark leading-snug">' + escapeHTML(e.text) + '</p>' +
         '<p class="text-[11px] text-stone-400 mt-1">' + escapeHTML(e.admin) + '</p>' +
       '</div>' +
       '<span class="text-[10px] font-bold text-stone-400 uppercase tracking-widest shrink-0">' + relativeTime(e.time) + '</span>' +
-      (clickable ? '<i class="fa-solid fa-chevron-right text-stone-300 text-xs shrink-0"></i>' : '') +
-      closeTag;
+      '<i class="fa-solid fa-chevron-right text-stone-300 text-xs shrink-0"></i>' +
+    '</div>';
   }).join('');
 
   if (countEl) countEl.textContent = entries.length + ' of ' + total + ' actions';
