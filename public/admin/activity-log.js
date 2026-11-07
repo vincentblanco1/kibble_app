@@ -157,6 +157,21 @@ function populateLogAdminFilter() {
   select.value = names.indexOf(current) !== -1 ? current : 'all';
 }
 
+// back-compat for every entry logged before logAdminAction() took a "link" --
+// those rows have no link field and never will, so this reads a scan or
+// ticket ID straight out of the free-form text instead, the same way an
+// admin reading the sentence would. A name match (e.g. "Sent message to
+// John Bartolata") isn't attempted here: unlike a scan or ticket ID there's
+// no reliable, collision-free account identifier sitting in that text.
+function inferActivityLogLink(text) {
+  if (!text) return null;
+  var ticketMatch = /ticket_\d+/.exec(text);
+  if (ticketMatch) return 'inquiries.html?inspect=' + encodeURIComponent(ticketMatch[0]);
+  var scanMatch = /#?(KB-\d+)/.exec(text);
+  if (scanMatch) return 'ocr-scans.html?inspect=' + encodeURIComponent(scanMatch[1]);
+  return null;
+}
+
 function renderActivityLog(resetPage) {
   var countEl = document.getElementById('log-visible-count');
   populateLogAdminFilter();
@@ -187,12 +202,15 @@ function renderActivityLog(resetPage) {
     // logged here eventually, so this is the one place that has to be safe
     // no matter where the text originally came from
     // entries logged with a "link" (the scan, ticket or account the action was
-    // about) render as an actual <a> straight to that record; older entries
-    // logged before this existed, or actions with nothing specific to jump to,
-    // just render as a plain row like before
-    var clickable = !!e.link;
+    // about) render as an actual <a> straight to that record. Every entry that
+    // was already sitting in localStorage before this existed has no "link"
+    // field at all (it simply predates it, forever -- there's no action log
+    // to go back and re-run), so inferActivityLogLink() falls back to reading
+    // the scan/ticket ID straight out of the text itself for those
+    var link = e.link || inferActivityLogLink(e.text);
+    var clickable = !!link;
     var openTag = clickable
-      ? '<a href="' + escapeHTML(e.link) + '" class="p-5 flex items-center gap-4 hover:bg-stone-50 transition-colors">'
+      ? '<a href="' + escapeHTML(link) + '" class="p-5 flex items-center gap-4 hover:bg-stone-50 transition-colors">'
       : '<div class="p-5 flex items-center gap-4">';
     var closeTag = clickable ? '</a>' : '</div>';
     return openTag +
