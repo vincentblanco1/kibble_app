@@ -796,40 +796,50 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeModalBtn = document.getElementById('closeDossierModalBtn');
   const closeModalBtn2 = document.getElementById('closeDossierModalBtn2');
 
-  // Each field gets its own separate boxed card inside the species' assessment --
-  // never merged into a shared paragraph -- and is only rendered when there's real
-  // text for it, so an unfilled field just doesn't take up space.
-  function dossierField(label, value) {
+  // Every field renders as its own fully standalone, bold, highlighted box -- not
+  // nested inside a shared "Canine Assessment" / "Feline Assessment" container.
+  // Each box carries its own species icon + label so it's still clear which
+  // species it's about without grouping it under anything. Skipped when empty.
+  function dossierField(icon, speciesLabel, color, fieldLabel, value) {
     if (!value) return '';
-    return '<div class="p-3 rounded-xl bg-white/80 border border-black/5 shadow-sm">' +
-      '<strong class="block text-[9.5px] font-extrabold uppercase tracking-wide opacity-70">' + escapeHtml(label) + '</strong>' +
-      '<p class="text-[11.5px] leading-relaxed whitespace-pre-line mt-0.5">' + escapeHtml(value) + '</p></div>';
+    return '<div class="p-4 rounded-2xl border-2 ' + color.border + ' ' + color.bg + ' shadow-sm">' +
+      '<div class="flex items-center gap-1.5 mb-1">' +
+        '<i class="fa-solid ' + icon + ' text-xs ' + color.strong + '"></i>' +
+        '<strong class="text-[9.5px] font-extrabold uppercase tracking-wide ' + color.strong + '">' + escapeHtml(speciesLabel) + ' &middot; ' + escapeHtml(fieldLabel) + '</strong>' +
+      '</div>' +
+      '<p class="text-[11.5px] leading-relaxed whitespace-pre-line text-[#182811]">' + escapeHtml(value) + '</p></div>';
   }
 
-  // Builds one species' full assessment -- every column the database has for that
-  // species (not just notes), so nothing documented for an ingredient is left out
-  // of what a pet owner can see here.
-  function renderSpeciesAssessment(containerId, badgeId, hasRow, risk, notes, symptoms, dosage, alternatives, breed, weight) {
+  // A standalone box for the species' overall rating, separate from every other field.
+  function dossierRiskBox(icon, speciesLabel, color, risk) {
+    return '<div class="p-4 rounded-2xl border-2 ' + color.border + ' ' + color.bg + ' shadow-sm flex items-center justify-between gap-2">' +
+      '<div class="flex items-center gap-1.5">' +
+        '<i class="fa-solid ' + icon + ' text-sm ' + color.strong + '"></i>' +
+        '<strong class="font-extrabold uppercase tracking-wide text-[10.5px] ' + color.strong + '">' + escapeHtml(speciesLabel) + '</strong>' +
+      '</div>' +
+      '<span class="px-2.5 py-1 rounded-full text-[9.5px] font-extrabold uppercase border ' + color.badgeBg + ' ' + color.badgeBorder + ' ' + color.badgeText + '">' + escapeHtml(getRiskLabel(risk)) + '</span></div>';
+  }
+
+  // Builds every standalone box for one species -- every column the database has for
+  // that species (not just notes), so nothing documented for an ingredient is left
+  // out of what a pet owner can see here.
+  function renderSpeciesAssessment(containerId, icon, speciesLabel, hasRow, risk, notes, symptoms, dosage, alternatives, breed, weight) {
     const container = document.getElementById(containerId);
-    const badgeEl = document.getElementById(badgeId);
-    const color = getRiskColor(risk);
-    if (badgeEl) {
-      badgeEl.innerHTML = '<span class="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase border ' + color.badgeBg + ' ' + color.badgeBorder + ' ' + color.badgeText + '">' + escapeHtml(getRiskLabel(risk)) + '</span>';
-    }
     if (!container) return;
+    const color = getRiskColor(risk);
     if (!hasRow) {
-      container.innerHTML = '<p class="text-[11.5px] leading-relaxed italic opacity-70">This ingredient has not been assessed for this species. Do not assume it is safe.</p>';
+      container.innerHTML = dossierRiskBox(icon, speciesLabel, color, risk) +
+        '<div class="p-4 rounded-2xl border-2 ' + color.border + ' ' + color.bg + ' shadow-sm sm:col-span-2">' +
+        '<p class="text-[11.5px] leading-relaxed italic ' + color.strong + '">This ingredient has not been assessed for this species. Do not assume it is safe.</p></div>';
       return;
     }
-    const html = [
-      dossierField('Overview', notes),
-      dossierField('Clinical Symptoms', symptoms),
-      dossierField('Dosage / Toxic Threshold', dosage),
-      dossierField('Vet-Safe Alternatives / Guidance', alternatives),
-      dossierField('Breed-Specific Risk', breed),
-      dossierField('Weight-Specific Risk', weight)
-    ].join('');
-    container.innerHTML = html || '<p class="text-[11.5px] leading-relaxed italic opacity-70">No further clinical detail documented yet.</p>';
+    container.innerHTML = dossierRiskBox(icon, speciesLabel, color, risk) +
+      dossierField(icon, speciesLabel, color, 'Overview', notes) +
+      dossierField(icon, speciesLabel, color, 'Clinical Symptoms', symptoms) +
+      dossierField(icon, speciesLabel, color, 'Dosage / Toxic Threshold', dosage) +
+      dossierField(icon, speciesLabel, color, 'Vet-Safe Alternatives / Guidance', alternatives) +
+      dossierField(icon, speciesLabel, color, 'Breed-Specific Risk', breed) +
+      dossierField(icon, speciesLabel, color, 'Weight-Specific Risk', weight);
   }
 
   function openDossier(ingredientId) {
@@ -843,9 +853,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mechanism / Notes
     document.getElementById('dossierModalMechanism').textContent = item.notes || 'No detailed notes available for this ingredient.';
 
-    renderSpeciesAssessment('dossierModalCanine', 'dossierModalCanineBadge', !!item.dog, item.dog_risk,
+    renderSpeciesAssessment('dossierModalCanine', 'fa-dog', 'Canine', !!item.dog, item.dog_risk,
       item.dog_notes, item.dog_clinical, item.dog_dosage, item.dog_alternatives, item.dog_breed_specific, item.dog_weight_specific);
-    renderSpeciesAssessment('dossierModalFeline', 'dossierModalFelineBadge', !!item.cat, item.cat_risk,
+    renderSpeciesAssessment('dossierModalFeline', 'fa-cat', 'Feline', !!item.cat, item.cat_risk,
       item.cat_notes, item.cat_clinical, item.cat_dosage, item.cat_alternatives, item.cat_breed_specific, item.cat_weight_specific);
 
     // Emergency action section -- species-specific in the database, so when dogs and
