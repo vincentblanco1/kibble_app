@@ -169,7 +169,7 @@ nav.sidebar-nav a {
   gap: 12px;
   padding: 8.5px 12px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--color-muted);
   text-decoration: none;
@@ -177,7 +177,7 @@ nav.sidebar-nav a {
 }
 
 nav.sidebar-nav a i {
-  font-size: 15px;
+  font-size: 16px;
   width: 20px;
   text-align: center;
 }
