@@ -805,6 +805,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedPet = null;     // { id, name, species: 'Canine'|'Feline', ... } or a generic "any dog / any cat"
     let scanning = false;
     let currentScanId = null;   // the real scans.id of whatever result is on screen -- set in renderScan(), read by the Dispute button
+    // The pet the result currently on screen was actually scanned for. Separate from
+    // selectedPet so that clicking a different pet card doesn't retroactively make an
+    // already-finished result look like it belongs to someone else -- the picker instead
+    // collapses to show just this one pet once a result is showing (see drawLockedPetCard),
+    // which is what was actually causing the "wrong pet" confusion: the full, clickable
+    // picker stayed visible after a scan finished, so clicking another pet changed which
+    // card was highlighted while the result underneath kept showing the PREVIOUS pet's
+    // data, making it look like the system had mixed the two pets up.
+    let resultLockedPet = null;
 
     // ---- the result panels (these elements have ids on both pages) ----
     const panel = function () {
@@ -849,6 +858,38 @@ document.addEventListener('DOMContentLoaded', () => {
     function drawPetCards() {
       if (!petBox) return;
       petBox.innerHTML = petBox.__pets.map(function (p) { return petCardHtml(p, selectedPet && selectedPet.key === p.key); }).join('');
+    }
+
+    // Collapses the picker down to a single, non-clickable row confirming who the result
+    // currently on screen was scanned for, with a "Change pet" link to bring back the full
+    // list when the owner actually wants to pick someone else for their NEXT scan.
+    function drawLockedPetCard(pet) {
+      if (!petBox || !pet) return;
+      const feline = pet.species === 'Feline';
+      const accent = feline ? '#a855f7' : '#ff9800';
+      const tint = feline ? 'bg-[#f4effa]' : 'bg-[#fff8ed]';
+      const pad = IS_MOBILE ? 'p-3' : 'p-3.5';
+      const sens = splitList(pet.allergies);
+      const details = [pet.breed, pet.weight ? pet.weight + ' kg' : '', sens.length ? 'Sensitive: ' + sens.slice(0, 2).join(', ') : ''].filter(Boolean).join(' • ');
+      const avatar = pet.image_url
+        ? '<img src="' + esc(pet.image_url) + '" alt="" class="w-9 h-9 rounded-xl object-cover shrink-0 border border-[#ebdcd0]">'
+        : '<span class="text-2xl shrink-0">' + (feline ? '🐱' : '🐶') + '</span>';
+      petBox.innerHTML =
+        '<div class="w-full ' + pad + ' rounded-2xl border-2 border-[' + accent + '] ' + tint + ' flex items-center justify-between gap-2">' +
+          '<div class="flex items-center gap-' + (IS_MOBILE ? '3' : '3.5') + ' min-w-0 flex-1">' + avatar +
+            '<div class="min-w-0 flex-1">' +
+              '<span class="text-[9px] font-extrabold uppercase tracking-wider text-[#788673] block">Scanned for</span>' +
+              '<h4 class="font-extrabold text-sm text-[#182811] leading-tight truncate">' + esc(pet.name) + ' (' + pet.species + ')</h4>' +
+              '<p class="text-[11px] text-[#788673] font-semibold truncate mt-0.5">' + esc(details || 'No profile details yet') + '</p>' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" id="switchPetBtn" class="shrink-0 text-[11px] font-extrabold text-[#45671d] hover:underline">Change pet →</button>' +
+        '</div>';
+      const switchBtn = petBox.querySelector('#switchPetBtn');
+      if (switchBtn) switchBtn.addEventListener('click', function () {
+        resultLockedPet = null;
+        drawPetCards();
+      });
     }
 
     function choosePet(key) {
@@ -1220,13 +1261,17 @@ document.addEventListener('DOMContentLoaded', () => {
       setScanningLocked(true);
       showBusy();
       const speciesName = speciesNow();
+      // Snapshot of who this specific request is for -- used below so the result that
+      // comes back gets locked to the pet it actually belongs to, not whatever the picker
+      // happens to be showing as "selected" by the time the response arrives.
+      const petForThisScan = selectedPet;
       try {
         if (!blob) throw new Error('The photo could not be prepared.');
         const form = new FormData();
         form.append('labelImage', blob, 'scan-' + Date.now() + '.jpg');
         form.append('species', speciesName);
         form.append('user_id', kgUserId);
-        if (selectedPet && selectedPet.id) form.append('pet_id', selectedPet.id);
+        if (petForThisScan && petForThisScan.id) form.append('pet_id', petForThisScan.id);
 
         const res = await fetch('/api/assess', { method: 'POST', body: form });
         let data = {};
@@ -1234,6 +1279,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.status === 422 && data.notPetFood) { showNotPetFood(data); return; }
         if (!res.ok || data.error) throw new Error(data.error || ('The scanner returned an error (' + res.status + ').'));
         renderScan(data, speciesName);
+        // Collapse the picker to just this one pet now that the result on screen is
+        // actually theirs -- see the resultLockedPet comment above for why.
+        if (petForThisScan) { resultLockedPet = petForThisScan; drawLockedPetCard(petForThisScan); }
         if (typeof window.kgRefreshNotifications === 'function') window.kgRefreshNotifications();
       } catch (err) {
         console.error('Scan failed:', err);
