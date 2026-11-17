@@ -192,7 +192,11 @@
             <span class="flex items-center gap-2 text-xs font-bold text-dark"><span class="w-2.5 h-2.5 rounded-full chart-legend-dot-caution"></span>Caution</span>
             <span class="flex items-center gap-2 text-xs font-bold text-dark"><span class="w-2.5 h-2.5 rounded-full chart-legend-dot-toxic"></span>Toxic</span>
           </div>
-          <p class="text-[10px] text-stone-400 text-center -mt-1 mb-4"><i class="fa-solid fa-circle-info mr-1"></i>Each point is how many scans in the date range below landed on that day, split by final verdict — a rising Toxic line means more risky products were scanned that day, not that scanning got less accurate.</p>
+          <p class="text-[10px] text-stone-400 text-center -mt-1 mb-1"><i class="fa-solid fa-circle-info mr-1"></i>Each point is how many scans in the date range below landed on that day, split by final verdict — a rising Toxic line means more risky products were scanned that day, not that scanning got less accurate.</p>
+          <!-- filled by renderMainChartInsight() in dashboard.js, a plain-language read of
+               whatever the chart is currently showing (e.g. "mostly Safe" vs "Toxic is unusually
+               high") so a non-technical admin doesn't have to interpret the lines themselves -->
+          <p class="text-[11px] font-bold text-center mb-4 hidden" id="chart-insight"></p>
           <!-- empty on purpose, ApexCharts (loaded via CDN) draws the actual
                chart into this div from buildRangeData() in dashboard.js -->
           <div id="main-chart" class="h-[320px]"></div>

@@ -382,6 +382,51 @@ function updateMainChartSummary(data) {
 
   var empty = document.getElementById('main-chart-empty');
   if (empty) empty.style.display = (sums.safe + sums.caution + sums.toxic) === 0 ? 'flex' : 'none';
+
+  renderMainChartInsight(sums);
+}
+
+// turns the same safe/caution/toxic totals the legend counts use into one plain-language
+// sentence about what's actually happening in the range picked -- a non-technical admin
+// glancing at three colored lines shouldn't have to work out for themselves whether "a lot
+// of orange" is normal or a problem. Toxic is flagged at a much lower bar than the others:
+// even a small share of Toxic scans is worth a sentence, where Safe/Caution only earn one
+// once they're a clear majority.
+function describeMainChartMood(sums) {
+  var total = sums.safe + sums.caution + sums.toxic;
+  if (!total) return null;
+  var toxicPct = Math.round((sums.toxic / total) * 100);
+  var cautionPct = Math.round((sums.caution / total) * 100);
+  var safePct = Math.round((sums.safe / total) * 100);
+
+  if (sums.toxic > 0 && toxicPct >= 15) {
+    return { tone: 'text-danger', icon: 'fa-triangle-exclamation',
+      text: 'Toxic made up ' + toxicPct + '% of scans in this range (' + sums.toxic + ' of ' + total + ') — high enough to be worth a look at High-Risk Triage and Safety Feed for what’s driving it.' };
+  }
+  if (sums.toxic > 0) {
+    return { tone: 'text-caution', icon: 'fa-circle-exclamation',
+      text: sums.toxic + ' scan' + (sums.toxic === 1 ? '' : 's') + ' in this range came back Toxic (' + toxicPct + '%) — a small share, but each one sits in High-Risk Triage waiting on manual review.' };
+  }
+  if (safePct >= 70) {
+    return { tone: 'text-safe', icon: 'fa-circle-check',
+      text: safePct + '% of scans in this range were Safe with no Toxic results — ingredients being scanned are coming back low-risk.' };
+  }
+  if (cautionPct >= 40) {
+    return { tone: 'text-caution', icon: 'fa-circle-exclamation',
+      text: 'Caution is the most common verdict in this range (' + cautionPct + '%) — no Toxic matches, but plenty of borderline ingredients are turning up. Top Risk Ingredients (right) breaks down which ones.' };
+  }
+  return { tone: 'text-dark', icon: 'fa-chart-line',
+    text: 'A mix of Safe (' + safePct + '%) and Caution (' + cautionPct + '%) verdicts in this range, with no Toxic results.' };
+}
+
+function renderMainChartInsight(sums) {
+  var el = document.getElementById('chart-insight');
+  if (!el) return;
+  var mood = describeMainChartMood(sums);
+  if (!mood) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+  el.classList.remove('hidden');
+  el.className = 'text-[11px] font-bold text-center mb-4 ' + mood.tone;
+  el.innerHTML = '<i class="fa-solid ' + mood.icon + ' mr-1"></i>' + mood.text;
 }
 
 // wraps the chart in a positioned box (must happen BEFORE ApexCharts renders
