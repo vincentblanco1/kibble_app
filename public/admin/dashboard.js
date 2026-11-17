@@ -938,6 +938,7 @@ function resolveTriage(rowId) {
     row.style.transform = 'translateX(12px)';
     setTimeout(function () {
       row.remove();
+      paginateTriageList();
     }, 300);
   }
   updateTriageCount(-1);
@@ -1026,6 +1027,48 @@ function removeResolvedTriageCards() {
   });
   localStorage.setItem('kibbleguard-resolved-scans', JSON.stringify(stillUnprocessed));
   if (anyRemoved) savePersistedRows('kibbleguard-triage-rows', document.getElementById('triage-list'));
+  if (anyRemoved) paginateTriageList();
+}
+
+// ---------- High-Risk Triage pagination ----------
+// Every row stays in the DOM no matter what (savePersistedRows, the hazard-floor
+// badges, and the overdue check all need to see the *whole* queue, not just the
+// current page) -- this just shows/hides which ones are visible, a handful at a
+// time, so the card can't grow endlessly tall the way it used to.
+var TRIAGE_PAGE_SIZE = 5;
+var triagePage = 1;
+function paginateTriageList() {
+  var list = document.getElementById('triage-list');
+  var controls = document.getElementById('triage-pagination');
+  if (!list || !controls) return;
+  var rows = Array.prototype.slice.call(list.children);
+  var total = rows.length;
+  if (!total) { controls.classList.add('hidden'); return; }
+
+  var totalPages = Math.max(1, Math.ceil(total / TRIAGE_PAGE_SIZE));
+  if (triagePage > totalPages) triagePage = totalPages;
+  if (triagePage < 1) triagePage = 1;
+
+  var start = (triagePage - 1) * TRIAGE_PAGE_SIZE;
+  var end = Math.min(start + TRIAGE_PAGE_SIZE, total);
+  rows.forEach(function (row, i) { row.classList.toggle('hidden', i < start || i >= end); });
+
+  controls.classList.toggle('hidden', totalPages <= 1);
+  controls.classList.toggle('flex', totalPages > 1);
+  var summary = document.getElementById('triage-pagination-summary');
+  var pageLabel = document.getElementById('triage-pagination-page');
+  var prevBtn = document.getElementById('triage-prev-btn');
+  var nextBtn = document.getElementById('triage-next-btn');
+  if (summary) summary.textContent = 'Showing ' + (start + 1) + '-' + end + ' of ' + total;
+  if (pageLabel) pageLabel.textContent = 'Page ' + triagePage + ' of ' + totalPages;
+  if (prevBtn) prevBtn.disabled = triagePage <= 1;
+  if (nextBtn) nextBtn.disabled = triagePage >= totalPages;
+}
+function changeTriagePage(delta) {
+  triagePage += delta;
+  paginateTriageList();
+  var section = document.getElementById('high-risk-triage-section');
+  if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // refreshKpiFromPersistedRows itself now lives in app.js since Safety Feed
@@ -1216,6 +1259,7 @@ renderNavBadges();
 applyRoleState();
 prioritizeTriageQueue();
 removeResolvedTriageCards();
+paginateTriageList();
 
 // the icon uses the species color (dog teal, cat purple, same as everywhere else); the verdict stays in the colored word on the right
 // Live Assessment Stream: the 3 most recent real scans from OCR Scan Records'
@@ -1357,6 +1401,7 @@ function refreshDashboard() {
   applyHazardFloorBadges();
   checkOverdueToxicCases();
   syncTriageKpi();
+  paginateTriageList();
 
   refreshKpiFromPersistedRows('kibbleguard-ingredients-rows', 'kpi-ingredients', 6);
   refreshKpiFromPersistedRows('kibbleguard-users-rows', 'kpi-owners', 4);

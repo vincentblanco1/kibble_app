@@ -192,6 +192,7 @@
             <span class="flex items-center gap-2 text-xs font-bold text-dark"><span class="w-2.5 h-2.5 rounded-full chart-legend-dot-caution"></span>Caution</span>
             <span class="flex items-center gap-2 text-xs font-bold text-dark"><span class="w-2.5 h-2.5 rounded-full chart-legend-dot-toxic"></span>Toxic</span>
           </div>
+          <p class="text-[10px] text-stone-400 text-center -mt-1 mb-4"><i class="fa-solid fa-circle-info mr-1"></i>Each point is how many scans in the date range below landed on that day, split by final verdict — a rising Toxic line means more risky products were scanned that day, not that scanning got less accurate.</p>
           <!-- empty on purpose, ApexCharts (loaded via CDN) draws the actual
                chart into this div from buildRangeData() in dashboard.js -->
           <div id="main-chart" class="h-[320px]"></div>
@@ -214,9 +215,20 @@
                attributes are what prioritizeTriageQueue, verifyTriage, and the
                overdue-case check in dashboard.js all read from -->
           <div class="divide-y divide-stone-50" id="triage-list">
-            
-            
-            
+
+
+
+          </div>
+          <!-- all rows always stay in the DOM (saving, badges, and the overdue
+               check all need the full queue); paginateTriageList() in dashboard.js
+               just shows/hides which ones are visible, five at a time -->
+          <div class="hidden items-center justify-between gap-3 px-7 py-4 border-t border-stone-50" id="triage-pagination">
+            <p class="text-[11px] text-stone-400 font-medium" id="triage-pagination-summary">Showing 1-5 of 5</p>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="changeTriagePage(-1)" id="triage-prev-btn" class="press w-8 h-8 rounded-lg bg-stone-50 border border-stone-200 text-stone-500 text-xs hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed" disabled><i class="fa-solid fa-chevron-left"></i></button>
+              <span class="text-[11px] font-bold text-dark" id="triage-pagination-page">Page 1 of 1</span>
+              <button type="button" onclick="changeTriagePage(1)" id="triage-next-btn" class="press w-8 h-8 rounded-lg bg-stone-50 border border-stone-200 text-stone-500 text-xs hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
           </div>
           <!-- shown by updateTriageCount() in dashboard.js once every triage
                case has been resolved -->
