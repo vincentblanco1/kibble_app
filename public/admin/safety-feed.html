@@ -1,6 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Universal Multi-Device Gateway Router -- same pattern as the customer-facing
+     pages (see ../index.html): bounces a phone/tablet straight to this section's
+     mobile-*.html counterpart, and bounces a desktop browser back if it lands on
+     a mobile URL directly. Each mobile-*.html also carries its own small one-way
+     guard (force back to desktop if the window is wide), same as the customer
+     pages' mobile-index.html etc. -->
+<script>
+  (function() {
+    var width = window.innerWidth;
+    var isMobileDevice = width <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    var currentPage = window.location.pathname.split('/').pop() || 'dashboard.html';
+    var mapping = {
+      'dashboard.html': 'mobile-dashboard.html',
+      'ingredient-database.html': 'mobile-ingredient-database.html',
+      'ocr-scans.html': 'mobile-ocr-scans.html',
+      'safety-rules.html': 'mobile-safety-rules.html',
+      'users-pets.html': 'mobile-users-pets.html',
+      'safety-feed.html': 'mobile-safety-feed.html',
+      'inquiries.html': 'mobile-inquiries.html',
+      'activity-log.html': 'mobile-activity-log.html',
+      'settings.html': 'mobile-settings.html'
+    };
+    var reverseMapping = {
+      'mobile-dashboard.html': 'dashboard.html',
+      'mobile-ingredient-database.html': 'ingredient-database.html',
+      'mobile-ocr-scans.html': 'ocr-scans.html',
+      'mobile-safety-rules.html': 'safety-rules.html',
+      'mobile-users-pets.html': 'users-pets.html',
+      'mobile-safety-feed.html': 'safety-feed.html',
+      'mobile-inquiries.html': 'inquiries.html',
+      'mobile-activity-log.html': 'activity-log.html',
+      'mobile-settings.html': 'settings.html'
+    };
+    if (isMobileDevice && mapping[currentPage]) {
+      window.location.replace(mapping[currentPage] + window.location.search + window.location.hash);
+    } else if (!isMobileDevice && reverseMapping[currentPage]) {
+      window.location.replace(reverseMapping[currentPage] + window.location.search + window.location.hash);
+    }
+  })();
+</script>
     <script>
         window.FontAwesomeConfig = {
           autoReplaceSvg: 'nest'

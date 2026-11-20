@@ -1,0 +1,159 @@
+/* ==================== KIBBLEGUARD ADMIN — MOBILE SHELL ====================
+   Shared by every mobile-*.html page in /admin. Mirrors the look of the
+   customer-facing mobile pages (see ../mobile-style.css: the floating bottom
+   dock, the sticky compact header) but recolored for the admin panel's own
+   palette (brand/dark/caution/danger/safe, from the tailwind.config in
+   app.js) and with a 5th dock slot ("More") since admin has 9 sections where
+   the customer app only ever needed 4-5.
+
+   Each mobile-admin page keeps its <main><header> structure from the desktop
+   page (so the header-widget injectors in app.js -- initNotificationBell,
+   initAdminChat, initProfileMenu -- still find it and work unmodified) but
+   does NOT give <main> the "paw-field" class, which is what the desktop
+   pages use to opt into the OLD mobile-topbar/scroll-indicator shims in
+   app.js (initMobileTopbar/initMobileScrollIndicator both bail out when
+   main.paw-field isn't present) -- so those don't duplicate the dock built
+   here. */
+
+body { background-color: #FAF6EE; padding-bottom: 104px !important; }
+
+/* ---------- Compact mobile header ----------
+   Same <header> element the desktop page has (so app.js's widget injectors
+   still attach to it), just re-laid-out for a narrow screen: title row on
+   top, and anything app.js injects into "header > div.gap-3" (search/chat/
+   bell/profile) wraps onto its own row below rather than overflowing. */
+main > header {
+  min-height: auto !important;
+  padding: 0.85rem 1rem !important;
+  gap: 0.6rem !important;
+  flex-wrap: wrap !important;
+}
+main > header h1 { font-size: 0.95rem !important; }
+main > header > div:first-child { min-width: 0; flex: 1 1 auto; }
+/* the icon-button group app.js appends (#notif-bell-wrap, #chat-wrap,
+   #profile-menu-wrap live inside it) -- keep it compact and anchored right */
+main > header > div.gap-3 {
+  gap: 0.5rem !important;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+main > header > div.gap-3 > * { position: relative; }
+/* the global search box app.js inserts is "order-last w-full" by design
+   (built to drop to its own full-width row on a flex-wrap header) -- just
+   tighten its margin on a phone */
+#global-search-wrap { margin-top: 0.1rem; }
+/* dropdown panels (#notif-panel, #chat-panel, #profile-menu-panel,
+   #global-search-panel) already cap themselves at calc(100vw - 2rem), so
+   they fit a phone screen as-is -- no override needed. */
+
+/* page content: same cards/components as desktop, just phone-sized padding
+   instead of the desktop p-10, and no [1700px] max-width ceiling */
+main > .mobile-page-content {
+  padding: 1rem !important;
+  max-width: none !important;
+}
+
+/* ---------- Floating bottom dock (5 slots: 4 sections + More) ---------- */
+.admin-mobile-dock {
+  position: fixed;
+  bottom: 12px;
+  left: 14px;
+  right: 14px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 26px;
+  border: 1.2px solid #ece4d6;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  padding: 0 6px;
+  z-index: 70;
+  box-shadow: 0 12px 30px -4px rgba(42, 36, 28, 0.16), 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+html.dark-theme .admin-mobile-dock { background: rgba(23, 24, 27, 0.95); border-color: #33332e; }
+
+.admin-dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #9a8f7f;
+  text-decoration: none;
+  position: relative;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.admin-dock-item i { font-size: 16px; }
+.admin-dock-item.active { color: #45671D; }
+.admin-dock-item:active { transform: scale(0.94); }
+
+/* reuses app.js's existing nav-notify-dot/nav-notify-count classes (the same
+   ones the desktop sidebar badges use -- see renderNavBadges() in app.js,
+   which now matches either the sidebar or dock <a>) but repositioned to sit
+   on the compact icon instead of inline after sidebar text */
+.admin-dock-item .nav-notify-dot {
+  top: 2px;
+  left: 50%;
+  margin-left: 7px;
+}
+.admin-dock-item .nav-notify-count { display: none !important; }
+
+/* ---------- "More" bottom sheet (Safety Rules, Safety Feed, Inquiries,
+   Activity Log, Settings -- the 5 sections that don't fit in the dock) ---------- */
+#admin-more-backdrop {
+  position: fixed; inset: 0; background: rgba(24, 22, 17, 0.5); z-index: 80;
+}
+#admin-more-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 81;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 10px 14px calc(env(safe-area-inset-bottom, 0px) + 14px);
+  box-shadow: 0 -12px 32px rgba(24, 22, 17, 0.18);
+  animation: admin-sheet-in 220ms cubic-bezier(0.23, 1, 0.32, 1);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+html.dark-theme #admin-more-sheet { background: #1f2024; }
+@keyframes admin-sheet-in { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.admin-more-handle { width: 36px; height: 4px; border-radius: 4px; background: #e5decf; margin: 2px auto 14px; }
+.admin-more-link {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 10px;
+  border-radius: 14px;
+  color: #2A241C;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.admin-more-link:active { background: #F5EFE6; }
+.admin-more-link i { width: 20px; text-align: center; font-size: 15px; color: #45671D; }
+.admin-more-link + .admin-more-link { border-top: 1px solid #f5efe6; }
+html.dark-theme .admin-more-link { color: #e8e6e1; }
+html.dark-theme .admin-more-link + .admin-more-link { border-top-color: #2b2c30; }
+
+/* ---------- Tables -> horizontally-scrollable, never squeezed ----------
+   Admin tables already use .scroll-fade-right/.scroll-fade-left (see
+   style.css), so the horizontal-scroll affordance exists; this just makes
+   sure the table itself doesn't try to shrink its columns to fit. */
+main .mobile-page-content table { min-width: 640px; }
+
+/* ---------- Modals: full-bleed on a phone instead of a centered fixed-width
+   dialog that overflows the viewport ---------- */
+@media (max-width: 639px) {
+  .admin-mobile-dialog-card {
+    width: calc(100vw - 2rem) !important;
+    max-width: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #admin-more-sheet { animation: none !important; }
+  .admin-dock-item:active { transform: none !important; }
+}

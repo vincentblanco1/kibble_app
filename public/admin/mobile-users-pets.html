@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Force Desktop Redirection Script -- see mobile-dashboard.html for notes. -->
+<script>
+  if (window.innerWidth > 1024 && !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    window.location.replace('users-pets.html');
+  }
+</script>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>KibbleGuard Admin - Users &amp; Pets</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="db-sync.js?v=1"></script>
+<script src="app.js?v=16-db"></script>
+<script src="mobile-nav.js?v=1"></script>
+<script>restoreThemeState();restoreTableDensityState();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="mobile-style.css?v=1">
+</head>
+<body class="bg-[#FAF6EE] text-stone-800 font-sans antialiased min-h-screen">
+
+<main class="flex flex-col min-h-screen">
+  <header class="min-h-20 bg-white border-b border-stone-50 flex flex-wrap items-center justify-between gap-4 px-10 py-4 sticky top-0 z-40">
+    <div>
+      <h1 class="font-display font-bold text-xl text-dark">Users &amp; Pets</h1>
+      <p class="text-[11px] text-stone-400 font-bold uppercase tracking-wider">Manage Owner Accounts &amp; Household Safety Profiles</p>
+    </div>
+  </header>
+
+  <div class="mobile-page-content space-y-6">
+
+    <!-- Highlights -->
+    <div class="grid grid-cols-1 gap-4">
+      <div class="lift-card bg-white p-5 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Active Users</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="active-users-kpi">-</h4>
+        </div>
+      </div>
+      <div class="lift-card bg-white p-5 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-xl"><i class="fa-solid fa-paw"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Registered Pets</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="registered-pets-kpi">-</h4>
+        </div>
+      </div>
+      <div class="lift-card bg-white p-5 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-caution/10 text-caution flex items-center justify-center text-xl"><i class="fa-solid fa-flag"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Flagged Accounts</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="flagged-kpi">-</h4>
+        </div>
+      </div>
+      <div class="lift-card bg-white p-5 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-danger/5 text-danger flex items-center justify-center text-xl"><i class="fa-solid fa-user-slash"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Banned Accounts</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="banned-kpi">-</h4>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pet Sensitivity & Risk Profile -->
+    <div class="bg-white p-5 rounded-[2rem] border border-stone-100 card-shadow">
+      <h2 class="font-display font-bold text-base text-dark mb-1">Pet Sensitivity &amp; Risk Profile</h2>
+      <p class="text-xs text-stone-400 font-medium mb-5">Aggregated live from every registered pet's reported sensitivities below &mdash; broken down Canine/Feline, the same way ingredient risk is classified everywhere else in the system</p>
+      <div class="grid grid-cols-1 gap-3" id="pet-demographics-grid">
+        <div class="p-4 rounded-2xl bg-stone-100 border border-stone-200">
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Pets With a Reported Sensitivity</p>
+          <p class="text-sm font-bold text-dark" id="demo-pets-with-sensitivity">-</p>
+        </div>
+        <div class="p-4 rounded-2xl bg-stone-100 border border-stone-200">
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Distinct Sensitivities Reported</p>
+          <p class="text-sm font-bold text-dark" id="demo-distinct-sensitivities">-</p>
+        </div>
+        <div class="p-4 rounded-2xl bg-stone-100 border border-stone-200">
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Most Common Sensitivity</p>
+          <p class="text-sm font-bold text-dark" id="demo-top-allergen">-</p>
+        </div>
+      </div>
+
+      <!-- the full breakdown behind the 3 tiles above -- same ids as desktop,
+           just horizontally scrollable instead of squeezed (see "table" rule
+           in mobile-style.css) -->
+      <div class="mt-5 border border-stone-200 rounded-2xl overflow-hidden overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="text-[10px] uppercase tracking-[0.15em] text-stone-500 border-b border-stone-200 bg-stone-50">
+              <th class="font-bold px-4 py-3">Sensitivity</th>
+              <th class="font-bold px-4 py-3"># of Pets Affected</th>
+              <th class="font-bold px-4 py-3">Species Affected</th>
+            </tr>
+          </thead>
+          <tbody id="sensitivity-table-body" class="divide-y divide-stone-100"></tbody>
+        </table>
+        <div class="hidden p-8 text-center text-xs text-stone-400" id="sensitivity-table-empty">No sensitivities reported yet.</div>
+        <div class="hidden px-4 py-3 border-t border-stone-100 bg-stone-50/50 text-center" id="sensitivity-table-toggle-wrap">
+          <button onclick="toggleSensitivityTableExpand()" id="sensitivity-table-toggle-btn" class="text-[11px] font-bold text-brand hover:text-brand-hover transition-all"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white border border-stone-100 rounded-[2rem] card-shadow overflow-hidden">
+      <div class="p-4 border-b border-stone-50 space-y-3">
+        <div>
+          <label for="user-search" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Search</label>
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xs"></i>
+            <input type="text" id="user-search" oninput="filterUsers()" placeholder="Search by name, email or pet name..." class="w-full pl-10 pr-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs focus:outline-none focus:border-brand transition-all">
+          </div>
+        </div>
+        <div class="flex items-end gap-3 flex-wrap">
+          <div class="w-full sm:w-44 shrink-0">
+            <label for="user-filter-status" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Status</label>
+            <div class="relative">
+              <select id="user-filter-status" onchange="setUserStatusFilter(this.value)" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+                <option value="all">All statuses</option>
+                <option value="active">Active</option>
+                <option value="flagged">Flagged</option>
+                <option value="banned">Banned</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+            </div>
+          </div>
+          <div class="w-full sm:w-52 shrink-0">
+            <label for="user-filter-barangay" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Barangay</label>
+            <div class="relative">
+              <select id="user-filter-barangay" onchange="setUserBarangayFilter(this.value)" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+                <option value="all">All Barangays</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+            </div>
+          </div>
+          <button id="user-clear-filters" onclick="clearUserFilters()" class="hidden press shrink-0 whitespace-nowrap px-3 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all"><i class="fa-solid fa-xmark mr-1.5"></i>Clear filters</button>
+          <button onclick="openExportOptions()" data-perm="manageUsers" class="press w-full shrink-0 whitespace-nowrap px-5 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all"><i class="fa-solid fa-download mr-1.5"></i>Export Report</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+          <thead>
+            <tr class="text-[10px] uppercase tracking-[0.15em] text-stone-500 border-b border-stone-50 bg-stone-50/10">
+              <th class="font-bold px-6 py-4">User Profile</th>
+              <th class="font-bold px-6 py-4">Pet Profiles</th>
+              <th class="font-bold px-6 py-4">Scan Stats</th>
+              <th class="font-bold px-6 py-4">Status</th>
+              <th class="font-bold px-6 py-4 text-right">Last Interaction</th>
+              <th class="font-bold px-6 py-4 text-right sticky right-0 bg-white sticky-col-shadow"></th>
+            </tr>
+          </thead>
+          <!-- data-pets/data-status/data-role/data-scans drive users-pets.js's
+               filterUsers()/computePetDemographics()/profile modal -- unchanged -->
+          <tbody class="divide-y divide-stone-50" id="user-table-body">
+
+
+
+            <tr id="user-empty-row" class="hidden" data-empty-row="true">
+              <td colspan="7" class="px-6 py-16 text-center">
+                <div class="w-14 h-14 mx-auto mb-3 relative">
+                  <svg class="w-full h-full text-stone-300" viewBox="0 0 24 24" fill="currentColor">
+                    <ellipse cx="12" cy="16.2" rx="5" ry="4.1"/>
+                    <ellipse cx="5.6" cy="9.2" rx="2.1" ry="2.7" transform="rotate(-18 5.6 9.2)"/>
+                    <ellipse cx="10.4" cy="6" rx="2.1" ry="2.7" transform="rotate(-6 10.4 6)"/>
+                    <ellipse cx="15.6" cy="6" rx="2.1" ry="2.7" transform="rotate(6 15.6 6)"/>
+                    <ellipse cx="19.4" cy="9.2" rx="2.1" ry="2.7" transform="rotate(18 19.4 9.2)"/>
+                  </svg>
+                </div>
+                <p class="text-sm font-bold text-dark">No users match your search</p>
+                <p class="text-[11px] text-stone-400 mt-1">Try a different name, email, or pet name.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="p-5 border-t border-stone-50 flex flex-col gap-3 bg-stone-50/10">
+        <span class="text-xs font-bold text-stone-400 uppercase tracking-widest" id="user-count-label">Showing all 4 users</span>
+        <div class="flex items-center gap-2 flex-wrap" id="user-pagination-controls"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>renderAdminMobileNav('users');</script>
+<script src="users-pets.js?v=7-db"></script>
+
+</body>
+</html>

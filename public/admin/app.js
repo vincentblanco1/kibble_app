@@ -345,10 +345,14 @@ function initIdleSignOut() {
 // data or handle pet-owner support requests at all
 function applyNavVisibility() {
   var role = getActiveRole();
-  var usersPetsLink = document.querySelector('a[href="users-pets.html"]');
-  if (usersPetsLink) usersPetsLink.classList.toggle('hidden', role === 'ingredient');
-  var inquiriesLink = document.querySelector('a[href="inquiries.html"]');
-  if (inquiriesLink) inquiriesLink.classList.toggle('hidden', role === 'ingredient');
+  // matches either the desktop sidebar link or the mobile bottom-dock/More-sheet
+  // link, whichever is actually on the current page
+  document.querySelectorAll('a[href="users-pets.html"], a[href="mobile-users-pets.html"]').forEach(function (el) {
+    el.classList.toggle('hidden', role === 'ingredient');
+  });
+  document.querySelectorAll('a[href="inquiries.html"], a[href="mobile-inquiries.html"]').forEach(function (el) {
+    el.classList.toggle('hidden', role === 'ingredient');
+  });
 }
 
 // backup for applyNavVisibility - stops someone from just typing the URL
@@ -717,9 +721,12 @@ function renderNavBadges() {
   var disputeOn = localStorage.getItem('kibbleguard-notify-dispute') !== 'false';
   var inquiryOn = localStorage.getItem('kibbleguard-notify-inquiries') !== 'false';
 
-  var dashboardLink = document.querySelector('a[href="dashboard.html"]');
-  var ocrLink = document.querySelector('a[href="ocr-scans.html"]');
-  var inquiriesLink = document.querySelector('a[href="inquiries.html"]');
+  // matches either the desktop sidebar link or the mobile bottom-dock link --
+  // whichever one is actually in the DOM on the current page -- so the same
+  // red dot/count logic works on both without being duplicated per layout
+  var dashboardLink = document.querySelector('a[href="dashboard.html"], a[href="mobile-dashboard.html"]');
+  var ocrLink = document.querySelector('a[href="ocr-scans.html"], a[href="mobile-ocr-scans.html"]');
+  var inquiriesLink = document.querySelector('a[href="inquiries.html"], a[href="mobile-inquiries.html"]');
 
   // [link, show it?, how many are waiting]. Expanded sidebar shows the number as a pill at the
   // right of the link; the collapsed (icons-only) sidebar keeps the small red dot on the icon.

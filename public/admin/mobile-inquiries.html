@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Force Desktop Redirection Script -- see mobile-dashboard.html for notes. -->
+<script>
+  if (window.innerWidth > 1024 && !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    window.location.replace('inquiries.html');
+  }
+</script>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>KibbleGuard Admin - Inquiries</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="db-sync.js?v=1"></script>
+<script src="app.js?v=16-db"></script>
+<script src="mobile-nav.js?v=1"></script>
+<script>restoreThemeState();restoreTableDensityState();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="mobile-style.css?v=1">
+</head>
+<body class="bg-[#FAF6EE] text-stone-800 font-sans antialiased min-h-screen">
+
+<main class="flex flex-col min-h-screen">
+  <!-- no action-button group on desktop either, so the header widgets'
+       own gap-3 wrapper auto-creates itself here (app.js initNotificationBell etc.) -->
+  <header class="min-h-20 bg-white border-b border-stone-50 flex flex-wrap items-center justify-between gap-4 px-10 py-4 sticky top-0 z-40">
+    <div>
+      <h1 class="font-display font-bold text-xl text-dark">Inquiries</h1>
+      <p class="text-[11px] text-stone-400 font-bold uppercase tracking-wider">Pet Owner Help, Support &amp; Inquiries Requests</p>
+    </div>
+  </header>
+
+  <div class="mobile-page-content space-y-5">
+
+    <div class="grid grid-cols-1 gap-4">
+      <div class="bg-white p-5 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-brand-light text-brand flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-inbox"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Total Inquiries</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="inquiries-total-kpi">-</h4>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-caution/10 text-caution flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Pending Review</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="inquiries-pending-kpi">-</h4>
+        </div>
+      </div>
+      <div class="bg-white p-5 rounded-[1.5rem] border border-stone-100 card-shadow flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-safe/10 text-safe flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-circle-check"></i></div>
+        <div>
+          <p class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Resolved</p>
+          <h4 class="text-xl font-display font-bold text-dark" id="inquiries-resolved-kpi">-</h4>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table card -->
+    <div class="bg-white border border-stone-100 rounded-[2rem] card-shadow overflow-hidden">
+      <div class="p-5 border-b border-stone-50 space-y-3">
+        <div>
+          <label for="inquiry-search" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Search</label>
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xs"></i>
+            <input type="text" id="inquiry-search" oninput="filterInquiries()" placeholder="Search by name, email or ID..." class="w-full pl-10 pr-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs focus:outline-none focus:border-brand transition-all">
+          </div>
+        </div>
+        <div>
+          <label for="inquiry-category-filter" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Category</label>
+          <div class="relative">
+            <select id="inquiry-category-filter" onchange="setInquiryCategoryFilter()" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+              <option value="all">All categories</option>
+              <option value="Account Flag / Suspension Appeal">Account Flag / Suspension Appeal</option>
+              <option value="Application Bug / OCR Issue">Application Bug / OCR Issue</option>
+              <option value="Suggest Missing Ingredient for Encyclopedia">Suggest Missing Ingredient</option>
+              <option value="General Complaint / Feedback">General Complaint / Feedback</option>
+            </select>
+            <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+          </div>
+        </div>
+        <div>
+          <label for="inquiry-filter-status" class="block text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1.5">Status</label>
+          <div class="relative">
+            <select id="inquiry-filter-status" onchange="setInquiryStatusFilter(this.value)" class="appearance-none w-full pl-3.5 pr-9 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-xs font-bold text-dark focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all cursor-pointer">
+              <option value="all">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="resolved">Resolved</option>
+            </select>
+            <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-stone-400"></i>
+          </div>
+        </div>
+        <button id="inquiry-clear-filters" onclick="clearInquiryFilters()" class="hidden press w-full text-center px-3 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all"><i class="fa-solid fa-xmark mr-1.5"></i>Clear filters</button>
+      </div>
+      <div class="overflow-x-auto scroll-fade-right">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+          <thead>
+            <tr class="text-[10px] uppercase tracking-[0.15em] text-stone-500 border-b border-stone-50 bg-stone-50/10">
+              <th class="font-bold px-6 py-4">Inquiry</th>
+              <th class="font-bold px-6 py-4">Pet Owner</th>
+              <th class="font-bold px-6 py-4">Category</th>
+              <th class="font-bold px-6 py-4">Status</th>
+              <th class="font-bold px-6 py-4 text-right">Submitted</th>
+              <th class="font-bold px-6 py-4 text-right sticky right-0 bg-white sticky-col-shadow"></th>
+            </tr>
+          </thead>
+          <!-- rendered entirely by renderInquiriesTable() in inquiries.js -->
+          <tbody class="divide-y divide-stone-50" id="inquiry-table-body"></tbody>
+        </table>
+      </div>
+      <div class="p-5 border-t border-stone-50 flex items-center justify-between bg-stone-50/10 flex-wrap gap-2">
+        <span class="text-xs font-bold text-stone-400 uppercase tracking-widest" id="inquiry-count-label">Showing all inquiries</span>
+        <div class="flex items-center gap-2" id="inquiry-pagination-controls"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>renderAdminMobileNav('inquiries');</script>
+<script src="inquiries.js?v=4-db"></script>
+
+</body>
+</html>
