@@ -270,6 +270,30 @@ function applyRoleState() {
   initIdleSignOut();
   initMobileTopbar();
   initMobileScrollIndicator();
+  showDataSyncWarningIfNeeded();
+}
+
+// db-sync.js sets window.KGDB.offline = true when its sync to the server
+// failed even after its retry (a cold Render instance, a dropped mobile
+// connection, etc.) -- until now that was completely invisible on screen:
+// the page just silently fell back to whatever was cached from the last
+// successful sync (or nothing, on a fresh browser/private tab), so a chart
+// or KPI built fresh from the server response could show 0/empty right next
+// to a plain table still showing old-but-real cached numbers, with no
+// indication anything had gone wrong. This puts that failure in front of
+// the admin instead of only in the console.
+function showDataSyncWarningIfNeeded() {
+  if (!(window.KGDB && window.KGDB.offline)) return;
+  var main = document.querySelector('main');
+  if (!main || document.getElementById('data-sync-warning')) return;
+  var banner = document.createElement('div');
+  banner.id = 'data-sync-warning';
+  banner.className = 'px-6 py-3.5 bg-danger text-white flex items-center gap-3 flex-wrap';
+  banner.innerHTML =
+    '<i class="fa-solid fa-triangle-exclamation shrink-0"></i>' +
+    '<p class="text-xs font-bold flex-1 min-w-[200px]">Could not load the latest data from the server. Some numbers on this page may be missing or out of date.</p>' +
+    '<button type="button" onclick="location.reload()" class="press shrink-0 px-4 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-xs font-bold transition-all">Retry</button>';
+  main.insertBefore(banner, main.firstChild);
 }
 
 /* ---------- Auto sign-out after inactivity ----------

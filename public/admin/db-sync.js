@@ -64,7 +64,7 @@
     };
   }
 
-  function xhr(url) {
+  function xhrOnce(url) {
     var x = new XMLHttpRequest();
     x.open('GET', url, false);                               // synchronous on purpose: the pages read storage the moment they load
     x.setRequestHeader('Authorization', 'Bearer ' + getToken());
@@ -77,6 +77,21 @@
       console.error('[db-sync] ' + url + ' -> HTTP ' + x.status + ': ' + x.responseText);
     }
     return { status: x.status, json: parse(x.responseText, null) };
+  }
+  // a cold Render instance waking up, or a phone's connection dropping for a
+  // moment, both look exactly like a failed sync here -- and when that happens
+  // mid-load, RECORD_TRACES (app.js) and the Users & Pets KPI cards (built
+  // fresh from this response every page load) silently show 0/empty, while
+  // the plain row tables (kept in localStorage from the last successful sync)
+  // keep showing old-but-real numbers right next to them, with nothing on
+  // screen explaining why the two disagree. One immediate retry clears most
+  // of those transient blips without adding any delay to the normal, already-
+  // working case.
+  function xhr(url) {
+    var first = xhrOnce(url);
+    if (first.status >= 200 && first.status < 300) return first;
+    console.warn('[db-sync] retrying ' + url + ' after a failed first attempt');
+    return xhrOnce(url);
   }
 
   /* ------------------------------ row builders ------------------------------ */
