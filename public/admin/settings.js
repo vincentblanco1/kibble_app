@@ -144,6 +144,68 @@ function handleThemeButtonClick(preference) {
 
 updateThemeSelectorUI(localStorage.getItem('kibbleguard-theme') || 'system');
 
+/* ---------- Admin Profile: edit mode ----------
+   enterProfileEditMode/cancelProfileEditMode/saveGlobalSettings were all called
+   by settings.html's buttons but never existed anywhere -- clicking "Edit Profile"
+   (or any of the Platform Preferences controls below) just threw a silent console
+   error and did nothing. Email is deliberately left disabled even in edit mode:
+   it's the key getLoggedInAdmin() matches the signed-in session against, and
+   changing it here without also updating the session/login record would lock
+   the admin out of their own account, so only the display name is editable
+   from this card. */
+function enterProfileEditMode() {
+  var nameInput = document.getElementById('admin-name');
+  if (nameInput) { nameInput.disabled = false; nameInput.focus(); }
+  var editBtn = document.getElementById('edit-profile-btn');
+  var cancelBtn = document.getElementById('cancel-profile-btn');
+  var saveBtn = document.getElementById('save-profile-btn');
+  if (editBtn) editBtn.classList.add('hidden');
+  if (cancelBtn) cancelBtn.classList.remove('hidden');
+  if (saveBtn) saveBtn.classList.remove('hidden');
+}
+
+function cancelProfileEditMode() {
+  var nameInput = document.getElementById('admin-name');
+  if (nameInput) nameInput.disabled = true;
+  populateAdminProfileCard();   // discards any unsaved edits, restores the real value
+  var editBtn = document.getElementById('edit-profile-btn');
+  var cancelBtn = document.getElementById('cancel-profile-btn');
+  var saveBtn = document.getElementById('save-profile-btn');
+  if (editBtn) editBtn.classList.remove('hidden');
+  if (cancelBtn) cancelBtn.classList.add('hidden');
+  if (saveBtn) saveBtn.classList.add('hidden');
+}
+
+function saveGlobalSettings() {
+  var nameInput = document.getElementById('admin-name');
+  var newName = nameInput ? nameInput.value.trim() : '';
+  if (!newName) { showToast('Name cannot be empty', 'danger'); return; }
+
+  var me = getLoggedInAdmin();
+  if (!me) return;
+  var accounts = getAdminAccounts();
+  var acc = accounts.find(function (a) { return a.email === me.email; });
+  if (acc) {
+    acc.name = newName;
+    try {
+      saveAdminAccounts(accounts, { unguarded: true });   // re-read above, only touching our own record
+    } catch (e) {
+      showToast(e && e.message ? e.message : 'Could not save your changes, please try again', 'danger');
+      return;
+    }
+  }
+
+  // retention policy: nothing is deleted from this panel (the backend archiving
+  // job applies it), so saving it here just persists the chosen window
+  var retentionSelect = document.getElementById('pref-retention');
+  if (retentionSelect) localStorage.setItem('kibbleguard-scan-retention', retentionSelect.value);
+
+  if (typeof applySidebarIdentity === 'function') applySidebarIdentity();
+  if (typeof renderAdminTeamList === 'function') renderAdminTeamList();
+  cancelProfileEditMode();   // re-locks the name field and re-reads the just-saved name
+  showToast('Settings saved', 'success');
+}
+
 /* ---------- Admin Profile card ----------
    The HTML's "Dr. Sarah Chen" / "sarah.chen@kibbleguard.app" values are just
    placeholders -- a comment right above them in settings.html already says
@@ -207,6 +269,146 @@ function handleAvatarFileSelected(event) {
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+/* ---------- Security: password + self-deactivate ----------
+   openPasswordForm/confirmDeactivate were also called by settings.html but
+   never existed. The backend route for the first one (POST /api/admin/change-password)
+   was already there and unused; the second reuses the same "edit only our own
+   record, unguarded" pattern as the profile save above, then signs out exactly
+   like the Log Out flow in the profile menu does. */
+function openPasswordForm() {
+  openModal({
+    title: 'Update Password',
+    subtitle: 'Choose a new password for your admin account',
+    bodyHtml:
+      '<div class="space-y-4">' +
+        '<div><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Current Password</label>' +
+          '<input type="password" id="pw-current" autocomplete="current-password" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand"></div>' +
+        '<div><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">New Password</label>' +
+          '<input type="password" id="pw-new" autocomplete="new-password" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand"></div>' +
+        '<div><label class="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Confirm New Password</label>' +
+          '<input type="password" id="pw-confirm" autocomplete="new-password" class="w-full mt-1.5 px-4 py-2.5 bg-stone-100 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-brand"></div>' +
+        '<p class="text-[10px] text-stone-400 leading-relaxed">At least 8 characters, with upper and lower case, a number, and a special character (!@#$%^&amp;*).</p>' +
+        '<p id="pw-form-error" class="hidden text-xs font-bold text-danger"></p>' +
+      '</div>',
+    footerHtml:
+      '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
+      '<button onclick="submitPasswordForm()" class="press px-6 py-2.5 text-xs font-bold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-lg shadow-brand/20 transition-all">Update Password</button>'
+  });
+  setTimeout(function () { var el = document.getElementById('pw-current'); if (el) el.focus(); }, 50);
+}
+
+function showPasswordFormError(msg) {
+  var el = document.getElementById('pw-form-error');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function submitPasswordForm() {
+  var curEl = document.getElementById('pw-current');
+  var newEl = document.getElementById('pw-new');
+  var confEl = document.getElementById('pw-confirm');
+  if (!curEl || !newEl || !confEl) return;
+  var current = curEl.value, next = newEl.value, confirm = confEl.value;
+
+  if (!current || !next) { showPasswordFormError('Please fill in all fields.'); return; }
+  if (next !== confirm) { showPasswordFormError('New password and confirmation do not match.'); return; }
+  var checks = getPasswordChecks(next);
+  if (!(checks.length && checks.mixedCase && checks.number && checks.special)) {
+    showPasswordFormError('New password does not meet the requirements above.');
+    return;
+  }
+
+  fetch('/api/admin/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentPassword: current, newPassword: next })
+  })
+    .then(function (res) { return res.json().catch(function () { return {}; }).then(function (body) { return { ok: res.ok, body: body }; }); })
+    .then(function (result) {
+      if (!result.ok) { showPasswordFormError((result.body && result.body.error) || 'Could not update password.'); return; }
+      closeModal();
+      showToast('Password updated', 'success');
+      var me = getLoggedInAdmin();
+      if (me) logAdminAction(me.name + ' updated their password', 'security');
+    })
+    .catch(function () { showPasswordFormError('Network error, please try again.'); });
+}
+
+function confirmDeactivate() {
+  openModal({
+    title: 'Deactivate My Admin Access',
+    subtitle: 'You will be signed out immediately',
+    bodyHtml: '<p class="text-sm text-stone-600 leading-relaxed">Are you sure you want to deactivate your own admin account? You will be signed out right away and will not be able to log back in until another Chief Admin restores your access from the Admin Team list.</p>',
+    footerHtml:
+      '<button onclick="closeModal()" class="press px-5 py-2.5 text-xs font-bold text-stone-500 hover:text-dark transition-all">Cancel</button>' +
+      '<button onclick="submitSelfDeactivate()" class="press px-6 py-2.5 text-xs font-bold text-white bg-danger hover:bg-red-600 rounded-xl shadow-lg shadow-danger/20 transition-all">Deactivate My Access</button>'
+  });
+}
+
+function submitSelfDeactivate() {
+  var me = getLoggedInAdmin();
+  if (!me) return;
+  var accounts = getAdminAccounts();
+  var acc = accounts.find(function (a) { return a.email === me.email; });
+  if (!acc) return;
+  acc.status = 'deactivated';
+  try {
+    saveAdminAccounts(accounts, { unguarded: true });
+  } catch (e) {
+    showToast(e && e.message ? e.message : 'Could not deactivate your account, please try again', 'danger');
+    return;
+  }
+  logAdminAction(me.name + ' deactivated their own admin access', 'security');
+  localStorage.removeItem('kibbleguard-admin-email');
+  localStorage.removeItem('kibbleguard-session-token');
+  window.location.href = 'auth.html?deactivated=1';
+}
+
+/* ---------- Platform Preferences: density + notification toggles + idle timeout ----------
+   handleDensityToggleClick, togglePreference and handleIdleTimeoutChange were
+   called by settings.html's buttons/select but never existed either, despite
+   setTableDensity() and the idle-timeout engine (IDLE_KEY etc.) already being
+   fully built in app.js -- only the UI glue on this page was missing. */
+var PREFERENCE_STORAGE_KEYS = {
+  'pref-notify-triage': 'kibbleguard-notify-triage',
+  'pref-notify-dispute': 'kibbleguard-notify-dispute',
+  'pref-notify-inquiries': 'kibbleguard-notify-inquiries'
+};
+
+function setToggleButtonUI(btn, on) {
+  if (!btn) return;
+  btn.className = 'press pref-toggle shrink-0 w-12 h-7 rounded-full relative transition-all ' + (on ? 'bg-brand' : 'bg-stone-200');
+  var dot = btn.querySelector('.pref-dot');
+  if (dot) dot.className = 'pref-dot absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ' + (on ? 'left-6' : 'left-1');
+}
+
+function updateDensitySelectorUI(density) {
+  setToggleButtonUI(document.getElementById('pref-compact-density'), density === 'compact');
+}
+
+function handleDensityToggleClick() {
+  var isCompact = localStorage.getItem('kibbleguard-table-density') === 'compact';
+  setTableDensity(isCompact ? 'comfortable' : 'compact');
+  showToast('Table density set to ' + (isCompact ? 'comfortable' : 'compact'), 'success');
+}
+
+function togglePreference(id) {
+  var key = PREFERENCE_STORAGE_KEYS[id];
+  if (!key) return;
+  var nowOn = localStorage.getItem(key) === 'false';   // was off, so the click just turned it on
+  localStorage.setItem(key, nowOn ? 'true' : 'false');
+  setToggleButtonUI(document.getElementById(id), nowOn);
+  if (typeof renderNavBadges === 'function') renderNavBadges();
+  showToast((nowOn ? 'Enabled: ' : 'Disabled: ') + id.replace('pref-notify-', '').replace('-', ' '), 'success');
+}
+
+function handleIdleTimeoutChange(value) {
+  localStorage.setItem(IDLE_KEY, value);
+  touchActivity();
+  showToast('Auto sign-out set to ' + (value === '0' ? 'never' : value + ' minutes'), 'success');
 }
 
 /* ---------- Admin Team: invite, list, deactivate/restore/remove ----------
@@ -446,3 +648,18 @@ function renderAdminTeamList() {
 // Admin Team list) already read the real logged-in account correctly.
 renderNavBadges();
 applyRoleState();
+
+// reflect whatever's already persisted into the Platform Preferences controls --
+// without this they always rendered their hardcoded HTML default (all three
+// notify toggles "on", density "off") regardless of what was actually saved
+updateDensitySelectorUI(localStorage.getItem('kibbleguard-table-density') === 'compact' ? 'compact' : 'comfortable');
+Object.keys(PREFERENCE_STORAGE_KEYS).forEach(function (id) {
+  setToggleButtonUI(document.getElementById(id), localStorage.getItem(PREFERENCE_STORAGE_KEYS[id]) !== 'false');
+});
+(function () {
+  var idleSelect = document.getElementById('pref-idle-timeout');
+  if (idleSelect) idleSelect.value = localStorage.getItem(IDLE_KEY) || '0';
+  var retentionSelect = document.getElementById('pref-retention');
+  var savedRetention = localStorage.getItem('kibbleguard-scan-retention');
+  if (retentionSelect && savedRetention) retentionSelect.value = savedRetention;
+})();
