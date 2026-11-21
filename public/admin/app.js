@@ -271,6 +271,7 @@ function applyRoleState() {
   initMobileTopbar();
   initMobileScrollIndicator();
   showDataSyncWarningIfNeeded();
+  showSyncCountsIfAvailable();
 }
 
 // db-sync.js sets window.KGDB.offline = true when its sync to the server
@@ -293,6 +294,32 @@ function showDataSyncWarningIfNeeded() {
     '<i class="fa-solid fa-triangle-exclamation shrink-0"></i>' +
     '<p class="text-xs font-bold flex-1 min-w-[200px]">Could not load the latest data from the server. Some numbers on this page may be missing or out of date.</p>' +
     '<button type="button" onclick="location.reload()" class="press shrink-0 px-4 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-xs font-bold transition-all">Retry</button>';
+  main.insertBefore(banner, main.firstChild);
+}
+
+// A sync failure (above) was never the only way this page can look like it has
+// "no data" -- a page can also just be reading real, successfully-synced numbers
+// wrong (see users-pets.js's old seed-version bug, which deleted real synced rows
+// right after they landed). When that happens there's no error anywhere: the sync
+// succeeded, nothing logs a problem, and the only way to tell "the server really
+// has nothing" apart from "this page is miscounting what the server sent" used to
+// be opening devtools and reading the raw network response by hand. This puts the
+// exact counts db-sync.js just received straight on the page instead, so that
+// distinction never again needs guesswork or a trip through me.
+function showSyncCountsIfAvailable() {
+  if (!(window.KGDB && window.KGDB.lastSyncCounts)) return;
+  var main = document.querySelector('main');
+  if (!main || document.getElementById('data-sync-counts')) return;
+  var c = window.KGDB.lastSyncCounts;
+  var banner = document.createElement('div');
+  banner.id = 'data-sync-counts';
+  banner.className = 'px-6 py-2.5 bg-stone-100 text-stone-500 flex items-center gap-3 flex-wrap';
+  banner.innerHTML =
+    '<i class="fa-solid fa-database shrink-0 text-stone-400"></i>' +
+    '<p class="text-[11px] font-bold flex-1 min-w-[200px]">Just synced from the server: ' +
+      c.users + ' users &middot; ' + c.pets + ' pets &middot; ' + c.scans + ' scans &middot; ' +
+      c.ingredients + ' ingredients &middot; ' + c.tickets + ' inquiries</p>' +
+    '<button type="button" onclick="document.getElementById(\'data-sync-counts\').remove()" class="press shrink-0 w-7 h-7 rounded-lg hover:bg-stone-200 flex items-center justify-center text-[10px] transition-all"><i class="fa-solid fa-xmark"></i></button>';
   main.insertBefore(banner, main.firstChild);
 }
 

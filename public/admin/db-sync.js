@@ -346,6 +346,18 @@
     if (d.status !== 200 || !d.json) { KGDB.offline = true; return; }
     var data = d.json, t = getToken();
 
+    // the exact, raw counts the server just returned -- shown on-page by
+    // showSyncCountsIfAvailable() (app.js) so "this number is 0" and "the sync
+    // failed" are never ambiguous again, without needing devtools or a trip
+    // through the database itself to tell them apart
+    KGDB.lastSyncCounts = {
+      users: (data.users || []).length,
+      pets: (data.pets || []).length,
+      scans: (data.scans || []).length,
+      ingredients: (data.ingredients || []).length,
+      tickets: (data.tickets || []).length
+    };
+
     // ---- Users & Pets ----
     var petsByUser = {}, stats = {};
     (data.pets || []).forEach(function (p) { (petsByUser[p.user_id] = petsByUser[p.user_id] || []).push(p); });

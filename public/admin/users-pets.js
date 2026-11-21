@@ -3,8 +3,25 @@
 // already cached the OLD table via savePersistedRows below would keep
 // silently restoring those stale rows over the new seed file forever, since
 // restorePersistedRows has no way to know the seed changed on its own
+//
+// THIS USED TO RUN UNCONDITIONALLY. db-sync.js's hydrate() runs earlier in
+// the page load (it's a <head> script) and, for a logged-in admin, already
+// overwrites 'kibbleguard-users-rows' with the REAL rows straight from the
+// database moments before this file even runs. So the moment this browser's
+// own stored seed-version string didn't happen to match -- after any deploy
+// that bumped it, after the browser's site data got cleared (iOS Safari does
+// this on its own after some days of disuse), or on any device/browser this
+// admin hadn't used before -- this code deleted that real, just-synced data
+// and replaced it with nothing, and the page then rendered "Active Users: 0 /
+// No data yet" despite the database having real users and real scans. This
+// is almost certainly why Users & Pets kept showing no data no matter how
+// many times the page was reloaded: every reload re-ran this same wipe.
+// Gating it on "not logged in" means it can only ever reset the hardcoded
+// demo seed for a logged-out/preview view, and can never touch real synced
+// data again.
 var USERS_SEED_VERSION = 'v3-2026-09-27-barangay-noroles';
-if (localStorage.getItem('kibbleguard-users-seed-version') !== USERS_SEED_VERSION) {
+if (!localStorage.getItem('kibbleguard-session-token') &&
+    localStorage.getItem('kibbleguard-users-seed-version') !== USERS_SEED_VERSION) {
   localStorage.removeItem('kibbleguard-users-rows');
   localStorage.setItem('kibbleguard-users-seed-version', USERS_SEED_VERSION);
 }
