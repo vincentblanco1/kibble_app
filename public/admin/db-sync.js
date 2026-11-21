@@ -12,6 +12,35 @@
   var TOKEN_KEY = 'kibbleguard-session-token';
   var origSet = Storage.prototype.setItem;
   var origRemove = Storage.prototype.removeItem;
+  var origGet = Storage.prototype.getItem;
+
+  /* In-memory copy of everything this panel reads/writes, kept in front of
+     localStorage. The database is the real source of truth now, so the browser's
+     own storage is only a convenience cache -- but every page used to READ its
+     tables back out of localStorage, and Safari/iPhone gives a site only ~5MB of
+     it. Once the synced data (650 ingredients of clinical notes, scans, users...)
+     didn't fit, a write threw QuotaExceededError partway through loading, and the
+     rows that were supposed to be written after that point simply never existed
+     -- the page then drew 0 users even though the server had just sent 19.
+     Now every write lands in memory first (which can't fail), and the localStorage
+     copy is best-effort only. Reads always come from memory when it has the key. */
+  var MEM = {};
+  function hasMem(k) { return Object.prototype.hasOwnProperty.call(MEM, k); }
+  function memSet(k, v) {
+    k = String(k); v = String(v);
+    MEM[k] = v;
+    try { memSet(k, v); }
+    catch (e) { try { origRemove.call(localStorage, k); } catch (e2) {} }   // don't leave an older copy behind
+  }
+  function memRemove(k) {
+    k = String(k);
+    delete MEM[k];
+    try { origRemove.call(localStorage, k); } catch (e) {}
+  }
+  Storage.prototype.getItem = function (k) {
+    if (this === w.localStorage && hasMem(String(k))) return MEM[String(k)];
+    return origGet.call(this, k);
+  };
   var origFetch = w.fetch ? w.fetch.bind(w) : null;
 
   // per-browser / per-session values that must NOT be shared between admins
@@ -156,7 +185,7 @@
       '" data-barangay="' + esc(u.barangay || '') + '" data-feeding-style="' + esc(u.feeding_style || '') + '" data-avatar="' + esc(u.avatar || '') + '" data-owned-animals="' + pets.length +
       '" data-disputed-count="' + disputedCount + '" data-pets="' + esc(petData) + '" data-scans="' + scanText + '" data-status="' + (banned ? 'banned' : 'active') +
       '" data-joined="' + esc(isNaN(joined) ? '' : joined.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })) +
-      '" data-joined-date="' + esc(isNaN(joined) ? '' : u.created_at.slice(0, 10)) + '" data-last-active="' + esc(st.last ? ago(st.last) : 'Never') + '"' +
+      '" data-joined-date="' + esc(isNaN(joined) ? '' : String(u.created_at || '').slice(0, 10)) + '" data-last-active="' + esc(st.last ? ago(st.last) : 'Never') + '"' +
       (banned ? ' data-ban-reason="' + esc(u.ban_reason || '') + '"' : '') + ' data-search="' + esc(search) + '">' +
       '<td class="px-10 py-6"><div class="flex items-center gap-4">' + (u.avatar
         ? '<img src="' + esc(u.avatar) + '" class="w-10 h-10 rounded-xl object-cover shrink-0" alt="">'
@@ -192,7 +221,7 @@
       : s.needsTriage
       ? '<span class="ml-2 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-[8px] font-bold uppercase tracking-widest not-italic" title="' + (s.triageReason === 'toxic-match' ? 'Possible Toxic match -- always reviewed regardless of confidence' : 'OCR confidence was below the Auto-Approve Threshold') + '">Needs Review</span>'
       : '';
-    return '<tr class="feed-row hover:bg-stone-50/50 group" id="row-' + s.id + '" data-date="' + esc(s.timestamp.slice(0, 10)) + '" data-verdict="' + verdict +
+    return '<tr class="feed-row hover:bg-stone-50/50 group" id="row-' + s.id + '" data-date="' + esc(String(s.timestamp || '').slice(0, 10)) + '" data-verdict="' + verdict +
       '" data-species="' + s.species + '" data-confidence="' + (s.confidence != null ? esc(s.confidence) : '') + '" data-needs-review="' + ((s.needsTriage || s.confidenceTooWeak) ? 'true' : 'false') +
       '" data-overturned="' + (s.disputeResolutionType === 'overturned' ? 'true' : 'false') +
       '" data-search="' + esc(search) + '"' + (s.dispute ? ' data-disputed="true"' : '') + '>' +
@@ -206,7 +235,7 @@
         (s.confidence != null ? s.confidence + '%' : '&mdash;') + '</td>' +
       '<td class="px-10 py-6"><span class="text-sm font-display font-bold text-' + tone + ' tabular-nums">' + (s.score == null ? '&mdash;' : esc(s.score)) + '</span><span class="text-[10px] text-stone-400">/100</span></td>' +
       '<td class="px-10 py-6">' + badge(vName) + '</td>' +
-      '<td class="px-10 py-6 text-right text-stone-400 font-mono text-xs">' + esc(s.timestamp.slice(0, 10) + ' ' + s.timestamp.slice(11, 16)) + '</td>' +
+      '<td class="px-10 py-6 text-right text-stone-400 font-mono text-xs">' + esc(String(s.timestamp || '').slice(0, 10) + ' ' + String(s.timestamp || '').slice(11, 16)) + '</td>' +
       '<td class="px-10 py-6 text-right sticky right-0 bg-white sticky-col-shadow group-hover:bg-stone-50/50 transition-colors duration-180">' +
       '<button onclick="inspectRecord(\'' + idTxt + '\')" class="press px-4 py-2 text-xs font-bold text-stone-400 hover:text-dark transition-all">Inspect</button></td></tr>';
   }
@@ -321,6 +350,16 @@
   /* ------------------------------ load everything ------------------------------ */
   var baseline = { ings: {}, users: {}, alerts: {} };
 
+  // one section of the load failing (bad row in the database, storage trouble...)
+  // used to throw straight out of hydrate() and silently skip every section after
+  // it. Now each section is isolated, and the failure is shown on screen
+  // (showDataSyncStatus in app.js) with the actual error message.
+  KGDB.errors = [];
+  function sectionFailed(name, e) {
+    console.error('[db-sync] ' + name + ' failed to load:', e);
+    KGDB.errors.push(name + ': ' + (e && e.message ? e.message : String(e)));
+  }
+
   function hydrate() {
     // login page / invite page: nothing to load yet. On any other admin page this
     // means the browser still remembers WHO is signed in but has no server session
@@ -328,7 +367,7 @@
     // empty/zero data with no error anywhere. app.js sends the admin back to sign in.
     if (!getToken()) { KGDB.noSession = true; return; }
     var st = xhr('/api/admin/state');
-    if (st.status === 401) { origRemove.call(localStorage, 'kibbleguard-admin-email'); origRemove.call(localStorage, TOKEN_KEY); return; }
+    if (st.status === 401) { memRemove('kibbleguard-admin-email'); memRemove(TOKEN_KEY); return; }
     if (st.status !== 200 || !st.json) { KGDB.offline = true; return; }
     var state = st.json.state || {};
 
@@ -343,11 +382,11 @@
 
     var i, k, local = [];
     for (i = 0; i < localStorage.length; i++) local.push(localStorage.key(i));
-    local.forEach(function (key) { if (isSynced(key) && !(key in state)) origRemove.call(localStorage, key); });
-    Object.keys(state).forEach(function (key) { if (isSynced(key)) origSet.call(localStorage, key, state[key]); });
+    local.forEach(function (key) { if (isSynced(key) && !(key in state)) memRemove(key); });
+    Object.keys(state).forEach(function (key) { if (isSynced(key)) memSet(key, state[key]); });
     // these stop the pages inserting their built-in demo sample rows
-    origSet.call(localStorage, 'kibbleguard-sample-notrated-scan', '1');
-    origSet.call(localStorage, 'kibbleguard-sample-glucosamine', '1');
+    memSet('kibbleguard-sample-notrated-scan', '1');
+    memSet('kibbleguard-sample-glucosamine', '1');
 
     var d = xhr('/api/admin/data');
     if (d.status !== 200 || !d.json) { KGDB.offline = true; return; }
@@ -365,6 +404,7 @@
       tickets: (data.tickets || []).length
     };
 
+    try {
     // ---- Users & Pets ----
     var petsByUser = {}, stats = {};
     (data.pets || []).forEach(function (p) { (petsByUser[p.user_id] = petsByUser[p.user_id] || []).push(p); });
@@ -374,14 +414,21 @@
       if (s.dispute) x.disputed++;   // s.dispute is only set server-side for an open (unresolved) dispute
       if (!x.last || s.timestamp > x.last) x.last = s.timestamp;
     });
+    // one user row with unexpected data (a null date, an odd pet record...) used to throw
+    // and take every other user down with it -- now only that one row is skipped, and
+    // it's reported in the status strip
+    var badUsers = 0;
     var builtUsers = (data.users || []).slice().reverse().map(function (u) {
-      baseline.users[u.id] = { banned: isFlagTrue(u.is_banned), reason: u.ban_reason || '' };
-      return { id: 'row-u' + u.id, banned: isFlagTrue(u.is_banned), html: userRow(u, petsByUser[u.id] || [], stats[u.id] || { n: 0, warn: 0, last: null, disputed: 0 }) };
-    });
+      try {
+        baseline.users[u.id] = { banned: isFlagTrue(u.is_banned), reason: u.ban_reason || '' };
+        return { id: 'row-u' + u.id, banned: isFlagTrue(u.is_banned), html: userRow(u, petsByUser[u.id] || [], stats[u.id] || { n: 0, warn: 0, last: null, disputed: 0 }) };
+      } catch (e) { badUsers++; console.error('[db-sync] user ' + u.id + ' could not be shown:', e); return null; }
+    }).filter(Boolean);
+    if (badUsers) KGDB.errors.push(badUsers + ' user row(s) could not be shown');
     var savedUsers = {};
     parse(state[K_USERS], []).forEach(function (h) { var id = rowId(h); if (id) savedUsers[id] = h; });
     var disputedCountOf = function (html) { var m = /data-disputed-count="(\d+)"/.exec(html || ''); return m ? m[1] : '0'; };
-    origSet.call(localStorage, K_USERS, JSON.stringify(builtUsers.map(function (b) {
+    memSet(K_USERS, JSON.stringify(builtUsers.map(function (b) {
       var s = savedUsers[b.id];
       // keep the admin's flag/notes unless the database disagrees about a ban or a dispute
       // was opened/resolved since this row was last cached -- otherwise a brand-new dispute
@@ -392,8 +439,12 @@
       return s && sameBan && sameDisputeCount ? s : b.html;
     })));
 
+    } catch (e) { sectionFailed('Users & Pets', e); }
+    try {
     // ---- OCR Scans (+ the per-scan breakdown the Inspect window shows) ----
+    var badScans = 0;
     var builtScans = (data.scans || []).map(function (s) {
+      try {
       KGDB.recordTraces['KB-' + s.id] = {
         user_id: String(s.user_id), owner: s.owner, ownerEmail: s.ownerEmail, species: s.species, timestamp: s.timestamp,
         // only needed so the Activity Log's quick-view popup has a title to show --
@@ -420,15 +471,19 @@
         needsTriage: !!s.needsTriage, triageReason: s.triageReason || null, confidenceTooWeak: !!s.confidenceTooWeak
       };
       return { id: 'row-' + s.id, html: scanRow(s) };
-    });
+      } catch (e) { badScans++; console.error('[db-sync] scan ' + s.id + ' could not be shown:', e); delete KGDB.recordTraces['KB-' + s.id]; return null; }
+    }).filter(Boolean);
+    if (badScans) KGDB.errors.push(badScans + ' scan row(s) could not be shown');
     // Unlike users/ingredients (below), a scan row has nothing locally editable to preserve --
     // the admin never hand-edits a scan's own fields, only acts on it (dispute resolution etc.),
     // which already happens by mutating the live DOM row directly. So the freshly built HTML
     // always wins here; keeping the old cached HTML, like the other two sections do, would mean
     // a scan that goes from "no dispute" to "disputed" (or back) never actually gets its badge
     // updated after the row's first render, since the stale cached copy would win forever.
-    origSet.call(localStorage, K_SCANS, JSON.stringify(builtScans.map(function (b) { return b.html; })));
+    memSet(K_SCANS, JSON.stringify(builtScans.map(function (b) { return b.html; })));
 
+    } catch (e) { sectionFailed('OCR Scans', e); }
+    try {
     // ---- Ingredient Database ----
     var savedIngs = {};
     parse(state[K_INGS], []).forEach(function (h) {
@@ -440,8 +495,10 @@
       var s = savedIngs[i.name.toLowerCase()];
       return (s && ingSig(s.rec) === ingSig(rec)) ? s.html : ingRow(i);              // keep the admin's detailed clinical notes while the ratings still match the database
     });
-    origSet.call(localStorage, K_INGS, JSON.stringify(ingRows));
+    memSet(K_INGS, JSON.stringify(ingRows));
 
+    } catch (e) { sectionFailed('Ingredient Database', e); }
+    try {
     // ---- Triage: scanned ingredients that fuzzy-matched something real in the
     // database (so there's a concrete candidate to confirm) but whose match
     // confidence fell below the Auto-Approve threshold. A token with no real
@@ -495,12 +552,14 @@
     });
     if (fresh.length || savedTriage.length !== savedTriageRaw.length || !(K_TRIAGE in state)) {
       var merged = savedTriage.concat(fresh);
-      origSet.call(localStorage, K_TRIAGE, JSON.stringify(merged));
-      origSet.call(localStorage, K_SEEN, JSON.stringify(seen));
+      memSet(K_TRIAGE, JSON.stringify(merged));
+      memSet(K_SEEN, JSON.stringify(seen));
       queue(K_TRIAGE, JSON.stringify(merged));
       queue(K_SEEN, JSON.stringify(seen));
     }
 
+    } catch (e) { sectionFailed('High-Risk Triage', e); }
+    try {
     // ---- Inquiries (support tickets from pet owners) ----
     (data.tickets || []).forEach(function (tk) {
       var q = /["“]([^"”]{2,60})["”]/.exec(tk.message || '');
@@ -508,6 +567,7 @@
       if (/^Suggest/i.test(tk.category || '')) rec.suggestedIngredient = q ? q[1] : '';
       KGDB.inquiryRecords[tk.id] = rec;
     });
+    } catch (e) { sectionFailed('Inquiries', e); }
     KGDB.loaded = true;
   }
 
@@ -576,8 +636,8 @@
   }
 
   Storage.prototype.setItem = function (k, v) {
-    origSet.call(this, k, v);
-    if (this !== w.localStorage) return;
+    if (this !== w.localStorage) return origSet.call(this, k, v);
+    memSet(k, v);
     k = String(k);
     if (!isSynced(k)) return;
     queue(k, String(v));
@@ -586,8 +646,9 @@
     if (k === K_ALERTS) { clearTimeout(alertTimer); alertTimer = setTimeout(syncAlerts, 500); }
   };
   Storage.prototype.removeItem = function (k) {
-    origRemove.call(this, k);
-    if (this === w.localStorage && isSynced(String(k))) queue(String(k), null);
+    if (this !== w.localStorage) return origRemove.call(this, k);
+    memRemove(k);
+    if (isSynced(String(k))) queue(String(k), null);
   };
 
   /* pick up other admins' changes every 30 seconds (the pages' own "another admin changed this" checks then apply) */
@@ -599,10 +660,10 @@
         if (!j || !j.state || inflight || Object.keys(pending).length) return;
         Object.keys(j.state).forEach(function (key) {
           if (!isSynced(key) || key === K_USERS || key === K_SCANS || key === K_INGS) return;
-          if (localStorage.getItem(key) !== j.state[key]) origSet.call(localStorage, key, j.state[key]);
+          if (localStorage.getItem(key) !== j.state[key]) memSet(key, j.state[key]);
         });
       }).catch(function () {});
   }, 30000);
 
-  hydrate();
+  try { hydrate(); } catch (e) { sectionFailed('Loading', e); }
 })();

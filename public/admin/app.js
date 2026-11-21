@@ -289,7 +289,7 @@ function applyRoleState() {
 //   2. the server answered with an error (now: red, with the server's own message)
 //   3. the server answered fine (now: the exact counts it sent)
 // The build tag on the right also shows at a glance whether a new deploy is live.
-var ADMIN_BUILD_TAG = 'build 20';
+var ADMIN_BUILD_TAG = 'build 21';
 function showDataSyncStatus() {
   var main = document.querySelector('main');
   if (!main || document.getElementById('data-sync-status')) return;
@@ -302,6 +302,11 @@ function showDataSyncStatus() {
     cls = 'bg-stone-100 text-stone-500';
     icon = 'fa-database text-safe';
     text = 'Live from database: ' + c.users + ' users &middot; ' + c.pets + ' pets &middot; ' + c.scans + ' scans &middot; ' + c.tickets + ' inquiries';
+    if (k.errors && k.errors.length) {
+      cls = 'bg-caution text-white';
+      icon = 'fa-triangle-exclamation';
+      text += ' &mdash; but some of it could not be shown: ' + escapeStatusText(k.errors.join('; '));
+    }
   } else if (k.offline) {
     cls = 'bg-danger text-white';
     icon = 'fa-triangle-exclamation';
