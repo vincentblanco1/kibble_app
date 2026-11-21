@@ -260,6 +260,14 @@ function applyRoleState() {
     window.location.href = 'auth.html';
     return;
   }
+  // signed in as far as this browser remembers, but no server session token: nothing
+  // can be loaded from the database (db-sync.js skips every call), so every page would
+  // just show zeros. Send them to sign in again instead of showing an empty panel.
+  if (window.KGDB && window.KGDB.noSession) {
+    localStorage.removeItem('kibbleguard-admin-email');
+    window.location.href = 'auth.html?expired=1';
+    return;
+  }
   applySidebarIdentity();
   applyPermissionGating();
   applyNavVisibility();
@@ -270,57 +278,50 @@ function applyRoleState() {
   initIdleSignOut();
   initMobileTopbar();
   initMobileScrollIndicator();
-  showDataSyncWarningIfNeeded();
-  showSyncCountsIfAvailable();
+  showDataSyncStatus();
 }
 
-// db-sync.js sets window.KGDB.offline = true when its sync to the server
-// failed even after its retry (a cold Render instance, a dropped mobile
-// connection, etc.) -- until now that was completely invisible on screen:
-// the page just silently fell back to whatever was cached from the last
-// successful sync (or nothing, on a fresh browser/private tab), so a chart
-// or KPI built fresh from the server response could show 0/empty right next
-// to a plain table still showing old-but-real cached numbers, with no
-// indication anything had gone wrong. This puts that failure in front of
-// the admin instead of only in the console.
-function showDataSyncWarningIfNeeded() {
-  if (!(window.KGDB && window.KGDB.offline)) return;
+// One status strip at the top of every admin page, shown on EVERY load, that says
+// exactly what happened with the server this time. Before this, three different
+// failures all looked identical on screen -- zeros and "No data yet" with no error:
+//   1. the browser remembered who was signed in but had no server session token,
+//      so db-sync.js skipped loading anything at all (now: sent back to sign in)
+//   2. the server answered with an error (now: red, with the server's own message)
+//   3. the server answered fine (now: the exact counts it sent)
+// The build tag on the right also shows at a glance whether a new deploy is live.
+var ADMIN_BUILD_TAG = 'build 20';
+function showDataSyncStatus() {
   var main = document.querySelector('main');
-  if (!main || document.getElementById('data-sync-warning')) return;
-  var banner = document.createElement('div');
-  banner.id = 'data-sync-warning';
-  banner.className = 'px-6 py-3.5 bg-danger text-white flex items-center gap-3 flex-wrap';
-  banner.innerHTML =
-    '<i class="fa-solid fa-triangle-exclamation shrink-0"></i>' +
-    '<p class="text-xs font-bold flex-1 min-w-[200px]">Could not load the latest data from the server. Some numbers on this page may be missing or out of date.</p>' +
-    '<button type="button" onclick="location.reload()" class="press shrink-0 px-4 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-xs font-bold transition-all">Retry</button>';
-  main.insertBefore(banner, main.firstChild);
+  if (!main || document.getElementById('data-sync-status')) return;
+  var k = window.KGDB || {};
+  var bar = document.createElement('div');
+  bar.id = 'data-sync-status';
+  var icon, text, cls, action = '';
+  if (k.lastSyncCounts) {
+    var c = k.lastSyncCounts;
+    cls = 'bg-stone-100 text-stone-500';
+    icon = 'fa-database text-safe';
+    text = 'Live from database: ' + c.users + ' users &middot; ' + c.pets + ' pets &middot; ' + c.scans + ' scans &middot; ' + c.tickets + ' inquiries';
+  } else if (k.offline) {
+    cls = 'bg-danger text-white';
+    icon = 'fa-triangle-exclamation';
+    text = 'Could not load data from the server' + (k.lastError ? ': ' + escapeStatusText(k.lastError) : '') + '. Numbers below may be missing or out of date.';
+    action = '<button type="button" onclick="location.reload()" class="press shrink-0 px-4 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-xs font-bold transition-all">Retry</button>';
+  } else {
+    cls = 'bg-caution text-white';
+    icon = 'fa-circle-question';
+    text = 'Data was not loaded from the server on this page.';
+    action = '<button type="button" onclick="location.reload()" class="press shrink-0 px-4 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-xs font-bold transition-all">Retry</button>';
+  }
+  bar.className = 'px-6 py-2.5 flex items-center gap-3 flex-wrap ' + cls;
+  bar.innerHTML =
+    '<i class="fa-solid ' + icon + ' shrink-0"></i>' +
+    '<p class="text-[11px] font-bold flex-1 min-w-[200px]">' + text + '</p>' + action +
+    '<span class="text-[9px] font-bold uppercase tracking-widest opacity-60 shrink-0">' + ADMIN_BUILD_TAG + '</span>';
+  main.insertBefore(bar, main.firstChild);
 }
-
-// A sync failure (above) was never the only way this page can look like it has
-// "no data" -- a page can also just be reading real, successfully-synced numbers
-// wrong (see users-pets.js's old seed-version bug, which deleted real synced rows
-// right after they landed). When that happens there's no error anywhere: the sync
-// succeeded, nothing logs a problem, and the only way to tell "the server really
-// has nothing" apart from "this page is miscounting what the server sent" used to
-// be opening devtools and reading the raw network response by hand. This puts the
-// exact counts db-sync.js just received straight on the page instead, so that
-// distinction never again needs guesswork or a trip through me.
-function showSyncCountsIfAvailable() {
-  if (!(window.KGDB && window.KGDB.lastSyncCounts)) return;
-  var main = document.querySelector('main');
-  if (!main || document.getElementById('data-sync-counts')) return;
-  var c = window.KGDB.lastSyncCounts;
-  var banner = document.createElement('div');
-  banner.id = 'data-sync-counts';
-  banner.className = 'px-6 py-2.5 bg-stone-100 text-stone-500 flex items-center gap-3 flex-wrap';
-  banner.innerHTML =
-    '<i class="fa-solid fa-database shrink-0 text-stone-400"></i>' +
-    '<p class="text-[11px] font-bold flex-1 min-w-[200px]">Just synced from the server: ' +
-      c.users + ' users &middot; ' + c.pets + ' pets &middot; ' + c.scans + ' scans &middot; ' +
-      c.ingredients + ' ingredients &middot; ' + c.tickets + ' inquiries</p>' +
-    '<button type="button" onclick="document.getElementById(\'data-sync-counts\').remove()" class="press shrink-0 w-7 h-7 rounded-lg hover:bg-stone-200 flex items-center justify-center text-[10px] transition-all"><i class="fa-solid fa-xmark"></i></button>';
-  main.insertBefore(banner, main.firstChild);
+function escapeStatusText(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /* ---------- Auto sign-out after inactivity ----------

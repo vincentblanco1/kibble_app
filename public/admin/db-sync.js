@@ -75,6 +75,9 @@
     // right in devtools instead of needing a trip to the Render logs
     if (x.status < 200 || x.status >= 300) {
       console.error('[db-sync] ' + url + ' -> HTTP ' + x.status + ': ' + x.responseText);
+      var msg = '';
+      try { msg = (JSON.parse(x.responseText) || {}).error || ''; } catch (e) { msg = String(x.responseText || '').slice(0, 120); }
+      KGDB.lastError = url.replace('/api/admin/', '') + ' returned ' + (x.status || 'no response') + (msg ? ' (' + msg + ')' : '');
     }
     return { status: x.status, json: parse(x.responseText, null) };
   }
@@ -319,7 +322,11 @@
   var baseline = { ings: {}, users: {}, alerts: {} };
 
   function hydrate() {
-    if (!getToken()) return;                                   // login page / invite page: nothing to load yet
+    // login page / invite page: nothing to load yet. On any other admin page this
+    // means the browser still remembers WHO is signed in but has no server session
+    // token -- every sync call would be skipped, silently, and every page would show
+    // empty/zero data with no error anywhere. app.js sends the admin back to sign in.
+    if (!getToken()) { KGDB.noSession = true; return; }
     var st = xhr('/api/admin/state');
     if (st.status === 401) { origRemove.call(localStorage, 'kibbleguard-admin-email'); origRemove.call(localStorage, TOKEN_KEY); return; }
     if (st.status !== 200 || !st.json) { KGDB.offline = true; return; }
@@ -347,7 +354,7 @@
     var data = d.json, t = getToken();
 
     // the exact, raw counts the server just returned -- shown on-page by
-    // showSyncCountsIfAvailable() (app.js) so "this number is 0" and "the sync
+    // showDataSyncStatus() (app.js) so "this number is 0" and "the sync
     // failed" are never ambiguous again, without needing devtools or a trip
     // through the database itself to tell them apart
     KGDB.lastSyncCounts = {
